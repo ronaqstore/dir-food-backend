@@ -8,6 +8,10 @@ import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PlatformAdminModule } from './platform-admin/platform-admin.module.js';
 import { RestaurantsModule } from './restaurants/restaurants.module.js';
+import { RestaurantHoursModule } from './restaurant-hours/restaurant-hours.module.js';
+import { DeliveryAreasModule } from './delivery-areas/delivery-areas.module.js';
+import { MenuCategoriesModule } from './menu-categories/menu-categories.module.js';
+import { MenuItemsModule } from './menu-items/menu-items.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
@@ -33,6 +37,10 @@ import { ResponseEnvelopeInterceptor } from './common/interceptors/response-enve
     AuthModule,
     PlatformAdminModule,
     RestaurantsModule,
+    RestaurantHoursModule,
+    DeliveryAreasModule,
+    MenuCategoriesModule,
+    MenuItemsModule,
   ],
   controllers: [AppController],
   providers: [

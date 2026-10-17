@@ -1,11 +1,16 @@
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { UserRole, UserStatus } from '../src/generated/prisma/enums.js';
 import { normalizePhone, isValidPakistaniMobile } from '../src/common/utils/phone.js';
 
 async function bootstrapAdmin() {
-  const prisma = new PrismaClient();
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL,
+    connectionTimeoutMillis: 15_000,
+  });
+  const prisma = new PrismaClient({ adapter });
 
   const phone = process.env.BOOTSTRAP_ADMIN_PHONE || '923000000000';
   const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'AdminPass123!';

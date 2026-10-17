@@ -12,6 +12,29 @@ export interface EnvelopeResponse<T> {
   meta?: Record<string, unknown>;
 }
 
+function serializeBigInts(value: unknown): unknown {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeBigInts);
+  }
+  if (typeof value === 'object') {
+    const res: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      res[k] = serializeBigInts(v);
+    }
+    return res;
+  }
+  return value;
+}
+
 @Injectable()
 export class ResponseEnvelopeInterceptor<T>
   implements NestInterceptor<T, EnvelopeResponse<T>>
@@ -28,9 +51,9 @@ export class ResponseEnvelopeInterceptor<T>
         }
         // If response is already formatted with data/meta
         if (typeof res === 'object' && res !== null && 'data' in res) {
-          return res;
+          return serializeBigInts(res) as EnvelopeResponse<T>;
         }
-        return { data: res };
+        return { data: serializeBigInts(res) as T };
       }),
     );
   }

@@ -17,16 +17,19 @@ import { OwnerLoginDto } from '../dto/owner-login.dto.js';
 import { PlatformAdminLoginDto } from '../dto/platform-admin-login.dto.js';
 import { SetupPasswordDto } from '../dto/setup-password.dto.js';
 import { ChangePasswordDto } from '../dto/change-password.dto.js';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.js';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('register')
+  @ApiOperation({ summary: 'Register a new restaurant and owner account atomically' })
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() dto: RegisterRestaurantDto,
@@ -37,6 +40,7 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @ApiOperation({ summary: 'Restaurant owner login' })
   @HttpCode(HttpStatus.OK)
   async ownerLogin(
     @Body() dto: OwnerLoginDto,
@@ -66,6 +70,7 @@ export class AuthController {
 
   @Public()
   @Post('platform-admin/login')
+  @ApiOperation({ summary: 'Platform admin login' })
   @HttpCode(HttpStatus.OK)
   async platformAdminLogin(
     @Body() dto: PlatformAdminLoginDto,
@@ -93,6 +98,7 @@ export class AuthController {
 
   @Public()
   @Post('setup-password')
+  @ApiOperation({ summary: 'First-time password setup via one-time link token' })
   @HttpCode(HttpStatus.OK)
   async setupPassword(@Body() dto: SetupPasswordDto) {
     return this.authService.setupPassword(dto);
@@ -100,6 +106,8 @@ export class AuthController {
 
   @Post('change-password')
   @UseGuards(RestaurantAuthGuard)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Change password for authenticated restaurant owner' })
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @CurrentUser() user: AuthenticatedUser,
@@ -109,6 +117,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Log out and clear session cookie' })
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('dir_food_token');
@@ -116,6 +125,8 @@ export class AuthController {
   }
 
   @Get('me')
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Get current authenticated user profile and restaurant info' })
   async me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getMe(user.userId);
   }
