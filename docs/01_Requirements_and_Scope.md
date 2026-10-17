@@ -184,8 +184,8 @@ Rules:
 9. **Shortening** an end date is not an extension. It is a separate corrective admin action that needs a reason and an explicit confirmation flag, and is audit-logged as `RESTAURANT_SUBSCRIPTION_SHORTENED`. It does not change `status`.
 10. Extension and shortening are refused for a restaurant that was never approved (dates NULL) and for a `DEACTIVATED` restaurant.
 11. **`DEACTIVATED` is terminal in the MVP.** There is no normal reactivation flow; the service refuses any transition out of it and a database trigger enforces this as a safety net. `PENDING` restaurants may be rejected by moving them to `DEACTIVATED`.
-12. **Expired subscription (status still `ACTIVE`):** the owner can log in, sees "subscription expired, contact support", and **may still edit menu, prices, availability, opening hours and delivery areas** (and profile data). The restaurant is not eligible: it is hidden from public discovery and menu pages, and new WhatsApp handoff requests are refused with `RESTAURANT_NOT_AVAILABLE`.
-13. **Suspended** restaurants stay blocked regardless of subscription validity (hidden, no new requests, owner editing blocked). **Deactivated** restaurants are blocked the same way. `PENDING` owners can edit while preparing for approval.
+12. **Expired subscription (status still `ACTIVE`):** the owner can log in, sees "subscription expired, contact support", and **may still edit** the restaurant profile (name, description, contact details, WhatsApp number, logo, cover image), menu, prices, availability, opening hours and delivery areas, so they can prepare for renewal. The restaurant is not eligible: it is hidden from public discovery and menu pages, and new WhatsApp handoff requests are refused with `RESTAURANT_NOT_AVAILABLE`.
+13. **Suspended** restaurants stay blocked regardless of subscription validity (hidden, no new requests, owner editing blocked). **Deactivated** restaurants are blocked the same way. `PENDING` owners can complete setup (profile, menu, hours, delivery areas) while preparing for approval. Suspended and deactivated restaurants cannot make business changes (owner read-only).
 
 ## 10. Implementation plan
 

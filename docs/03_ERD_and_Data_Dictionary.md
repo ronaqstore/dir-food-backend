@@ -260,7 +260,7 @@ Legend: **R** required, **N** nullable. All `created_at` default `now()`.
 
 Indexes: `UNIQUE(slug)`, `(status, subscription_ends_at)` (eligibility listing), GIN on `cuisines`, `(lower(name))` and `(lower(name) text_pattern_ops)` for prefix search (plain `LIKE 'abc%'` can use a btree only with `text_pattern_ops` under a non-C collation). Plain "contains" search uses `ILIKE '%abc%'` without an index, which is fine for the small MVP table; `pg_trgm` is deliberately not installed. Soft deletion: `status = DEACTIVATED`.
 
-**`DEACTIVATED` is terminal:** a `BEFORE UPDATE` trigger on `restaurants` raises an error if a row with `status = 'DEACTIVATED'` is updated to any other status (safety net behind the service rule).
+**`DEACTIVATED` is terminal:** a `BEFORE UPDATE OF status` trigger on `restaurants` raises an error only when a `DEACTIVATED` row's `status` is changed to a different value (safety net behind the service rule). Updates that do not change `status` (including ones that set `status` to the same value, and any other column) are not blocked by the trigger; blocking business edits for deactivated restaurants is a service rule.
 
 **Eligibility (computed per request, never stored):** `status = 'ACTIVE' AND subscription_ends_at IS NOT NULL AND subscription_ends_at > now()`. The time-dependent part cannot be a CHECK constraint. No grace period; no expiry job; suspension overrides subscription validity; extending `subscription_ends_at` never changes `status`; dates keep running while suspended. No price, ledger or invoice columns exist.
 

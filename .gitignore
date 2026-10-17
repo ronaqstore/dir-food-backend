@@ -5,3 +5,5 @@ dist/
 !.env.example
 *.bak
 *.tsbuildinfo
+
+local_pg_dev/
