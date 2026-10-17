@@ -1,0 +1,14 @@
+import { IsString, IsNotEmpty, Matches } from 'class-validator';
+
+export class LoginDto {
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
+    message: 'Phone must be a valid Pakistani mobile number',
+  })
+  phone!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password!: string;
+}

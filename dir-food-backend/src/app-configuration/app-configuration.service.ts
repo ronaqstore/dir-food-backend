@@ -9,7 +9,7 @@ export class AppConfigurationService {
   static validate(config: Record<string, unknown>): Record<string, unknown> {
     const schema = Joi.object<Record<string, unknown>>({
       NODE_ENV: Joi.string()
-        .valid('development', 'staging', 'production')
+        .valid('development', 'staging', 'production', 'test')
         .default('development'),
       PORT: Joi.number().integer().min(1).max(65535).default(4000),
       DATABASE_URL: Joi.string()
