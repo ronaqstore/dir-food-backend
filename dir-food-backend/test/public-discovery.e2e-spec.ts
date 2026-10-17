@@ -16,6 +16,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
   let inactiveAreaId: string;
 
   let activeRestSlug: string;
+  let activeRestName: string;
+  let closedRestName: string;
+  let scheduledRestName: string;
   let expiredRestSlug: string;
   let pendingRestSlug: string;
   let suspendedRestSlug: string;
@@ -70,10 +73,12 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
     const pastDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 10); // -10 days
 
     // 2. Active Restaurant (Always open, serving active area, full menu)
-    activeRestSlug = `al-noor-pub-${Date.now()}`;
+    const uniqueRunId = Date.now();
+    activeRestSlug = `al-noor-pub-${uniqueRunId}`;
+    activeRestName = `Al-Noor Public Restaurant ${uniqueRunId}`;
     const activeRest = await prisma.restaurant.create({
       data: {
-        name: 'Al-Noor Public Restaurant',
+        name: activeRestName,
         slug: activeRestSlug,
         description: 'Best Karahi in Timergara',
         cuisines: ['Karahi', 'Desi'],
@@ -282,9 +287,10 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
 
     // 7. Closed Restaurant (Active status, valid subscription, but manualStatus = CLOSED)
     closedRestSlug = `closed-pub-${Date.now()}`;
+    closedRestName = `Closed Under Renovation Spot ${uniqueRunId}`;
     await prisma.restaurant.create({
       data: {
-        name: 'Closed Under Renovation Spot',
+        name: closedRestName,
         slug: closedRestSlug,
         cuisines: ['Fast Food', 'Burgers'],
         whatsappNumber: '923004445566',
@@ -298,11 +304,12 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
 
     // 8. Scheduled Restaurant (Active, valid subscription, but only open on tomorrow)
     scheduledRestSlug = `scheduled-pub-${Date.now()}`;
+    scheduledRestName = `Weekend Only Diner ${uniqueRunId}`;
     const today = new Date().getDay();
     const tomorrow = (today + 1) % 7;
     await prisma.restaurant.create({
       data: {
-        name: 'Weekend Only Diner',
+        name: scheduledRestName,
         slug: scheduledRestSlug,
         cuisines: ['Traditional'],
         whatsappNumber: '923007778899',
@@ -355,21 +362,21 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       // 1. Active unexpired restaurant is included
       const resActive = await request(app.getHttpServer())
         .get('/public/restaurants')
-        .query({ q: 'Al-Noor Public', limit: 10 });
+        .query({ q: activeRestName, limit: 10 });
       expect(resActive.status).toBe(200);
       expect(resActive.body.data.map((r: { slug: string }) => r.slug)).toContain(activeRestSlug);
 
       // 2. Closed but active/unexpired restaurant is included
       const resClosed = await request(app.getHttpServer())
         .get('/public/restaurants')
-        .query({ q: 'Closed Under Renovation', limit: 10 });
+        .query({ q: closedRestName, limit: 10 });
       expect(resClosed.status).toBe(200);
       expect(resClosed.body.data.map((r: { slug: string }) => r.slug)).toContain(closedRestSlug);
 
       // 3. Scheduled active/unexpired restaurant is included
       const resScheduled = await request(app.getHttpServer())
         .get('/public/restaurants')
-        .query({ q: 'Weekend Only', limit: 10 });
+        .query({ q: scheduledRestName, limit: 10 });
       expect(resScheduled.status).toBe(200);
       expect(resScheduled.body.data.map((r: { slug: string }) => r.slug)).toContain(scheduledRestSlug);
 
@@ -406,7 +413,7 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
 
       // Allowed public fields
       expect(restaurant).toHaveProperty('slug', activeRestSlug);
-      expect(restaurant).toHaveProperty('name', 'Al-Noor Public Restaurant');
+      expect(restaurant).toHaveProperty('name', activeRestName);
       expect(restaurant).toHaveProperty('cuisines');
       expect(restaurant).toHaveProperty('logoUrl');
       expect(restaurant).toHaveProperty('minOrderAmount', 50000); // BigInt serialized to Number
@@ -554,7 +561,7 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       const data = res.body.data;
 
       expect(data.slug).toBe(activeRestSlug);
-      expect(data.name).toBe('Al-Noor Public Restaurant');
+      expect(data.name).toBe(activeRestName);
       expect(data.description).toBe('Best Karahi in Timergara');
       expect(data.cuisines).toEqual(['Karahi', 'Desi']);
       expect(data.logoUrl).toBe('https://images.example.com/al-noor-logo.jpg');

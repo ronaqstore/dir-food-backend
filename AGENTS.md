@@ -54,4 +54,16 @@ Dir Food is a restaurant-discovery and WhatsApp-request platform for Timergara a
    - Never expose internal IDs, user accounts, audit logs, admin notes, status reasons, or subscription dates.
    - Dynamic opening hours and nextOpenAt strictly evaluated using `Asia/Karachi` timezone (UTC+5), with global open-first ranking.
 
+9. **Order Intents & WhatsApp Requests (Phase 6):**
+   - Server price recalculated; throws 409 `PRICE_CHANGED` if client expectedSubtotal differs.
+   - Reference codes (`TM-XXXXXX`) using unambiguous charset. Raw messages never stored.
+   - Layered IP (5 per 10m) and salted phone hash (3 per 1h per restaurant) rate limiting.
+
+10. **Platform Admin Operations & Areas (Phase 7):**
+    - `PlatformAdminModule` under `/admin/` protected by `PLATFORM_ADMIN` role and guards.
+    - Restaurant lifecycle: admin-assisted onboarding (`POST /admin/restaurants`), status changes, subscription extensions/shortenings, slug changes, setup links.
+    - Master delivery areas CRUD under `/admin/areas`.
+    - Support order-intent lookup, 7-day activity metrics, and audit log exploration.
+
+
 

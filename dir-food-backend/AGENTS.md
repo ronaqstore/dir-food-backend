@@ -195,6 +195,29 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
    - Customer phone numbers are never written to system logs.
    - 24-hour expiration (`expiresAt = now + 24h`). Expired requests return `409` / `410` without scheduled cron deletion.
 
+---
 
+## 10. Platform Admin Management & Operations (Phase 7)
 
-
+1. **Module & Endpoints:**
+   - Managed under `PlatformAdminModule` (`src/platform-admin/`).
+   - Protected by `@Roles(UserRole.PLATFORM_ADMIN)` and `RolesGuard` / `PlatformAdminGuard`.
+   - **Restaurant Administration (`PlatformAdminController`):**
+     - `GET /admin/restaurants`: Paginated restaurant listing with `status` filter and `q` search.
+     - `POST /admin/restaurants`: Admin-assisted onboarding creates restaurant and owner account atomically, returning a single-use password setup link.
+     - `GET /admin/restaurants/pending`: Lists pending restaurant onboarding applications.
+     - `GET /admin/restaurants/:id`: Restaurant onboarding detail including verification checklist (`isReadyForApproval`, `missingPrerequisites`).
+     - `PATCH /admin/restaurants/:id`: Support updates and internal `adminNotes`.
+     - `PATCH /admin/restaurants/:id/status`: Approval (verifies 4 prerequisites, starts 30-day trial), suspension, or deactivation.
+     - `POST /admin/restaurants/:id/subscription/extend`: Extends subscription end date following offline manual payment (`addDays` or explicit `subscriptionEndsAt`). Never alters status.
+     - `POST /admin/restaurants/:id/subscription/shorten`: Corrective shortening with mandatory reason and `confirm: true`.
+     - `PATCH /admin/restaurants/:id/slug`: Changes URL slug with uniqueness validation and reserved keywords protection.
+     - `POST /admin/restaurants/:id/setup-link`: Re-issues single-use password setup link for owner account.
+   - **Master Delivery Areas (`PlatformAdminAreasController`):**
+     - `GET /admin/areas`: Lists all delivery areas with active restaurant counts.
+     - `POST /admin/areas`: Creates master delivery area.
+     - `PATCH /admin/areas/:id`: Renames, reorders (`sortOrder`), or toggles active status.
+   - **Support, Activity & Audit (`PlatformAdminOperationsController`):**
+     - `GET /admin/order-intents`: Support lookup of customer WhatsApp requests by short code reference or customer keywords.
+     - `GET /admin/activity`: Aggregated platform 7-day or 30-day activity summary metrics.
+     - `GET /admin/audit-logs`: Paginated audit log search with actor, action, and restaurant filtering.
