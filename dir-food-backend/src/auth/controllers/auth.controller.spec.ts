@@ -102,3 +102,4 @@ describe('AuthController (unit)', () => {
     expect(result).toEqual(profile);
   });
 });
+

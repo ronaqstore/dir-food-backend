@@ -66,3 +66,4 @@ describe('PlatformAdminController (unit)', () => {
     expect(result).toEqual(mockUpdated);
   });
 });
+

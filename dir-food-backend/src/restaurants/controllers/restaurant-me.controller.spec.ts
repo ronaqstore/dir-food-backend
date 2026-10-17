@@ -33,3 +33,4 @@ describe('RestaurantMeController (unit)', () => {
     expect(result).toEqual(mockResult);
   });
 });
+

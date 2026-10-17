@@ -21,3 +21,4 @@ export class RestaurantMeController {
     return this.restaurantsService.getMyRestaurant(user.restaurantId);
   }
 }
+

@@ -48,3 +48,4 @@ describe('RestaurantsService (unit)', () => {
     expect(result).toEqual(mockRestaurant);
   });
 });
+
