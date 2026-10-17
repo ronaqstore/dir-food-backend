@@ -12,12 +12,18 @@ export interface EnvelopeResponse<T> {
   meta?: Record<string, unknown>;
 }
 
+const MIN_SAFE_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);
+const MAX_SAFE_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
+
 function serializeBigInts(value: unknown): unknown {
   if (value === null || value === undefined) {
     return value;
   }
   if (typeof value === 'bigint') {
-    return Number(value);
+    if (value >= MIN_SAFE_BIGINT && value <= MAX_SAFE_BIGINT) {
+      return Number(value);
+    }
+    return value.toString();
   }
   if (value instanceof Date) {
     return value;

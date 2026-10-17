@@ -70,4 +70,35 @@ describe('ResponseEnvelopeInterceptor', () => {
       expect(result).toEqual({ data: null });
     });
   });
+
+  it('safely handles BigInt values near and beyond Number.MAX_SAFE_INTEGER and MIN_SAFE_INTEGER', async () => {
+    const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+    const minSafe = BigInt(Number.MIN_SAFE_INTEGER);
+    const beyondMax = maxSafe + 2n;
+    const beyondMin = minSafe - 2n;
+
+    const handler: CallHandler = {
+      handle: () =>
+        of({
+          normalAmount: 150000n,
+          atMaxSafe: maxSafe,
+          atMinSafe: minSafe,
+          beyondMaxSafe: beyondMax,
+          beyondMinSafe: beyondMin,
+        }),
+    };
+
+    const observable = interceptor.intercept(mockContext, handler);
+    observable.subscribe((result) => {
+      expect(result).toEqual({
+        data: {
+          normalAmount: 150000,
+          atMaxSafe: Number.MAX_SAFE_INTEGER,
+          atMinSafe: Number.MIN_SAFE_INTEGER,
+          beyondMaxSafe: '9007199254740993',
+          beyondMinSafe: '-9007199254740993',
+        },
+      });
+    });
+  });
 });
