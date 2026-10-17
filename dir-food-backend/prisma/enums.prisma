@@ -1,0 +1,37 @@
+// -----------------------------------------------------------------------------
+// ENUMS (shared across every model file)
+// -----------------------------------------------------------------------------
+
+enum RestaurantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum ManualStatus {
+  AUTO
+  CLOSED
+  TEMP_UNAVAILABLE
+}
+
+enum UserRole {
+  RESTAURANT_OWNER
+  PLATFORM_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrderIntentStatus {
+  WHATSAPP_HANDOFF_READY
+  WHATSAPP_OPENED
+}
+
+enum DeliveryFeeStatus {
+  KNOWN
+  TO_BE_CONFIRMED
+}
+

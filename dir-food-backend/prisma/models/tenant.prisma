@@ -1,0 +1,64 @@
+// =============================================================================
+// RESTAURANT (TENANT) AND USER (OWNER / PLATFORM ADMIN)
+// =============================================================================
+
+model Restaurant {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  name               String
+  slug               String           @unique
+  description        String?
+  cuisines           String[]         @default([])
+  logoUrl            String?          @map("logo_url")
+  coverUrl           String?          @map("cover_url")
+  addressText        String?          @map("address_text")
+  contactPhone       String?          @map("contact_phone")
+  whatsappNumber     String?          @map("whatsapp_number")
+  minOrderAmount     BigInt?          @map("min_order_amount")
+  status             RestaurantStatus @default(PENDING)
+  statusReason       String?          @map("status_reason")
+  statusChangedAt    DateTime?        @map("status_changed_at") @db.Timestamptz(3)
+  // Subscription (separate from status). Both NULL until first approval.
+  trialStartedAt     DateTime?        @map("trial_started_at") @db.Timestamptz(3)
+  subscriptionEndsAt DateTime?        @map("subscription_ends_at") @db.Timestamptz(3)
+  manualStatus       ManualStatus     @default(AUTO) @map("manual_status")
+  unavailableNote    String?          @map("unavailable_note")
+  adminNotes         String?          @map("admin_notes")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  users            User[]
+  hours            RestaurantHours[]
+  deliveryAreas    RestaurantDeliveryArea[]
+  categories       MenuCategory[]
+  items            MenuItem[]
+  variants         MenuItemVariant[]
+  orderIntents     OrderIntent[]
+  orderIntentItems OrderIntentItem[]
+  auditLogs        AuditLog[]
+
+  @@index([status, subscriptionEndsAt])
+  @@map("restaurants")
+}
+
+model User {
+  id               String     @id @default(uuid(7)) @db.Uuid
+  restaurantId     String?    @map("restaurant_id") @db.Uuid
+  name             String
+  phone            String     @unique
+  passwordHash     String?    @map("password_hash")
+  setupTokenHash   String?    @map("setup_token_hash")
+  setupExpiresAt   DateTime?  @map("setup_expires_at") @db.Timestamptz(3)
+  role             UserRole
+  status           UserStatus @default(ACTIVE)
+  failedLoginCount Int        @default(0) @map("failed_login_count")
+  lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  auditLogs  AuditLog[]
+
+  @@index([restaurantId])
+  @@map("users")
+}
+

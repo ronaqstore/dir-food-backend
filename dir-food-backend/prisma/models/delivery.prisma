@@ -1,0 +1,51 @@
+// =============================================================================
+// DELIVERY AREAS AND OPERATING HOURS
+// =============================================================================
+
+// Shared master list. One row can be used by many restaurants via RestaurantDeliveryArea.
+model Area {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  restaurantAreas RestaurantDeliveryArea[]
+
+  @@map("areas")
+}
+
+model RestaurantDeliveryArea {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  restaurantId String   @map("restaurant_id") @db.Uuid
+  areaId       String   @map("area_id") @db.Uuid
+  deliveryFee  BigInt?  @map("delivery_fee") // null = restaurant confirms; 0 = free
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  restaurant   Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  area         Area          @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  orderIntents OrderIntent[]
+
+  @@unique([restaurantId, areaId])
+  @@index([areaId, isActive])
+  @@map("restaurant_delivery_areas")
+}
+
+model RestaurantHours {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  restaurantId String   @map("restaurant_id") @db.Uuid
+  dayOfWeek    Int      @map("day_of_week") @db.SmallInt // 0 = Sunday .. 6 = Saturday
+  openTime     DateTime @map("open_time") @db.Time(0)
+  closeTime    DateTime @map("close_time") @db.Time(0) // earlier than open = closes after midnight
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  @@unique([restaurantId, dayOfWeek, openTime])
+  @@map("restaurant_hours")
+}
+

@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import jwt from 'jsonwebtoken';
+import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 import { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
@@ -16,9 +16,10 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly configService: AppConfigurationService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -36,14 +37,23 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = jwt.verify(token, this.configService.jwtSecret) as {
-        userId: string;
+      const payload = await this.jwtService.verifyAsync<{
+        sub?: string;
+        userId?: string;
         role: AuthenticatedUser['role'];
         restaurantId?: string | null;
-      };
+        typ?: string;
+      }>(token, {
+        secret: this.configService.jwtSecret,
+      });
+
+      const userId = payload.sub ?? payload.userId;
+      if (!userId) {
+        throw new UnauthorizedException('Invalid or expired token');
+      }
 
       request.user = {
-        userId: payload.userId,
+        userId,
         role: payload.role,
         restaurantId: payload.restaurantId ?? null,
       };
@@ -69,4 +79,3 @@ export class JwtAuthGuard implements CanActivate {
     return null;
   }
 }
-

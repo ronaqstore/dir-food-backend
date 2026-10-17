@@ -1,0 +1,63 @@
+// =============================================================================
+// ORDER INTENTS (WHATSAPP HANDOFF ORDER FLOW)
+// =============================================================================
+
+model OrderIntent {
+  id                         String            @id @default(uuid(7)) @db.Uuid
+  publicRef                  String            @unique @map("public_ref")
+  clientRequestId            String            @unique @map("client_request_id") @db.Uuid
+  restaurantId               String            @map("restaurant_id") @db.Uuid
+  status                     OrderIntentStatus @default(WHATSAPP_HANDOFF_READY)
+  restaurantNameSnapshot     String            @map("restaurant_name_snapshot")
+  restaurantWhatsappSnapshot String            @map("restaurant_whatsapp_snapshot")
+  customerName               String?           @map("customer_name") // optional
+  customerPhone              String?           @map("customer_phone") // optional
+  deliveryAreaId             String            @map("delivery_area_id") @db.Uuid
+  deliveryAreaNameSnapshot   String            @map("delivery_area_name_snapshot")
+  landmark                   String
+  directions                 String?
+  mapLat                     Decimal?          @map("map_lat") @db.Decimal(9, 6)
+  mapLng                     Decimal?          @map("map_lng") @db.Decimal(9, 6)
+  subtotal                   BigInt
+  deliveryFee                BigInt?           @map("delivery_fee")
+  deliveryFeeStatus          DeliveryFeeStatus @map("delivery_fee_status")
+  currency                   String            @default("PKR")
+  whatsappOpenedAt           DateTime?         @map("whatsapp_opened_at") @db.Timestamptz(3)
+  expiresAt                  DateTime          @map("expires_at") @db.Timestamptz(3)
+  createdAt                  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                  DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  restaurant   Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  // Composite FK: the area must be one this SAME restaurant serves.
+  deliveryArea RestaurantDeliveryArea @relation(fields: [restaurantId, deliveryAreaId], references: [restaurantId, areaId], onDelete: Restrict)
+  items        OrderIntentItem[]
+
+  @@unique([id, restaurantId])
+  @@index([restaurantId, createdAt(sort: Desc)])
+  @@index([restaurantId, customerPhone, createdAt]) // per-phone rate limit, only used when a phone was supplied
+  @@map("order_intents")
+}
+
+model OrderIntentItem {
+  id                  String  @id @default(uuid(7)) @db.Uuid
+  orderIntentId       String  @map("order_intent_id") @db.Uuid
+  restaurantId        String  @map("restaurant_id") @db.Uuid
+  menuItemId          String  @map("menu_item_id") @db.Uuid
+  variantId           String? @map("variant_id") @db.Uuid
+  itemNameSnapshot    String  @map("item_name_snapshot")
+  variantNameSnapshot String? @map("variant_name_snapshot")
+  unitPrice           BigInt  @map("unit_price")
+  quantity            Int
+  lineTotal           BigInt  @map("line_total")
+  lineNo              Int     @map("line_no")
+
+  restaurant  Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+  orderIntent OrderIntent      @relation(fields: [orderIntentId, restaurantId], references: [id, restaurantId], onDelete: Cascade)
+  menuItem    MenuItem         @relation(fields: [menuItemId, restaurantId], references: [id, restaurantId], onDelete: Restrict)
+  variant     MenuItemVariant? @relation(fields: [variantId, restaurantId, menuItemId], references: [id, restaurantId, menuItemId], onDelete: Restrict)
+
+  @@unique([orderIntentId, lineNo])
+  @@index([menuItemId])
+  @@map("order_intent_items")
+}
+

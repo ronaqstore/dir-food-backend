@@ -14,6 +14,7 @@ describe('Auth & Access Control (e2e)', () => {
   let prisma: PrismaService;
 
   let adminToken: string;
+  let adminPhone: string;
   let owner1Token: string;
   let owner2Token: string;
   let owner1RestId: string;
@@ -47,7 +48,7 @@ describe('Auth & Access Control (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // Setup initial platform admin in DB for testing
-    const adminPhone = getUniquePakistaniPhone();
+    adminPhone = getUniquePakistaniPhone();
     const adminNormalizedPhone = normalizePhone(adminPhone);
     const adminPassHash = await bcrypt.hash('AdminSecret123!', 10);
     await prisma.user.upsert({
@@ -65,9 +66,9 @@ describe('Auth & Access Control (e2e)', () => {
 
     // Login as Admin to get token
     const adminLoginRes = await request(app.getHttpServer())
-      .post('/auth/login')
+      .post('/auth/platform-admin/login')
       .send({ phone: adminPhone, password: 'AdminSecret123!' });
-    adminToken = adminLoginRes.body.data.token;
+    adminToken = adminLoginRes.body.data.token || adminLoginRes.body.data.accessToken;
 
     // Register Restaurant 1
     owner1Phone = getUniquePakistaniPhone();
@@ -344,4 +345,151 @@ describe('Auth & Access Control (e2e)', () => {
       expect(res.body.error.code).toBe('FORBIDDEN');
     });
   });
+
+  describe('Separate Auth Endpoints & Password Lifecycle (Ronaq Store Pattern)', () => {
+    it('rejects owner on /auth/platform-admin/login and admin on /auth/login', async () => {
+      // Owner tries platform admin login
+      await request(app.getHttpServer())
+        .post('/auth/platform-admin/login')
+        .send({ phone: owner1Phone, password: 'Password123!' })
+        .expect(401);
+
+      // Admin tries owner login
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ phone: adminPhone, password: 'AdminSecret123!' })
+        .expect(401);
+    });
+
+    it('completes the admin setup-link → setup-password → me → change-password flow', async () => {
+      // 1. Register a new restaurant without direct password login
+      const setupPhone = getUniquePakistaniPhone();
+      const reg = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          restaurantName: `Setup Flow Hotel ${testRunId}`,
+          ownerName: 'Setup Owner',
+          phone: setupPhone,
+          password: 'InitialPassword123!',
+        })
+        .expect(201);
+
+      const setupUserId = reg.body.data.user.id;
+
+      // 2. Admin issues password setup link
+      const linkRes = await request(app.getHttpServer())
+        .post(`/platform-admin/users/${setupUserId}/password-setup-link`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(linkRes.body.data.setupUrl).toBeDefined();
+      const setupUrl = new URL(linkRes.body.data.setupUrl);
+      const token = setupUrl.searchParams.get('token');
+      expect(token).toMatch(/^[a-f0-9]{64}$/);
+
+      // 3. Owner consumes setup link to set new password
+      await request(app.getHttpServer())
+        .post('/auth/setup-password')
+        .send({
+          token,
+          password: 'FreshPassword123!',
+        })
+        .expect(200);
+
+      // 4. Token cannot be replayed
+      await request(app.getHttpServer())
+        .post('/auth/setup-password')
+        .send({
+          token,
+          password: 'FreshPassword123!',
+        })
+        .expect(400);
+
+      // 5. Owner logs in with new password
+      const newLoginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          phone: setupPhone,
+          password: 'FreshPassword123!',
+        })
+        .expect(200);
+
+      const newOwnerToken = newLoginRes.body.data.accessToken || newLoginRes.body.data.token;
+      expect(newOwnerToken).toBeDefined();
+
+      // 6. Owner changes password
+      await request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${newOwnerToken}`)
+        .send({
+          currentPassword: 'WrongOldPassword',
+          newPassword: 'EvenNewerPassword123!',
+        })
+        .expect(400);
+
+      await request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${newOwnerToken}`)
+        .send({
+          currentPassword: 'FreshPassword123!',
+          newPassword: 'EvenNewerPassword123!',
+        })
+        .expect(200);
+
+      // 7. Re-login with changed password
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          phone: setupPhone,
+          password: 'EvenNewerPassword123!',
+        })
+        .expect(200);
+
+      // 8. Immediate revocation: Disable user in DB -> token is rejected on next request
+      await prisma.user.update({
+        where: { id: setupUserId },
+        data: { status: UserStatus.DISABLED },
+      });
+
+      await request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${newOwnerToken}`)
+        .send({
+          currentPassword: 'EvenNewerPassword123!',
+          newPassword: 'AnotherPassword123!',
+        })
+        .expect(403);
+
+      // Re-enable user
+      await prisma.user.update({
+        where: { id: setupUserId },
+        data: { status: UserStatus.ACTIVE },
+      });
+
+      // 9. Restaurant suspension: Mutations blocked with 403, but GET allowed
+      const regRestId = reg.body.data.restaurant.id;
+      await prisma.restaurant.update({
+        where: { id: regRestId },
+        data: { status: RestaurantStatus.SUSPENDED },
+      });
+
+      // GET /auth/me should succeed (read-only)
+      await request(app.getHttpServer())
+        .get('/auth/me')
+        .set('Authorization', `Bearer ${newOwnerToken}`)
+        .expect(200);
+
+      // POST /auth/change-password (mutation) should be blocked with 403
+      await request(app.getHttpServer())
+        .post('/auth/change-password')
+        .set('Authorization', `Bearer ${newOwnerToken}`)
+        .send({
+          currentPassword: 'EvenNewerPassword123!',
+          newPassword: 'AnotherPassword123!',
+        })
+        .expect(403);
+    });
+  });
 });
+
+

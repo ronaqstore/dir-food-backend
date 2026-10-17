@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
 import { AppConfigurationModule } from './app-configuration/app-configuration.module.js';
+import { AppConfigurationService } from './app-configuration/app-configuration.service.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -14,6 +16,17 @@ import { ResponseEnvelopeInterceptor } from './common/interceptors/response-enve
 
 @Module({
   imports: [
+    JwtModule.registerAsync({
+      global: true,
+      imports: [AppConfigurationModule],
+      inject: [AppConfigurationService],
+      useFactory: (configService: AppConfigurationService) => ({
+        secret: configService.jwtSecret,
+        signOptions: {
+          expiresIn: '12h',
+        },
+      }),
+    }),
     AppConfigurationModule,
     PrismaModule,
     AuditModule,

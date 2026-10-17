@@ -30,3 +30,24 @@ Every feature module in the backend (`dir-food-backend/src/<module>/`) must mirr
 - Admin approval requires all 4 prerequisites (WhatsApp number, opening hours, active menu item, active delivery area), sets `ACTIVE`, and starts the 30-day trial from server time.
 - `DEACTIVATED` status is terminal through normal application workflows.
 - Currency is strictly `BigInt` paisa (Rs 1 = 100 paisa).
+
+## 6. Authentication, Guards & Token Management
+- Separate login endpoints: `POST /auth/login` (Restaurant Owner) and `POST /auth/platform-admin/login` (Platform Admin). Cross-login attempts return HTTP 403.
+- Single-use password setup link issued via `POST /platform-admin/users/:userId/password-setup-link` and consumed via `POST /auth/setup-password`.
+- JWT tokens signed and verified via `@nestjs/jwt` (`JwtService`) with explicit `AuthTokenType` audience.
+- Database-backed request authorization:
+  - `PlatformAdminGuard`: verifies JWT and checks DB user exists, is admin, and not disabled.
+  - `RestaurantAuthGuard`: verifies JWT and checks DB user and restaurant status.
+    - `PENDING`: allowed through for initial setup.
+    - Expired subscription: allowed through for dashboard menu/hours setup (customer checkout blocked at order time).
+    - `SUSPENDED`: read-only `GET` allowed; mutations (`POST`, `PATCH`, `DELETE`) return HTTP 403.
+    - `DEACTIVATED`: all access returns HTTP 403.
+    - User `DISABLED`: immediately revoked.
+- Brute-force protection: 5 failed attempts lock account for 15 minutes (`lockedUntil`). Password verification always runs `timingEqualizer` dummy bcrypt hash to eliminate enumeration timing attacks.
+
+## 7. Multi-File Prisma Schema Architecture
+- Prisma 7 multi-file schema: `prisma.config.ts` points `schema: 'prisma'`.
+- `prisma/enums.prisma` contains all enums.
+- `prisma/models/` contains domain models (`tenant.prisma`, `delivery.prisma`, `menu.prisma`, `orders.prisma`, `audit.prisma`).
+- `prisma/schema.prisma` contains the root generator and datasource.
+

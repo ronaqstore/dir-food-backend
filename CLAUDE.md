@@ -10,3 +10,7 @@
 4. **Tenant Isolation:** Owner queries must always be scoped by `restaurantId` from `@CurrentUser()`. Never accept `restaurantId` from the request body.
 5. **Approval Workflow:** Approval requires 4 prerequisites (WhatsApp number, opening hours, active menu item, active delivery area) and starts the 30-day trial from server time.
 6. **Currency:** `BigInt` paisa (Rs 1 = 100 paisa). Never use floats.
+7. **Auth & Token Flow:** Separate endpoints for Owner (`/auth/login`) and Platform Admin (`/auth/platform-admin/login`). JWT handled via `@nestjs/jwt`. Per-request DB verification in `RestaurantAuthGuard` (read-only on suspension, blocks deactivated, allows pending/expired setup) and `PlatformAdminGuard`.
+8. **Prisma Schema:** Multi-file structure under `prisma/` (`enums.prisma`, `models/*.prisma`, `schema: 'prisma'`).
+
+

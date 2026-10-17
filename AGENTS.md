@@ -33,7 +33,19 @@ Dir Food is a restaurant-discovery and WhatsApp-request platform for Timergara a
    - Approval strictly validates 4 prerequisites: WhatsApp number, opening hours, active menu item, active delivery area.
    - Approval starts the 30-day trial from server time.
    - `DEACTIVATED` is terminal in normal application workflows.
-5. **Money & WhatsApp Privacy:**
+5. **Authentication, Guards & Token Management:**
+   - Separate endpoints for Platform Admin (`POST /auth/platform-admin/login`) and Restaurant Owner (`POST /auth/login`).
+   - Single-use setup token links via admin endpoint and one-time password setup.
+   - JWT managed via `@nestjs/jwt` (`JwtService`) with typed token audiences (`AuthTokenType`).
+   - Database-backed guards (`RestaurantAuthGuard`, `PlatformAdminGuard`) re-verify user/restaurant status per request.
+   - `RestaurantAuthGuard`: allows `PENDING` & expired subscriptions for dashboard setup; allows read-only `GET` when `SUSPENDED` while blocking mutations (`POST`/`PATCH`/`DELETE`); blocks `DEACTIVATED`.
+   - Brute-force protection: 5 failed attempts = 15m lockout; always equalizes timing via dummy bcrypt comparison.
+6. **Multi-File Prisma Schema Architecture:**
+   - Prisma 7 configured for multi-file loading (`schema: 'prisma'` in `prisma.config.ts`).
+   - `prisma/enums.prisma` contains all enums.
+   - `prisma/models/` contains domain models (`tenant.prisma`, `delivery.prisma`, `menu.prisma`, `orders.prisma`, `audit.prisma`).
+7. **Money & WhatsApp Privacy:**
    - All currency values stored as `BigInt` in paisa (Rs 1 = 100 paisa).
    - Minimal snapshot data stored for WhatsApp handoff requests (do not store full raw messages).
    - Required `expectedSubtotal` with HTTP 409 `PRICE_CHANGED` if prices changed since fetch.
+

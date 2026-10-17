@@ -69,18 +69,47 @@ Every file created in the backend MUST have its corresponding spec file:
 
 ## 4. Multi-Tenancy & Access Control Rules
 
-1. **Owner Isolation:**
+1. **Dedicated Auth Endpoints & Token Management:**
+   - Platform Admin and Restaurant Owner auth flows are strictly separated:
+     - `POST /auth/login`: Dedicated restaurant owner login (`OwnerLoginDto`).
+     - `POST /auth/platform-admin/login`: Dedicated platform admin login (`PlatformAdminLoginDto`). Cross-login attempts return HTTP 403 Forbidden.
+     - `POST /platform-admin/users/:userId/password-setup-link`: Admin single-use setup link issuance.
+     - `POST /auth/setup-password`: One-time password setup consuming SHA-256 token hash.
+     - `POST /auth/change-password`: Authenticated password change.
+     - `GET /auth/me`: Current profile and restaurant association.
+   - JWT tokens are signed and verified globally via `@nestjs/jwt` (`JwtService`) with explicit `AuthTokenType` (`RESTAURANT_OWNER` vs `PLATFORM_ADMIN`).
+
+2. **Database-Backed Guards:**
+   - **`PlatformAdminGuard`**: Verifies JWT type `PLATFORM_ADMIN`, re-checks database that user exists, role is `PLATFORM_ADMIN`, and status is not `DISABLED`.
+   - **`RestaurantAuthGuard`**: Verifies JWT type `RESTAURANT_OWNER`, re-checks database for user and restaurant status on every request:
+     - User status `DISABLED` is immediately revoked (HTTP 403).
+     - Restaurant `PENDING`: Allowed through to configure dashboard, hours, and menu.
+     - Restaurant `ACTIVE` with expired subscription: Allowed through for dashboard configuration (customer orders blocked at checkout).
+     - Restaurant `SUSPENDED`: Read-only `GET` queries are permitted; all mutations (`POST`, `PATCH`, `DELETE`) return HTTP 403 Forbidden.
+     - Restaurant `DEACTIVATED`: All requests return HTTP 403 Forbidden.
+   - Brute-force protection: 5 consecutive failed logins trigger a 15-minute account lockout (`lockedUntil`). Password comparisons always invoke `timingEqualizer` dummy bcrypt hash to eliminate username enumeration timing attacks.
+
+3. **Owner Isolation:**
    - For any restaurant owner endpoint (e.g. `/me/restaurant`, menus, categories, orders), lookups MUST use `user.restaurantId` obtained from `@CurrentUser()`.
    - Never accept `restaurantId` from the request body or query parameter for owner routes.
    - The global `ValidationPipe` uses `forbidNonWhitelisted: true`, rejecting unauthorized payload fields with HTTP 400.
 
-2. **Admin Operations:**
-   - Platform admin endpoints are placed under `/admin/*` and guarded by `@Roles(UserRole.PLATFORM_ADMIN)` and `RolesGuard`.
-   - Restaurant owners must be forbidden (HTTP 403) from accessing admin routes.
+---
+
+## 5. Multi-File Prisma Schema Architecture (Ronaq Store Pattern)
+
+Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `prisma.config.ts`):
+- `prisma/schema.prisma`: Master client generator and database datasource.
+- `prisma/enums.prisma`: Centralized system enums (`RestaurantStatus`, `ManualStatus`, `UserRole`, `UserStatus`, `OrderIntentStatus`, `DeliveryFeeStatus`).
+- `prisma/models/tenant.prisma`: `Restaurant` and `User` models.
+- `prisma/models/delivery.prisma`: `Area`, `RestaurantDeliveryArea`, and `RestaurantHours`.
+- `prisma/models/menu.prisma`: `MenuCategory`, `MenuItem`, and `MenuItemVariant`.
+- `prisma/models/orders.prisma`: `OrderIntent` and `OrderIntentItem`.
+- `prisma/models/audit.prisma`: `AuditLog`.
 
 ---
 
-## 5. Restaurant Lifecycle & Approval Rules
+## 6. Restaurant Lifecycle & Approval Rules
 
 1. **Registration:**
    - Public self-registration (`POST /auth/register`) atomically creates the restaurant with status `PENDING` and the initial owner account (`RESTAURANT_OWNER`).
@@ -104,8 +133,10 @@ Every file created in the backend MUST have its corresponding spec file:
 
 ---
 
-## 6. Response & Error Envelopes
+## 7. Response & Error Envelopes
 
 - **Success Envelope:** All endpoints return `{ data: ... }` via the global `ResponseEnvelopeInterceptor`.
 - **Error Envelope:** All errors return `{ error: { code, message, details? } }` via the global `HttpExceptionFilter`.
 - Tests must assert against `res.body.data` or `res.body.error`.
+
+

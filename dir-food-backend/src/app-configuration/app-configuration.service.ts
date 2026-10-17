@@ -103,6 +103,10 @@ export class AppConfigurationService {
     return this.configService.get<string>('JWT_SECRET') ?? '';
   }
 
+  get passwordSetupTokenTtlMinutes(): number {
+    return 60 * 24; // 24 hours (matches Ronaq Store setup token TTL)
+  }
+
   get r2StorageEnabled(): boolean {
     return this.configService.get<string>('R2_STORAGE_ENABLED') === 'true';
   }

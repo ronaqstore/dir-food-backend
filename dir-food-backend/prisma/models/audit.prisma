@@ -1,0 +1,23 @@
+// =============================================================================
+// AUDIT LOGS
+// =============================================================================
+
+model AuditLog {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  restaurantId String?  @map("restaurant_id") @db.Uuid
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String?  @map("entity_id") @db.Uuid
+  details      Json?
+  ipAddress    String?  @map("ip_address")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor      User?       @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  @@index([restaurantId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+

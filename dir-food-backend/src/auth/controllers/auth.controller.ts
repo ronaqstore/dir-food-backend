@@ -8,13 +8,18 @@ import {
   HttpCode,
   HttpStatus,
   Ip,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { RegisterRestaurantDto } from '../dto/register.dto.js';
-import { LoginDto } from '../dto/login.dto.js';
+import { OwnerLoginDto } from '../dto/owner-login.dto.js';
+import { PlatformAdminLoginDto } from '../dto/platform-admin-login.dto.js';
+import { SetupPasswordDto } from '../dto/setup-password.dto.js';
+import { ChangePasswordDto } from '../dto/change-password.dto.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.js';
 
 @Controller('auth')
 export class AuthController {
@@ -33,15 +38,15 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() dto: LoginDto,
+  async ownerLogin(
+    @Body() dto: OwnerLoginDto,
     @Res({ passthrough: true }) res: Response,
     @Ip() ipAddress: string,
   ) {
-    const result = await this.authService.login(dto, ipAddress);
+    const result = await this.authService.restaurantOwnerLogin(dto, ipAddress);
 
     // Set httpOnly cookie for web security
-    res.cookie('dir_food_token', result.token, {
+    res.cookie('dir_food_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -49,10 +54,58 @@ export class AuthController {
     });
 
     return {
-      token: result.token,
+      token: result.accessToken,
+      accessToken: result.accessToken,
+      tokenType: result.tokenType,
+      expiresIn: result.expiresIn,
       user: result.user,
+      restaurantId: result.restaurantId,
       restaurant: result.restaurant,
     };
+  }
+
+  @Public()
+  @Post('platform-admin/login')
+  @HttpCode(HttpStatus.OK)
+  async platformAdminLogin(
+    @Body() dto: PlatformAdminLoginDto,
+    @Res({ passthrough: true }) res: Response,
+    @Ip() ipAddress: string,
+  ) {
+    const result = await this.authService.platformAdminLogin(dto, ipAddress);
+
+    // Set httpOnly cookie for web security
+    res.cookie('dir_food_token', result.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+    });
+
+    return {
+      token: result.accessToken,
+      accessToken: result.accessToken,
+      tokenType: result.tokenType,
+      expiresIn: result.expiresIn,
+      admin: result.admin,
+    };
+  }
+
+  @Public()
+  @Post('setup-password')
+  @HttpCode(HttpStatus.OK)
+  async setupPassword(@Body() dto: SetupPasswordDto) {
+    return this.authService.setupPassword(dto);
+  }
+
+  @Post('change-password')
+  @UseGuards(RestaurantAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(user.userId, dto);
   }
 
   @Post('logout')
