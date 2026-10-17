@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import {
   Injectable,
   NotFoundException,
@@ -6,6 +7,8 @@ import {
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { normalizePhone } from '../../common/utils/phone.js';
+import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
+import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
 import type { UpdateRestaurantProfileDto } from '../dto/update-restaurant-profile.dto.js';
 import type { UpdateAvailabilityDto } from '../dto/update-availability.dto.js';
 
@@ -14,6 +17,8 @@ export class RestaurantsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly r2Storage: R2StorageService,
+    private readonly imageProcessor: ImageProcessorService,
   ) {}
 
   async getMyRestaurant(restaurantId?: string | null) {
@@ -128,6 +133,80 @@ export class RestaurantsService {
         unavailableNote: dto.unavailableNote?.trim() || null,
       },
     });
+
+    return updated;
+  }
+
+  async uploadRestaurantImage(
+    restaurantId: string,
+    kind: 'logo' | 'cover',
+    file?: { buffer?: Buffer; size?: number; mimetype?: string },
+  ) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { id: true, logoUrl: true, coverUrl: true },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    const processed = await this.imageProcessor.process(file);
+    const key = `restaurants/${restaurantId}/profile/${kind}-${randomUUID()}.${processed.ext}`;
+    const url = await this.r2Storage.put(
+      key,
+      processed.buffer,
+      processed.contentType,
+    );
+
+    const oldUrl = kind === 'logo' ? restaurant.logoUrl : restaurant.coverUrl;
+    const field = kind === 'logo' ? 'logoUrl' : 'coverUrl';
+
+    try {
+      const updated = await this.prisma.restaurant.update({
+        where: { id: restaurantId },
+        data: {
+          [field]: url,
+        },
+      });
+
+      if (oldUrl) {
+        await this.r2Storage.deleteByUrl(oldUrl, restaurantId);
+      }
+
+      return updated;
+    } catch (error) {
+      await this.r2Storage.deleteByUrl(url, restaurantId);
+      throw error;
+    }
+  }
+
+  async deleteRestaurantImage(
+    restaurantId: string,
+    kind: 'logo' | 'cover',
+  ) {
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      select: { id: true, logoUrl: true, coverUrl: true },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    const oldUrl = kind === 'logo' ? restaurant.logoUrl : restaurant.coverUrl;
+    const field = kind === 'logo' ? 'logoUrl' : 'coverUrl';
+
+    const updated = await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        [field]: null,
+      },
+    });
+
+    if (oldUrl) {
+      await this.r2Storage.deleteByUrl(oldUrl, restaurantId);
+    }
 
     return updated;
   }

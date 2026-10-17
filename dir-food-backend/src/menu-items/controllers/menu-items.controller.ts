@@ -4,14 +4,25 @@ import {
   Post,
   Patch,
   Put,
+  Delete,
   Param,
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -96,5 +107,46 @@ export class MenuItemsController {
     @Body() dto: ReplaceVariantsDto,
   ) {
     return this.itemsService.replaceVariants(user.restaurantId!, id, dto);
+  }
+
+  @Post(':id/image')
+  @ApiOperation({
+    summary: 'Upload a menu item photo',
+    description:
+      'Uploads a JPEG, PNG, or WebP photo for this menu item. Strips EXIF metadata, auto-rotates, and resizes up to 1600px.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 3 * 1024 * 1024 },
+    }),
+  )
+  async uploadItemImage(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @UploadedFile() file?: { buffer: Buffer; size: number; mimetype: string },
+  ) {
+    return this.itemsService.uploadItemImage(user.restaurantId!, id, file);
+  }
+
+  @Delete(':id/image')
+  @ApiOperation({
+    summary: 'Remove a menu item photo',
+    description:
+      'Clears the image URL for this menu item and removes the object from storage.',
+  })
+  async deleteItemImage(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.itemsService.deleteItemImage(user.restaurantId!, id);
   }
 }

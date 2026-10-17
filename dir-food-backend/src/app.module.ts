@@ -12,6 +12,7 @@ import { RestaurantHoursModule } from './restaurant-hours/restaurant-hours.modul
 import { DeliveryAreasModule } from './delivery-areas/delivery-areas.module.js';
 import { MenuCategoriesModule } from './menu-categories/menu-categories.module.js';
 import { MenuItemsModule } from './menu-items/menu-items.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
@@ -41,6 +42,7 @@ import { ResponseEnvelopeInterceptor } from './common/interceptors/response-enve
     DeliveryAreasModule,
     MenuCategoriesModule,
     MenuItemsModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [

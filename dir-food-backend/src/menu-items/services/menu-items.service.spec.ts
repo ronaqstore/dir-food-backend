@@ -5,6 +5,8 @@ import { MenuItemsService } from './menu-items.service.js';
 describe('MenuItemsService (unit)', () => {
   let service: MenuItemsService;
   let mockPrisma: any;
+  let mockR2: any;
+  let mockImageProcessor: any;
 
   beforeEach(() => {
     mockPrisma = {
@@ -37,7 +39,16 @@ describe('MenuItemsService (unit)', () => {
       }),
     };
 
-    service = new MenuItemsService(mockPrisma);
+    mockR2 = {
+      put: vi.fn(),
+      deleteByUrl: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mockImageProcessor = {
+      process: vi.fn(),
+    };
+
+    service = new MenuItemsService(mockPrisma, mockR2, mockImageProcessor);
   });
 
   it('should be defined', () => {
@@ -228,6 +239,119 @@ describe('MenuItemsService (unit)', () => {
       expect(mockPrisma.menuItemVariant.update).toHaveBeenCalled();
       expect(mockPrisma.menuItemVariant.create).toHaveBeenCalled();
       expect(res).toHaveLength(1);
+    });
+  });
+
+  describe('uploadItemImage', () => {
+    it('throws NotFoundException if menu item does not belong to restaurant', async () => {
+      mockPrisma.menuItem.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.uploadItemImage('res-1', 'item-1', {
+          buffer: Buffer.from('test'),
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('uploads image to R2, updates item, and cleans up old image', async () => {
+      mockPrisma.menuItem.findUnique.mockResolvedValue({
+        id: 'item-1',
+        imageUrl: 'https://images.dirfood.test/old-item.jpg',
+      });
+      mockImageProcessor.process.mockResolvedValue({
+        buffer: Buffer.from('processed'),
+        ext: 'webp',
+        contentType: 'image/webp',
+      });
+      mockR2.put.mockResolvedValue(
+        'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.webp',
+      );
+      mockPrisma.menuItem.update.mockResolvedValue({
+        id: 'item-1',
+        imageUrl:
+          'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.webp',
+      });
+
+      const res = await service.uploadItemImage('res-1', 'item-1', {
+        buffer: Buffer.from('raw'),
+      });
+
+      expect(res.imageUrl).toContain('img.webp');
+      expect(mockR2.put).toHaveBeenCalled();
+      expect(mockPrisma.menuItem.update).toHaveBeenCalledWith({
+        where: {
+          id_restaurantId: {
+            id: 'item-1',
+            restaurantId: 'res-1',
+          },
+        },
+        data: {
+          imageUrl:
+            'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.webp',
+        },
+      });
+      expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
+        'https://images.dirfood.test/old-item.jpg',
+        'res-1',
+      );
+    });
+
+    it('cleans up newly uploaded R2 object if DB update fails', async () => {
+      mockPrisma.menuItem.findUnique.mockResolvedValue({
+        id: 'item-1',
+        imageUrl: null,
+      });
+      mockImageProcessor.process.mockResolvedValue({
+        buffer: Buffer.from('processed'),
+        ext: 'jpg',
+        contentType: 'image/jpeg',
+      });
+      mockR2.put.mockResolvedValue(
+        'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.jpg',
+      );
+      mockPrisma.menuItem.update.mockRejectedValue(new Error('DB failure'));
+
+      await expect(
+        service.uploadItemImage('res-1', 'item-1', {
+          buffer: Buffer.from('raw'),
+        }),
+      ).rejects.toThrow('DB failure');
+
+      expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
+        'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.jpg',
+        'res-1',
+      );
+    });
+  });
+
+  describe('deleteItemImage', () => {
+    it('sets imageUrl to null and deletes object from R2', async () => {
+      mockPrisma.menuItem.findUnique.mockResolvedValue({
+        id: 'item-1',
+        imageUrl:
+          'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.jpg',
+      });
+      mockPrisma.menuItem.update.mockResolvedValue({
+        id: 'item-1',
+        imageUrl: null,
+      });
+
+      const res = await service.deleteItemImage('res-1', 'item-1');
+
+      expect(res.imageUrl).toBeNull();
+      expect(mockPrisma.menuItem.update).toHaveBeenCalledWith({
+        where: {
+          id_restaurantId: {
+            id: 'item-1',
+            restaurantId: 'res-1',
+          },
+        },
+        data: { imageUrl: null },
+      });
+      expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
+        'https://images.dirfood.test/restaurants/res-1/menu-items/item-1/img.jpg',
+        'res-1',
+      );
     });
   });
 });

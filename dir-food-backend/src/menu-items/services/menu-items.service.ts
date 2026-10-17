@@ -1,16 +1,23 @@
+import { randomUUID } from 'crypto';
 import {
   Injectable,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
+import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
 import type { CreateMenuItemDto } from '../dto/create-item.dto.js';
 import type { UpdateMenuItemDto } from '../dto/update-item.dto.js';
 import type { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
 
 @Injectable()
 export class MenuItemsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly r2Storage: R2StorageService,
+    private readonly imageProcessor: ImageProcessorService,
+  ) {}
 
   async getItems(
     restaurantId: string,
@@ -346,5 +353,94 @@ export class MenuItemsService {
       },
       orderBy: { sortOrder: 'asc' },
     });
+  }
+
+  async uploadItemImage(
+    restaurantId: string,
+    itemId: string,
+    file?: { buffer?: Buffer; size?: number; mimetype?: string },
+  ) {
+    const item = await this.prisma.menuItem.findUnique({
+      where: {
+        id_restaurantId: {
+          id: itemId,
+          restaurantId,
+        },
+      },
+      select: { id: true, imageUrl: true },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Menu item not found for this restaurant');
+    }
+
+    const processed = await this.imageProcessor.process(file);
+    const key = `restaurants/${restaurantId}/menu-items/${itemId}/${randomUUID()}.${processed.ext}`;
+    const url = await this.r2Storage.put(
+      key,
+      processed.buffer,
+      processed.contentType,
+    );
+
+    const oldUrl = item.imageUrl;
+
+    try {
+      const updated = await this.prisma.menuItem.update({
+        where: {
+          id_restaurantId: {
+            id: itemId,
+            restaurantId,
+          },
+        },
+        data: {
+          imageUrl: url,
+        },
+      });
+
+      if (oldUrl) {
+        await this.r2Storage.deleteByUrl(oldUrl, restaurantId);
+      }
+
+      return updated;
+    } catch (error) {
+      await this.r2Storage.deleteByUrl(url, restaurantId);
+      throw error;
+    }
+  }
+
+  async deleteItemImage(restaurantId: string, itemId: string) {
+    const item = await this.prisma.menuItem.findUnique({
+      where: {
+        id_restaurantId: {
+          id: itemId,
+          restaurantId,
+        },
+      },
+      select: { id: true, imageUrl: true },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Menu item not found for this restaurant');
+    }
+
+    const oldUrl = item.imageUrl;
+
+    const updated = await this.prisma.menuItem.update({
+      where: {
+        id_restaurantId: {
+          id: itemId,
+          restaurantId,
+        },
+      },
+      data: {
+        imageUrl: null,
+      },
+    });
+
+    if (oldUrl) {
+      await this.r2Storage.deleteByUrl(oldUrl, restaurantId);
+    }
+
+    return updated;
   }
 }

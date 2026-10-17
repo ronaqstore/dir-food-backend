@@ -91,4 +91,31 @@ describe('MenuItemsController (unit)', () => {
     expect(mockService.replaceVariants).toHaveBeenCalledWith('rest-1', 'item-1', dto);
     expect(res).toEqual(dto.variants);
   });
+
+  it('delegates uploadItemImage with user.restaurantId, id, and file', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-1',
+    };
+    const mockFile = { buffer: Buffer.from('img'), size: 100, mimetype: 'image/jpeg' };
+    mockService.uploadItemImage = vi.fn().mockResolvedValue({ id: 'item-1', imageUrl: 'https://images.dirfood.test/img.jpg' });
+
+    const res = await controller.uploadItemImage(mockUser, 'item-1', mockFile as any);
+    expect(mockService.uploadItemImage).toHaveBeenCalledWith('rest-1', 'item-1', mockFile);
+    expect(res.imageUrl).toContain('img.jpg');
+  });
+
+  it('delegates deleteItemImage with user.restaurantId and id', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-1',
+    };
+    mockService.deleteItemImage = vi.fn().mockResolvedValue({ id: 'item-1', imageUrl: null });
+
+    const res = await controller.deleteItemImage(mockUser, 'item-1');
+    expect(mockService.deleteItemImage).toHaveBeenCalledWith('rest-1', 'item-1');
+    expect(res.imageUrl).toBeNull();
+  });
 });

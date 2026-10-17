@@ -69,4 +69,40 @@ describe('RestaurantMeController (unit)', () => {
     expect(mockRestaurantsService.updateAvailability).toHaveBeenCalledWith('rest-123', dto);
     expect(result).toEqual(mockResult);
   });
+
+  it('delegates uploadImage with validated kind to RestaurantsService', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-123',
+    };
+    const mockFile = { buffer: Buffer.from('img'), size: 100, mimetype: 'image/jpeg' };
+    mockRestaurantsService.uploadRestaurantImage = vi.fn().mockResolvedValue({ logoUrl: 'https://images.dirfood.test/logo.jpg' });
+
+    const result = await controller.uploadImage(mockUser, 'logo', mockFile as any);
+    expect(mockRestaurantsService.uploadRestaurantImage).toHaveBeenCalledWith('rest-123', 'logo', mockFile);
+    expect(result).toEqual({ logoUrl: 'https://images.dirfood.test/logo.jpg' });
+  });
+
+  it('rejects uploadImage with invalid kind', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-123',
+    };
+    await expect(controller.uploadImage(mockUser, 'banner', {} as any)).rejects.toThrow('Invalid image kind');
+  });
+
+  it('delegates deleteImage to RestaurantsService', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-123',
+    };
+    mockRestaurantsService.deleteRestaurantImage = vi.fn().mockResolvedValue({ coverUrl: null });
+
+    const result = await controller.deleteImage(mockUser, 'cover');
+    expect(mockRestaurantsService.deleteRestaurantImage).toHaveBeenCalledWith('rest-123', 'cover');
+    expect(result).toEqual({ coverUrl: null });
+  });
 });

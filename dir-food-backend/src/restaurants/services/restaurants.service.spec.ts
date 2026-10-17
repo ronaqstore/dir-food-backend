@@ -7,6 +7,8 @@ describe('RestaurantsService (unit)', () => {
   let service: RestaurantsService;
   let mockPrisma: any;
   let mockAudit: any;
+  let mockR2: any;
+  let mockImageProcessor: any;
 
   beforeEach(() => {
     mockPrisma = {
@@ -20,7 +22,21 @@ describe('RestaurantsService (unit)', () => {
       log: vi.fn().mockResolvedValue(undefined),
     };
 
-    service = new RestaurantsService(mockPrisma, mockAudit);
+    mockR2 = {
+      put: vi.fn(),
+      deleteByUrl: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mockImageProcessor = {
+      process: vi.fn(),
+    };
+
+    service = new RestaurantsService(
+      mockPrisma,
+      mockAudit,
+      mockR2,
+      mockImageProcessor,
+    );
   });
 
   it('should be defined', () => {
@@ -136,6 +152,110 @@ describe('RestaurantsService (unit)', () => {
           unavailableNote: 'Renovating kitchen',
         },
       });
+    });
+  });
+
+  describe('uploadRestaurantImage', () => {
+    it('throws NotFoundException if restaurant does not exist', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.uploadRestaurantImage('res-1', 'logo', {
+          buffer: Buffer.from('test'),
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('processes image, uploads to R2, updates database, and cleans up old image', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        logoUrl: 'https://images.dirfood.test/old-logo.jpg',
+      });
+      mockImageProcessor.process.mockResolvedValue({
+        buffer: Buffer.from('processed'),
+        ext: 'jpg',
+        contentType: 'image/jpeg',
+      });
+      mockR2.put.mockResolvedValue(
+        'https://images.dirfood.test/restaurants/res-1/profile/logo-new.jpg',
+      );
+      mockPrisma.restaurant.update.mockResolvedValue({
+        id: 'res-1',
+        logoUrl:
+          'https://images.dirfood.test/restaurants/res-1/profile/logo-new.jpg',
+      });
+
+      const res = await service.uploadRestaurantImage('res-1', 'logo', {
+        buffer: Buffer.from('raw'),
+      });
+
+      expect(res.logoUrl).toContain('logo-new.jpg');
+      expect(mockR2.put).toHaveBeenCalled();
+      expect(mockPrisma.restaurant.update).toHaveBeenCalledWith({
+        where: { id: 'res-1' },
+        data: {
+          logoUrl:
+            'https://images.dirfood.test/restaurants/res-1/profile/logo-new.jpg',
+        },
+      });
+      expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
+        'https://images.dirfood.test/old-logo.jpg',
+        'res-1',
+      );
+    });
+
+    it('cleans up newly uploaded R2 object if database update fails', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        logoUrl: null,
+      });
+      mockImageProcessor.process.mockResolvedValue({
+        buffer: Buffer.from('processed'),
+        ext: 'jpg',
+        contentType: 'image/jpeg',
+      });
+      mockR2.put.mockResolvedValue(
+        'https://images.dirfood.test/restaurants/res-1/profile/logo-new.jpg',
+      );
+      mockPrisma.restaurant.update.mockRejectedValue(
+        new Error('Database disk full'),
+      );
+
+      await expect(
+        service.uploadRestaurantImage('res-1', 'logo', {
+          buffer: Buffer.from('raw'),
+        }),
+      ).rejects.toThrow('Database disk full');
+
+      expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
+        'https://images.dirfood.test/restaurants/res-1/profile/logo-new.jpg',
+        'res-1',
+      );
+    });
+  });
+
+  describe('deleteRestaurantImage', () => {
+    it('sets image column to null and deletes object from R2', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        coverUrl: 'https://images.dirfood.test/restaurants/res-1/profile/cover-123.jpg',
+      });
+      mockPrisma.restaurant.update.mockResolvedValue({
+        id: 'res-1',
+        coverUrl: null,
+      });
+
+      const res = await service.deleteRestaurantImage('res-1', 'cover');
+
+      expect(res.coverUrl).toBeNull();
+      expect(mockPrisma.restaurant.update).toHaveBeenCalledWith({
+        where: { id: 'res-1' },
+        data: { coverUrl: null },
+      });
+      expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
+        'https://images.dirfood.test/restaurants/res-1/profile/cover-123.jpg',
+        'res-1',
+      );
     });
   });
 });
