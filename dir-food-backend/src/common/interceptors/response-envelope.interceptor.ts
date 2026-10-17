@@ -15,7 +15,7 @@ export interface EnvelopeResponse<T> {
 const MIN_SAFE_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);
 const MAX_SAFE_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
 
-function serializeBigInts(value: unknown): unknown {
+export function serializeBigInts(value: unknown): unknown {
   if (value === null || value === undefined) {
     return value;
   }

@@ -14,6 +14,7 @@ import { MenuCategoriesModule } from './menu-categories/menu-categories.module.j
 import { MenuItemsModule } from './menu-items/menu-items.module.js';
 import { UploadsModule } from './uploads/uploads.module.js';
 import { PublicCatalogModule } from './public-catalog/public-catalog.module.js';
+import { OrderIntentsModule } from './order-intents/order-intents.module.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
@@ -45,6 +46,7 @@ import { ResponseEnvelopeInterceptor } from './common/interceptors/response-enve
     MenuItemsModule,
     UploadsModule,
     PublicCatalogModule,
+    OrderIntentsModule,
   ],
   controllers: [AppController],
   providers: [

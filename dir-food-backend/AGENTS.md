@@ -166,5 +166,35 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
    - Inactive categories, items, and variants are excluded. Out-of-stock items (`isAvailable = false`) remain visible.
    - All monetary values (`basePrice`, variant `price`, `minOrderAmount`, `deliveryFee`) are stored as `BigInt` paisa and serialized to safe integer numbers via `ResponseEnvelopeInterceptor`.
 
+---
+
+## 9. Order Intents & WhatsApp Handoff Lifecycle (Phase 6)
+
+1. **Module & Endpoints:**
+   - Managed under `OrderIntentsModule` (`src/order-intents/`).
+   - `POST /public/cart/validate`: Re-validates items, active variants, live prices, and operating hours. Does not persist to DB.
+   - `POST /public/order-intents`: Creates an immutable snapshot order intent with client-generated idempotency UUID (`clientRequestId`).
+   - `POST /public/order-intents/:ref/whatsapp-opened`: Tracks button clicks; sets `whatsappOpenedAt` while unexpired.
+   - `GET /public/order-intents/:ref`: Re-shows handoff screen and rebuilds `whatsappUrl` dynamically from snapshot.
+   - `GET /me/restaurant/order-intents`: Paginated owner stream of incoming requests (default 30 days) with `notConfirmed: true`.
+   - `GET /me/restaurant/order-intents/:id`: Owner request detail.
+   - `GET /me/restaurant/stats`: Owner dashboard activity metrics (`requestsCreated`, `whatsappOpened`, `whatsappOpenRate`, `topItems`).
+
+2. **Price Guard & Safety:**
+   - Client sends `expectedSubtotal`. If backend-calculated subtotal differs, throws `409 ConflictException` (`PRICE_CHANGED`) with updated line items. Nothing is saved.
+   - Enforces `minOrderAmount` with `422 UnprocessableEntityException` (`BELOW_MINIMUM_ORDER`).
+   - If closed, throws `409 ConflictException` (`RESTAURANT_CLOSED`).
+
+3. **Message & WhatsApp URLs:**
+   - Formatted in Urdu / English polite style using `wa.me/${phone}?text=...` with URL-encoded text.
+   - Human-friendly reference codes (`TM-XXXXXX`) using unambiguous charset (`ABCDEFGHJKMNPQRSTUVWXYZ23456789`).
+   - Raw messages are never stored in the database; always dynamically reconstructed from snapshot columns.
+
+4. **Rate Limiting & Expiry:**
+   - Layered IP rate limit (5 per 10m) and salted phone hash rate limit (3 per 1h per restaurant) when phone provided.
+   - Customer phone numbers are never written to system logs.
+   - 24-hour expiration (`expiresAt = now + 24h`). Expired requests return `409` / `410` without scheduled cron deletion.
+
+
 
 

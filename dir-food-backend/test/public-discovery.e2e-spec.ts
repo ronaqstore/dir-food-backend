@@ -352,24 +352,47 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
   // ===========================================================================
   describe('GET /public/restaurants', () => {
     it('returns only active restaurants with unexpired subscriptions', async () => {
-      const res = await request(app.getHttpServer())
+      // 1. Active unexpired restaurant is included
+      const resActive = await request(app.getHttpServer())
         .get('/public/restaurants')
-        .query({ limit: 50 });
+        .query({ q: 'Al-Noor Public', limit: 10 });
+      expect(resActive.status).toBe(200);
+      expect(resActive.body.data.map((r: { slug: string }) => r.slug)).toContain(activeRestSlug);
 
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.meta).toBeDefined();
+      // 2. Closed but active/unexpired restaurant is included
+      const resClosed = await request(app.getHttpServer())
+        .get('/public/restaurants')
+        .query({ q: 'Closed Under Renovation', limit: 10 });
+      expect(resClosed.status).toBe(200);
+      expect(resClosed.body.data.map((r: { slug: string }) => r.slug)).toContain(closedRestSlug);
 
-      const slugs = res.body.data.map((r: { slug: string }) => r.slug);
-      expect(slugs).toContain(activeRestSlug);
-      expect(slugs).toContain(closedRestSlug);
-      expect(slugs).toContain(scheduledRestSlug);
+      // 3. Scheduled active/unexpired restaurant is included
+      const resScheduled = await request(app.getHttpServer())
+        .get('/public/restaurants')
+        .query({ q: 'Weekend Only', limit: 10 });
+      expect(resScheduled.status).toBe(200);
+      expect(resScheduled.body.data.map((r: { slug: string }) => r.slug)).toContain(scheduledRestSlug);
 
-      // Must exclude expired, pending, suspended, and deactivated
-      expect(slugs).not.toContain(expiredRestSlug);
-      expect(slugs).not.toContain(pendingRestSlug);
-      expect(slugs).not.toContain(suspendedRestSlug);
-      expect(slugs).not.toContain(deactivatedRestSlug);
+      // 4. Must exclude expired, pending, suspended, and deactivated restaurants
+      const resExpired = await request(app.getHttpServer())
+        .get('/public/restaurants')
+        .query({ q: 'Expired Subscription', limit: 10 });
+      expect(resExpired.body.data).toHaveLength(0);
+
+      const resPending = await request(app.getHttpServer())
+        .get('/public/restaurants')
+        .query({ q: 'Pending Onboarding', limit: 10 });
+      expect(resPending.body.data).toHaveLength(0);
+
+      const resSuspended = await request(app.getHttpServer())
+        .get('/public/restaurants')
+        .query({ q: 'Suspended Public', limit: 10 });
+      expect(resSuspended.body.data).toHaveLength(0);
+
+      const resDeactivated = await request(app.getHttpServer())
+        .get('/public/restaurants')
+        .query({ q: 'Deactivated Public', limit: 10 });
+      expect(resDeactivated.body.data).toHaveLength(0);
     });
 
     it('verifies exclusion of private and administrative fields from listing', async () => {

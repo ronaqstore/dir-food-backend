@@ -6,6 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { serializeBigInts } from '../interceptors/response-envelope.interceptor.js';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -36,13 +37,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    response.status(status).json({
+    const payload = serializeBigInts({
       error: {
         code,
         message,
         ...(details !== undefined ? { details } : {}),
       },
     });
+
+    response.status(status).json(payload);
   }
 
   private statusToCode(status: number): string {
