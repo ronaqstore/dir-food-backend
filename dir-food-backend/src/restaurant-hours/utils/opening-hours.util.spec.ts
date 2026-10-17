@@ -150,6 +150,44 @@ describe('opening-hours.util', () => {
     it('returns false when hours list is empty', () => {
       const res = isRestaurantOpenNow([], ManualStatus.AUTO);
       expect(res.isOpenNow).toBe(false);
+      expect(res.nextOpenAt).toBeNull();
+    });
+
+    it('calculates nextOpenAt for closed restaurant opening later same day', () => {
+      // Monday 18:00 is next open. Check at 14:00 on Monday.
+      // 14:00 Karachi on 2026-10-19 = 09:00 UTC
+      const mondayAfternoon = new Date('2026-10-19T09:00:00.000Z');
+      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, mondayAfternoon);
+      expect(res.isOpenNow).toBe(false);
+      expect(res.availabilityText).toBe('Closed, opens at 18:00');
+      expect(res.nextOpenAt).toBe('2026-10-19T13:00:00.000Z'); // 18:00 PKT = 13:00 UTC
+    });
+
+    it('calculates nextOpenAt when next opening is on the next day', () => {
+      // After overnight range closes at 02:00 on Tuesday (e.g. at 03:00 PKT / 22:00 UTC Monday)
+      // Next opening is Tuesday at 10:00 PKT = 05:00 UTC on Tuesday
+      const tuesdayEarlyMorning = new Date('2026-10-19T22:00:00.000Z');
+      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, tuesdayEarlyMorning);
+      expect(res.isOpenNow).toBe(false);
+      expect(res.availabilityText).toBe('Closed, opens at 10:00');
+      expect(res.nextOpenAt).toBe('2026-10-20T05:00:00.000Z');
+    });
+
+    it('calculates nextOpenAt across multiple closed days', () => {
+      // Restaurant only open on Friday
+      const fridayOnlyHours = [
+        {
+          dayOfWeek: 5, // Friday
+          openTime: timeStringToDate('12:00'),
+          closeTime: timeStringToDate('23:00'),
+        },
+      ];
+      // Tuesday 10:00 PKT = 05:00 UTC on 2026-10-20
+      const tuesday = new Date('2026-10-20T05:00:00.000Z');
+      const res = isRestaurantOpenNow(fridayOnlyHours, ManualStatus.AUTO, null, tuesday);
+      expect(res.isOpenNow).toBe(false);
+      expect(res.availabilityText).toBe('Closed, opens Fri at 12:00');
+      expect(res.nextOpenAt).toBe('2026-10-23T07:00:00.000Z'); // 12:00 PKT = 07:00 UTC on Friday Oct 23
     });
   });
 

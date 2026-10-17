@@ -48,4 +48,10 @@ Dir Food is a restaurant-discovery and WhatsApp-request platform for Timergara a
    - All currency values stored as `BigInt` in paisa (Rs 1 = 100 paisa).
    - Minimal snapshot data stored for WhatsApp handoff requests (do not store full raw messages).
    - Required `expectedSubtotal` with HTTP 409 `PRICE_CHANGED` if prices changed since fetch.
+8. **Public Discovery & Menu Catalog:**
+   - `PublicCatalogModule` manages `/public/areas` and `/public/restaurants` (list, detail, menu).
+   - Visibility strictly enforces `status = ACTIVE` and `subscriptionEndsAt > now`. Ineligible restaurants return uniform 404 `RESTAURANT_NOT_AVAILABLE`.
+   - Never expose internal IDs, user accounts, audit logs, admin notes, status reasons, or subscription dates.
+   - Dynamic opening hours and nextOpenAt strictly evaluated using `Asia/Karachi` timezone (UTC+5), with global open-first ranking.
+
 

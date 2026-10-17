@@ -139,4 +139,32 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
 - **Error Envelope:** All errors return `{ error: { code, message, details? } }` via the global `HttpExceptionFilter`.
 - Tests must assert against `res.body.data` or `res.body.error`.
 
+---
+
+## 8. Public Restaurant Discovery & Menu Catalog (Phase 5)
+
+1. **Module & Endpoints:**
+   - Managed under `PublicCatalogModule` (`src/public-catalog/`).
+   - `GET /public/areas`: Returns active discovery areas (`id`, `name`, `slug`).
+   - `GET /public/restaurants`: Paginated listing with `areaId`, `cuisine`, `q`, and `openNow` filters. Open restaurants rank ahead of closed restaurants globally.
+   - `GET /public/restaurants/:slug`: Public restaurant profile including today's hours, active delivery areas, and delivery fees.
+   - `GET /public/restaurants/:slug/menu`: Active menu catalog (categories, items, variants).
+
+2. **Public Visibility & Expiry Rules:**
+   - Any public restaurant request strictly requires `status = ACTIVE` and `subscriptionEndsAt > now`.
+   - Inactive, pending, suspended, deactivated, expired, or non-existent restaurants uniformly return HTTP 404 with error code `RESTAURANT_NOT_AVAILABLE`.
+
+3. **Privacy & Information Security:**
+   - Internal UUIDs of restaurants, user accounts, audit trails, administrative notes (`adminNotes`), internal status reasons (`statusReason`), and subscription lifecycle dates (`trialStartedAt`, `subscriptionEndsAt`) are strictly omitted from public responses.
+   - Single-query joins and explicit field projections prevent N+1 query performance degradation.
+
+4. **Timezone & Dynamic Status:**
+   - Evaluated strictly using `Asia/Karachi` timezone (UTC+5).
+   - Accurately tracks same-day ranges, overnight ranges extending into the morning, multiple daily shifts, manual overrides (`CLOSED`, `TEMP_UNAVAILABLE`), and future scheduled openings (`nextOpenAt`).
+
+5. **Catalog & BigInt Serialization:**
+   - Inactive categories, items, and variants are excluded. Out-of-stock items (`isAvailable = false`) remain visible.
+   - All monetary values (`basePrice`, variant `price`, `minOrderAmount`, `deliveryFee`) are stored as `BigInt` paisa and serialized to safe integer numbers via `ResponseEnvelopeInterceptor`.
+
+
 

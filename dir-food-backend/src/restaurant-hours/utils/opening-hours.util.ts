@@ -186,6 +186,76 @@ export function getCurrentKarachiTime(targetDate?: Date): {
   return { dayOfWeek, minutes, date: now };
 }
 
+export function computeKarachiIso(
+  now: Date,
+  dayOffset: number,
+  openMinutes: number,
+): string {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const dateStr = formatter.format(now);
+  const [y, m, d] = dateStr.split('-').map(Number);
+
+  const targetUtc = new Date(Date.UTC(y, m - 1, d));
+  targetUtc.setUTCDate(targetUtc.getUTCDate() + dayOffset);
+
+  const tYear = targetUtc.getUTCFullYear();
+  const tMonth = String(targetUtc.getUTCMonth() + 1).padStart(2, '0');
+  const tDay = String(targetUtc.getUTCDate()).padStart(2, '0');
+
+  const hh = String(Math.floor(openMinutes / 60)).padStart(2, '0');
+  const mm = String(openMinutes % 60).padStart(2, '0');
+
+  const localIsoWithTz = `${tYear}-${tMonth}-${tDay}T${hh}:${mm}:00+05:00`;
+  return new Date(localIsoWithTz).toISOString();
+}
+
+export function calculateNextOpenAt(
+  hours: Array<{
+    dayOfWeek: number;
+    openTime: Date | string;
+    closeTime: Date | string;
+  }>,
+  nowDate?: Date,
+): { nextOpenAt: string | null; openStr: string | null; dayOffset: number } {
+  if (hours.length === 0) {
+    return { nextOpenAt: null, openStr: null, dayOffset: -1 };
+  }
+
+  const now = nowDate ?? new Date();
+  const { dayOfWeek: currentDay, minutes: currentMinutes } = getCurrentKarachiTime(now);
+
+  for (let offset = 0; offset <= 7; offset++) {
+    const targetDay = (currentDay + offset) % 7;
+    const dayRanges = hours
+      .filter((h) => h.dayOfWeek === targetDay)
+      .map((h) => {
+        const openStr = dateTimeToTimeString(h.openTime);
+        const openMin = parseTimeToMinutes(openStr);
+        return { openStr, openMin };
+      })
+      .sort((a, b) => a.openMin - b.openMin);
+
+    for (const r of dayRanges) {
+      if (offset === 0) {
+        if (r.openMin > currentMinutes) {
+          const iso = computeKarachiIso(now, offset, r.openMin);
+          return { nextOpenAt: iso, openStr: r.openStr, dayOffset: offset };
+        }
+      } else {
+        const iso = computeKarachiIso(now, offset, r.openMin);
+        return { nextOpenAt: iso, openStr: r.openStr, dayOffset: offset };
+      }
+    }
+  }
+
+  return { nextOpenAt: null, openStr: null, dayOffset: -1 };
+}
+
 export function isRestaurantOpenNow(
   hours: Array<{
     dayOfWeek: number;
@@ -200,6 +270,7 @@ export function isRestaurantOpenNow(
   manualStatus: ManualStatus;
   unavailableNote: string | null;
   availabilityText: string;
+  nextOpenAt: string | null;
 } {
   if (manualStatus === ManualStatus.CLOSED) {
     return {
@@ -207,6 +278,7 @@ export function isRestaurantOpenNow(
       manualStatus,
       unavailableNote: unavailableNote ?? null,
       availabilityText: unavailableNote ? `Closed (${unavailableNote})` : 'Closed',
+      nextOpenAt: null,
     };
   }
 
@@ -218,6 +290,7 @@ export function isRestaurantOpenNow(
       availabilityText: unavailableNote
         ? `Temporarily unavailable (${unavailableNote})`
         : 'Temporarily unavailable',
+      nextOpenAt: null,
     };
   }
 
@@ -227,6 +300,7 @@ export function isRestaurantOpenNow(
       manualStatus: ManualStatus.AUTO,
       unavailableNote: null,
       availabilityText: 'Closed',
+      nextOpenAt: null,
     };
   }
 
@@ -249,6 +323,7 @@ export function isRestaurantOpenNow(
             manualStatus: ManualStatus.AUTO,
             unavailableNote: null,
             availabilityText: `Open until ${closeStr}`,
+            nextOpenAt: null,
           };
         }
       } else {
@@ -259,6 +334,7 @@ export function isRestaurantOpenNow(
             manualStatus: ManualStatus.AUTO,
             unavailableNote: null,
             availabilityText: `Open until ${closeStr} tomorrow`,
+            nextOpenAt: null,
           };
         }
       }
@@ -272,8 +348,23 @@ export function isRestaurantOpenNow(
           manualStatus: ManualStatus.AUTO,
           unavailableNote: null,
           availabilityText: `Open until ${closeStr}`,
+          nextOpenAt: null,
         };
       }
+    }
+  }
+
+  const next = calculateNextOpenAt(hours, nowDate);
+  let availabilityText = 'Closed now';
+  if (next.nextOpenAt && next.openStr) {
+    if (next.dayOffset === 0) {
+      availabilityText = `Closed, opens at ${next.openStr}`;
+    } else if (next.dayOffset === 1) {
+      availabilityText = `Closed, opens at ${next.openStr} tomorrow`;
+    } else {
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const targetDay = (currentDay + next.dayOffset) % 7;
+      availabilityText = `Closed, opens ${dayNames[targetDay]} at ${next.openStr}`;
     }
   }
 
@@ -281,6 +372,7 @@ export function isRestaurantOpenNow(
     isOpenNow: false,
     manualStatus: ManualStatus.AUTO,
     unavailableNote: null,
-    availabilityText: 'Closed now',
+    availabilityText,
+    nextOpenAt: next.nextOpenAt,
   };
 }
