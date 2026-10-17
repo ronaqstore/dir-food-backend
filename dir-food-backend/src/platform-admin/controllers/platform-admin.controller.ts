@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 import {
   Controller,
   Get,
@@ -9,12 +9,12 @@ import {
   UseGuards,
   Ip,
 } from '@nestjs/common';
-import { PlatformAdminService } from './platform-admin.service.js';
-import { UpdateRestaurantStatusDto } from './dto/update-status.dto.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
-import { RolesGuard } from '../common/guards/roles.guard.js';
-import { UserRole } from '../generated/prisma/enums.js';
-import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { PlatformAdminService } from '../services/platform-admin.service.js';
+import { UpdateRestaurantStatusDto } from '../dto/update-status.dto.js';
+import { Roles } from '../../common/decorators/roles.decorator.js';
+import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { UserRole } from '../../generated/prisma/enums.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 
 @Controller('admin')
 @Roles(UserRole.PLATFORM_ADMIN)

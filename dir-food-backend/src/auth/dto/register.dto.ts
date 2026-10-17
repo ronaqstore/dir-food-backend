@@ -52,3 +52,4 @@ export class RegisterRestaurantDto {
   @IsString({ each: true })
   cuisines?: string[];
 }
+

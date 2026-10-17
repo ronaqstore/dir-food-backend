@@ -14,7 +14,7 @@ import { RegisterRestaurantDto } from '../dto/register.dto.js';
 import { LoginDto } from '../dto/login.dto.js';
 import { normalizePhone, isValidPakistaniMobile, slugify } from '../../common/utils/phone.js';
 import { RestaurantStatus, UserRole, UserStatus } from '../../generated/prisma/enums.js';
-import { AuditService } from '../../audit/audit.service.js';
+import { AuditService } from '../../audit/services/audit.service.js';
 
 export interface AuthTokenPayload {
   userId: string;

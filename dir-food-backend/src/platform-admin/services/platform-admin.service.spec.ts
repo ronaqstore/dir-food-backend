@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UnprocessableEntityException, ConflictException } from '@nestjs/common';
 import { PlatformAdminService } from './platform-admin.service.js';
-import { RestaurantStatus } from '../generated/prisma/enums.js';
+import { RestaurantStatus } from '../../generated/prisma/enums.js';
 
 describe('PlatformAdminService (unit)', () => {
   let adminService: PlatformAdminService;
@@ -31,7 +31,14 @@ describe('PlatformAdminService (unit)', () => {
         name: 'Dir Grill',
         status: RestaurantStatus.PENDING,
         whatsappNumber: '923001234567',
-        hours: [{ id: 'hour-1', dayOfWeek: 1, openTime: new Date(), closeTime: new Date() }],
+        hours: [
+          {
+            id: 'hour-1',
+            dayOfWeek: 1,
+            openTime: new Date(),
+            closeTime: new Date(),
+          },
+        ],
         items: [{ id: 'item-1', name: 'Karahi', isActive: true }],
         deliveryAreas: [{ id: 'area-1', areaId: 'a-1', isActive: true }],
       };
@@ -53,15 +60,19 @@ describe('PlatformAdminService (unit)', () => {
 
       // Verify trial ends roughly 30 days after start
       const diffDays = Math.round(
-        (result.subscriptionEndsAt.getTime() - result.trialStartedAt.getTime()) / (1000 * 60 * 60 * 24),
+        (result.subscriptionEndsAt.getTime() -
+          result.trialStartedAt.getTime()) /
+          (1000 * 60 * 60 * 24),
       );
       expect(diffDays).toBe(30);
 
-      expect(mockAudit.log).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'RESTAURANT_APPROVED',
-        actorUserId: 'admin-user-id',
-        restaurantId: 'rest-1',
-      }));
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'RESTAURANT_APPROVED',
+          actorUserId: 'admin-user-id',
+          restaurantId: 'rest-1',
+        }),
+      );
     });
 
     it('should reject approval if WhatsApp number is missing', async () => {
@@ -75,7 +86,11 @@ describe('PlatformAdminService (unit)', () => {
       });
 
       await expect(
-        adminService.updateRestaurantStatus('rest-1', { status: RestaurantStatus.ACTIVE }, 'admin-id'),
+        adminService.updateRestaurantStatus(
+          'rest-1',
+          { status: RestaurantStatus.ACTIVE },
+          'admin-id',
+        ),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -90,7 +105,11 @@ describe('PlatformAdminService (unit)', () => {
       });
 
       await expect(
-        adminService.updateRestaurantStatus('rest-1', { status: RestaurantStatus.ACTIVE }, 'admin-id'),
+        adminService.updateRestaurantStatus(
+          'rest-1',
+          { status: RestaurantStatus.ACTIVE },
+          'admin-id',
+        ),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -105,7 +124,11 @@ describe('PlatformAdminService (unit)', () => {
       });
 
       await expect(
-        adminService.updateRestaurantStatus('rest-1', { status: RestaurantStatus.ACTIVE }, 'admin-id'),
+        adminService.updateRestaurantStatus(
+          'rest-1',
+          { status: RestaurantStatus.ACTIVE },
+          'admin-id',
+        ),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -120,7 +143,11 @@ describe('PlatformAdminService (unit)', () => {
       });
 
       await expect(
-        adminService.updateRestaurantStatus('rest-1', { status: RestaurantStatus.ACTIVE }, 'admin-id'),
+        adminService.updateRestaurantStatus(
+          'rest-1',
+          { status: RestaurantStatus.ACTIVE },
+          'admin-id',
+        ),
       ).rejects.toThrow(UnprocessableEntityException);
     });
 
@@ -134,7 +161,11 @@ describe('PlatformAdminService (unit)', () => {
       });
 
       await expect(
-        adminService.updateRestaurantStatus('rest-1', { status: RestaurantStatus.ACTIVE }, 'admin-id'),
+        adminService.updateRestaurantStatus(
+          'rest-1',
+          { status: RestaurantStatus.ACTIVE },
+          'admin-id',
+        ),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -162,9 +193,11 @@ describe('PlatformAdminService (unit)', () => {
 
       expect(result.status).toBe(RestaurantStatus.ACTIVE);
       expect(result.subscriptionEndsAt).toBe(existingEnd); // dates remain untouched!
-      expect(mockAudit.log).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'RESTAURANT_REACTIVATED',
-      }));
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'RESTAURANT_REACTIVATED',
+        }),
+      );
     });
   });
 });

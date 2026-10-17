@@ -5,10 +5,10 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service.js';
-import { RestaurantStatus } from '../generated/prisma/enums.js';
-import { AuditService } from '../audit/audit.service.js';
-import { UpdateRestaurantStatusDto } from './dto/update-status.dto.js';
+import { PrismaService } from '../../prisma/prisma.service.js';
+import { RestaurantStatus } from '../../generated/prisma/enums.js';
+import { AuditService } from '../../audit/services/audit.service.js';
+import { UpdateRestaurantStatusDto } from '../dto/update-status.dto.js';
 
 @Injectable()
 export class PlatformAdminService {
@@ -116,14 +116,19 @@ export class PlatformAdminService {
 
     // Rule: DEACTIVATED is terminal through normal workflows
     if (restaurant.status === RestaurantStatus.DEACTIVATED) {
-      throw new ConflictException('Deactivated restaurants cannot be modified or reactivated');
+      throw new ConflictException(
+        'Deactivated restaurants cannot be modified or reactivated',
+      );
     }
 
     if (
-      (dto.status === RestaurantStatus.SUSPENDED || dto.status === RestaurantStatus.DEACTIVATED) &&
+      (dto.status === RestaurantStatus.SUSPENDED ||
+        dto.status === RestaurantStatus.DEACTIVATED) &&
       !dto.reason?.trim()
     ) {
-      throw new BadRequestException('A reason is required when suspending or deactivating a restaurant');
+      throw new BadRequestException(
+        'A reason is required when suspending or deactivating a restaurant',
+      );
     }
 
     const oldStatus = restaurant.status;
@@ -131,11 +136,16 @@ export class PlatformAdminService {
     const now = new Date();
 
     // APPROVAL WORKFLOW: PENDING -> ACTIVE
-    if (newStatus === RestaurantStatus.ACTIVE && oldStatus === RestaurantStatus.PENDING) {
+    if (
+      newStatus === RestaurantStatus.ACTIVE &&
+      oldStatus === RestaurantStatus.PENDING
+    ) {
       const missingPrerequisites: string[] = [];
 
       if (!restaurant.whatsappNumber) {
-        missingPrerequisites.push('A valid WhatsApp contact number is required');
+        missingPrerequisites.push(
+          'A valid WhatsApp contact number is required',
+        );
       }
       if (restaurant.hours.length === 0) {
         missingPrerequisites.push('Configured opening hours are required');
@@ -144,7 +154,9 @@ export class PlatformAdminService {
         missingPrerequisites.push('At least one active menu item is required');
       }
       if (restaurant.deliveryAreas.length === 0) {
-        missingPrerequisites.push('At least one active delivery area is required');
+        missingPrerequisites.push(
+          'At least one active delivery area is required',
+        );
       }
 
       if (missingPrerequisites.length > 0) {
@@ -156,7 +168,9 @@ export class PlatformAdminService {
       }
 
       // Starts 30-day trial
-      const subscriptionEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const subscriptionEndsAt = new Date(
+        now.getTime() + 30 * 24 * 60 * 60 * 1000,
+      );
 
       const updated = await this.prisma.restaurant.update({
         where: { id: restaurantId },
@@ -188,7 +202,10 @@ export class PlatformAdminService {
     }
 
     // REACTIVATION: SUSPENDED -> ACTIVE
-    if (newStatus === RestaurantStatus.ACTIVE && oldStatus === RestaurantStatus.SUSPENDED) {
+    if (
+      newStatus === RestaurantStatus.ACTIVE &&
+      oldStatus === RestaurantStatus.SUSPENDED
+    ) {
       // Rule: Reactivating never alters subscription dates.
       const updated = await this.prisma.restaurant.update({
         where: { id: restaurantId },

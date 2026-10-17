@@ -54,3 +54,4 @@ bootstrapAdmin().catch((err) => {
   console.error('Failed to bootstrap admin:', err);
   process.exit(1);
 });
+

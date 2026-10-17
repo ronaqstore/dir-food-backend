@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PlatformAdminService } from './platform-admin.service.js';
-import { PlatformAdminController } from './platform-admin.controller.js';
+import { PlatformAdminService } from './services/platform-admin.service.js';
+import { PlatformAdminController } from './controllers/platform-admin.controller.js';
 import { PrismaModule } from '../prisma/prisma.module.js';
 
 @Module({
