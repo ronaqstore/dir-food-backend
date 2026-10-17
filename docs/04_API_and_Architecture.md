@@ -13,13 +13,13 @@ Common errors: `400` bad body (unknown property), `401` not logged in, `403` wro
 | Method | URL | Purpose | Input | Response | DB | Errors |
 |---|---|---|---|---|---|---|
 | GET | `/public/areas` | Active areas for the filter | none | `[{id, name, slug}]` | read `areas` | — |
-| GET | `/public/restaurants` | List active restaurants | `areaId`, `cuisine`, `q` (2–50), `openNow` bool, `page`, `limit` | `[{slug, name, cuisines, logoUrl, minOrderAmount, isOpenNow, availabilityText, nextOpenAt}]` | read `restaurants`, `restaurant_hours`, join `restaurant_delivery_areas` where active | `422` bad query |
-| GET | `/public/restaurants/:slug` | Restaurant page data | slug | `{slug, name, description, cuisines, logoUrl, coverUrl, contactPhone, addressText, minOrderAmount, isOpenNow, manualStatus, unavailableNote, todayHours[], deliveryAreas:[{areaId, name, deliveryFee|null}]}` | read restaurant (status ACTIVE only), hours, delivery areas | `404 RESTAURANT_NOT_AVAILABLE` |
+| GET | `/public/restaurants` | List eligible restaurants (`ACTIVE`, subscription valid) | `areaId`, `cuisine`, `q` (2–50), `openNow` bool, `page`, `limit` | `[{slug, name, cuisines, logoUrl, minOrderAmount, isOpenNow, availabilityText, nextOpenAt}]` | read `restaurants`, `restaurant_hours`, join `restaurant_delivery_areas` where active | `422` bad query |
+| GET | `/public/restaurants/:slug` | Restaurant page data | slug | `{slug, name, description, cuisines, logoUrl, coverUrl, contactPhone, addressText, minOrderAmount, isOpenNow, manualStatus, unavailableNote, todayHours[], deliveryAreas:[{areaId, name, deliveryFee|null}]}` | read restaurant (eligible only: `status = ACTIVE` and `subscription_ends_at > now`), hours, delivery areas | `404 RESTAURANT_NOT_AVAILABLE` |
 | GET | `/public/restaurants/:slug/menu` | Full menu | slug | `{categories:[{id, name, items:[{id, name, description, imageUrl, price|null, isAvailable, variants:[{id, name, price}]}]}]}` | read categories, items, variants where active | `404` |
 | POST | `/public/cart/validate` | Re-check a cart, save nothing | `{restaurantSlug, items:[{menuItemId, variantId?, quantity}]}` | `{lines:[{menuItemId, variantId, name, unitPrice, quantity, lineTotal, available, priceChanged?}], subtotal, minOrderAmount, isOpenNow, problems:[...]}` | read items / variants / restaurant | `404`, `422` |
-| POST | `/public/order-intents` | Validate and create the WhatsApp request | see below | see below | transaction: insert `order_intents` + items | `404`, `409 RESTAURANT_CLOSED`, `409 PRICE_CHANGED`, `422`, `429` |
-| POST | `/public/order-intents/:ref/whatsapp-opened` | Record that the button was pressed | none | `{status}` | update status + `whatsapp_opened_at` (only from `WHATSAPP_HANDOFF_READY` or `WHATSAPP_OPENED`) | `404`, `409 INTENT_EXPIRED` |
-| GET | `/public/order-intents/:ref` | Re-show the result screen ("Open WhatsApp again") | ref | `{reference, status, whatsappUrl, summary}` while not expired and PII not erased | read intent | `404`, `410 INTENT_EXPIRED` |
+| POST | `/public/order-intents` | Validate and create the WhatsApp request | see below | see below | transaction: insert `order_intents` + items (nothing saved on any error) | `404`, `409 RESTAURANT_CLOSED`, `409 PRICE_CHANGED`, `422`, `429` |
+| POST | `/public/order-intents/:ref/whatsapp-opened` | Record that the button was pressed | none | `{status}` | update status + `whatsapp_opened_at` (only while `expires_at > now`). Records a button click, not a sent message | `404`, `409 INTENT_EXPIRED` |
+| GET | `/public/order-intents/:ref` | Re-show the result screen ("Open WhatsApp again") | ref | `{reference, status, whatsappUrl, summary, message}` while `expires_at > now`; the message is rebuilt from snapshot fields, never read from storage | read intent | `404`, `410 INTENT_EXPIRED` |
 
 **Create order intent: request**
 ```json
@@ -40,7 +40,14 @@ Common errors: `400` bad body (unknown property), `401` not logged in, `403` wro
   "expectedSubtotal": 142000
 }
 ```
-**Validation:** `clientRequestId` uuid; 1–30 items; `quantity` integer 1–50; `variantId` required if the item has active variants and forbidden otherwise; `name` 2–60; `phone` Pakistani mobile; `landmark` 3–150; `directions` ≤ 300; `mapPin` both or neither, valid range; `expectedSubtotal` optional integer.
+**Validation:** `clientRequestId` uuid (client-generated idempotency key); 1–30 items; `quantity` integer 1–50; `variantId` required if the item has active variants and forbidden otherwise; `name` 2–60; `phone` Pakistani mobile; `landmark` 3–150; `directions` ≤ 300; `mapPin` optional, both or neither, valid range (a Google Maps link is added to the message only when a valid pin is present); **`expectedSubtotal` required**, integer paisa ≥ 0. Missing or non-integer → `422`.
+
+**`PRICE_CHANGED` (HTTP 409).** If `expectedSubtotal` differs from the backend-calculated current subtotal, nothing is saved and the response is:
+```json
+{ "error": { "code": "PRICE_CHANGED", "message": "Prices have changed. Please review your cart.",
+  "details": { "subtotal": 150000, "lines": [ { "menuItemId": "0192...a1", "variantId": "0192...b2", "oldUnitPrice": 110000, "unitPrice": 120000, "quantity": 1, "lineTotal": 120000 } ] } } }
+```
+The frontend shows the changes, the customer reconfirms, and the next submit sends the new subtotal. A rejected attempt creates no `order_intents` row, so its `clientRequestId` may be reused.
 
 **Response `201` (or `200` for a repeated `clientRequestId`)**
 ```json
@@ -55,14 +62,14 @@ Common errors: `400` bad body (unknown property), `401` not logged in, `403` wro
     ],
     "subtotal": 122000,
     "delivery": { "status": "TO_BE_CONFIRMED", "fee": null, "areaName": "Timergara" },
-    "message": "Assalam o Alaikum, Hotel Al-Noor! ...",
+    "message": "Assalam o Alaikum, Hotel Al-Noor! ... (built for this response, not stored)",
     "whatsappUrl": "https://wa.me/923001234567?text=Assalam%20o%20Alaikum...",
     "expiresAt": "2026-10-17T09:00:00Z",
     "notice": "Your message is not sent until you press Send in WhatsApp."
   }
 }
 ```
-**Backend steps:** rate limit → DTO → duplicate check → load restaurant (ACTIVE), open check, WhatsApp number check → area check → load items by `(id, restaurant_id)` with active + available → variant check → price recalculation → min order → generate reference → build message → transaction insert → return. The browser's prices are never read.
+**Backend steps:** rate limit → DTO → duplicate check → load restaurant (eligible: `ACTIVE` and `subscription_ends_at > now`), open check, WhatsApp number check → area check → load items by `(id, restaurant_id)` with active + available → variant check → price recalculation → **compare with `expectedSubtotal` (409 `PRICE_CHANGED`)** → min order → generate reference → transaction insert (snapshots only) → build message from the snapshot → return. The browser's prices are never read; the complete message is never persisted.
 
 ## 3. Authentication
 
@@ -99,7 +106,7 @@ All URLs start with `/me/restaurant`. No restaurant id in any URL. Not-yours ids
 | POST | `/me/restaurant/items/:id/image` | Photo | multipart | Same image rules |
 | PUT | `/me/restaurant/items/order` | Reorder inside a category | `{categoryId, ids:[...]}` | |
 | PUT | `/me/restaurant/items/:id/variants` | Replace variants | `{variants:[{id?, name, price, isActive}]}` | Existing ids deactivated, not deleted |
-| GET | `/me/restaurant/order-intents?page=&q=` | Recent WhatsApp requests (30 days) | `q` = reference | Each response carries `notConfirmed: true` flag and the UI shows the label |
+| GET | `/me/restaurant/order-intents?page=&q=` | Recent WhatsApp requests (30 days) | `q` = reference | Each response carries `notConfirmed: true` flag and the UI shows the label. Default 30-day window is a display filter, not deletion. Rows past `expires_at` are labelled expired |
 | GET | `/me/restaurant/order-intents/:id` | Detail | — | |
 | GET | `/me/restaurant/stats?range=7d|30d` | Counts | — | `{requestsCreated, whatsappOpened, topItems:[{name, requestedQuantity}]}` |
 
@@ -116,7 +123,8 @@ Example `PUT /me/restaurant/delivery-areas` body:
 | POST | `/admin/restaurants` | Create restaurant + owner | `{name, contactPhone, whatsappNumber, addressText?, cuisines?, owner:{name, phone}}` → `{restaurant, setupLink}` | transaction insert restaurant, owner, default hours; audit |
 | GET | `/admin/restaurants/:id` | Detail, includes admin notes and completeness warnings | | read |
 | PATCH | `/admin/restaurants/:id` | Edit record (support) | profile fields, `adminNotes` | audit with old/new |
-| PATCH | `/admin/restaurants/:id/status` | Approve / suspend / deactivate | `{status, reason}` (reason required for SUSPENDED and DEACTIVATED) | update + audit |
+| PATCH | `/admin/restaurants/:id/status` | Approve / suspend / deactivate / reactivate | `{status, reason}` (reason required for SUSPENDED and DEACTIVATED) | update + audit. `PENDING → ACTIVE` is refused (`422`) unless WhatsApp number, hours, ≥ 1 active item and ≥ 1 active delivery area exist; on success sets `trial_started_at = now` and `subscription_ends_at = now + 30 days` in the same transaction. `SUSPENDED → ACTIVE` never changes the dates. Suspend / deactivate never change the dates |
+| POST | `/admin/restaurants/:id/subscription/extend` | Record a manual payment's effect | `{subscriptionEndsAt}` (ISO timestamp, must be in the future; refused for a restaurant never approved) | updates only `subscription_ends_at`; **never changes `status`**; audit `RESTAURANT_SUBSCRIPTION_EXTENDED` with old / new. No price, ledger or invoice |
 | PATCH | `/admin/restaurants/:id/slug` | Change slug | `{slug}` | unique check; audit |
 | POST | `/admin/restaurants/:id/setup-link` | New password link | | replace token; audit |
 | GET | `/admin/areas` | All areas | | |
@@ -147,7 +155,7 @@ src/
   menu-categories/
   menu-items/           (includes variants)
   public-catalog/       (public restaurants, menu, cart validate)
-  order-intents/        (public create + owner read + expiry/retention jobs)
+  order-intents/        (public create + owner read; request-time expiry check, no jobs)
   platform-admin/       (admin restaurants, status, slug, setup links, activity)
   audit/                (AuditService used by other modules)
   uploads/              (image validation + storage adapter)
@@ -163,8 +171,8 @@ src/
 | `DeliveryAreasModule` (inside restaurants folder is fine) | Owner serving areas and fees | |
 | `MenuCategoriesModule`, `MenuItemsModule` | Owner menu CRUD | Variants live inside menu-items to avoid a tiny module |
 | `PublicCatalogModule` | Public reads and cart validation | **Separate services and DTOs from dashboard**, explicit `select`, never reuse owner services |
-| `OrderIntentsModule` | Create intent, build message, owner list | Uses `PublicCatalogModule` for pricing logic through a `PricingService` |
-| `PlatformAdminModule` | Admin operations | Role `PLATFORM_ADMIN` on the controller class |
+| `OrderIntentsModule` | Create intent, build message from snapshot, owner list | Uses `PublicCatalogModule` for pricing logic through a `PricingService`. No scheduled jobs |
+| `PlatformAdminModule` | Admin operations (approval, suspension, subscription extension) | Role `PLATFORM_ADMIN` on the controller class |
 | `AuditModule` | `AuditService.log()` | |
 | `UploadsModule` | File checks + storage | adapter pattern: S3-compatible |
 
@@ -223,4 +231,12 @@ middleware.ts                        Redirects: /dashboard requires owner cookie
 - Cart stores `restaurantSlug`; adding from another slug opens a "clear cart?" dialog.
 - Every price shown in the cart comes from the last `POST /public/cart/validate`; stored prices are never trusted.
 - Order button is disabled when: cart empty, restaurant closed, any item unavailable, or details invalid.
-- One `clientRequestId` per checkout screen visit; regenerated only if the cart or details change after a successful create.
+- One `clientRequestId` per checkout screen visit; regenerated only if the cart or details change after a successful create. After a `409 PRICE_CHANGED` nothing was saved, so the same id may be reused once the customer has reconfirmed.
+- Every checkout submit carries `expectedSubtotal` = the subtotal from the last validation that the customer saw.
+
+## 9. Eligibility, subscription and privacy (backend rules)
+
+- **Eligible restaurant** = `status = ACTIVE` AND `subscription_ends_at IS NOT NULL` AND `subscription_ends_at > now`. A single `isEligible()` helper is used by the public catalog, cart validation and order-intent creation. There is no grace period, no expiry scheduler and no cron endpoint; expiry is enforced on each request.
+- Suspension overrides subscription validity; extending a subscription never changes `status`.
+- No endpoint, job or secret exists for customer-data retention in the MVP (automated deletion is deferred; legal / retention review is required before launch). Do not log customer name, phone, landmark, directions, map pin or message text.
+- Identifiers are UUID v7 generated by the application (Prisma `@default(uuid(7))`).

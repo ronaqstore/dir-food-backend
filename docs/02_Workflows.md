@@ -8,7 +8,7 @@ Step by step: how the system works and why each table is connected. Same format 
 |---|---|---|---|
 | 1 | Admin onboards a restaurant | Admin, then owner | restaurants, users, restaurant_hours, audit_logs |
 | 2 | Login and access check | Owner / Admin | users, restaurants |
-| 3 | Approve, suspend, deactivate | Admin | restaurants, audit_logs |
+| 3 | Approve, suspend, deactivate, extend subscription | Admin | restaurants, audit_logs |
 | 4 | Restaurant profile and WhatsApp number | Owner | restaurants |
 | 5 | Opening hours and availability | Owner | restaurant_hours, restaurants |
 | 6 | Delivery areas and fees | Owner (admin manages areas list) | areas, restaurant_delivery_areas |
@@ -17,7 +17,7 @@ Step by step: how the system works and why each table is connected. Same format 
 | 9 | Customer browses menu and builds cart | Guest | menu_categories, menu_items, menu_item_variants |
 | 10 | Customer prepares the order | Guest | areas, restaurant_delivery_areas |
 | 11 | WhatsApp handoff (create OrderIntent) | Guest | order_intents, order_intent_items |
-| 12 | Abandoned handoff, expiry, retention | System job | order_intents |
+| 12 | Abandoned handoff and intent expiry | System (request-time check, no job) | order_intents |
 | 13 | Owner views WhatsApp requests and stats | Owner | order_intents, order_intent_items |
 | 14 | Support, complaints, audit | Admin | audit_logs, restaurants |
 
@@ -75,7 +75,7 @@ sequenceDiagram
   participant DB as PostgreSQL
   participant WA as WhatsApp
   participant R as Restaurant
-  C->>API: POST /public/order-intents (items, qty, details, clientRequestId)
+  C->>API: POST /public/order-intents (items, qty, details, clientRequestId, expectedSubtotal)
   API->>DB: Load restaurant, hours, items, variants, area (one query set)
   API->>API: Check open, availability, area, min order, recalc prices
   API->>DB: Transaction: insert order_intent + items
@@ -97,8 +97,8 @@ flowchart TD
   D --> E[Opening hours]
   E --> F[Delivery areas + fees]
   F --> G[Menu categories, items, variants, images]
-  G --> H[Admin approves: status ACTIVE]
-  H --> I[Public page visible]
+  G --> H[Admin approves: status ACTIVE + 30-day trial starts]
+  H --> I[Public page visible while subscription valid]
   I --> J[Daily: open/close switch, item availability]
   I --> K[View recent WhatsApp requests - not confirmed]
   J --> L[Admin may suspend if needed]
@@ -118,7 +118,7 @@ flowchart TD
 | 4 | (automatic) | Writes `audit_logs` (`RESTAURANT_CREATED`). |
 | 5 | Owner opens link, chooses password. | Saves `password_hash`, clears token. |
 | 6 | Owner completes profile, menu, delivery areas (workflows 4–7). | See those workflows. |
-| 7 | Admin reviews and approves (workflow 3). | Status becomes `ACTIVE`. Restaurant is public. |
+| 7 | Admin reviews and approves (workflow 3). | Status becomes `ACTIVE`; the 30-day trial starts (`trial_started_at`, `subscription_ends_at`). Restaurant is public while the subscription is valid. |
 
 | Table | What happens | Why |
 |---|---|---|
@@ -142,7 +142,7 @@ flowchart TD
 | 1 | Types phone and password. | Finds `users` by phone. |
 | 2 | (automatic) | Compares with `password_hash`; generic error "phone or password is wrong". Counts failed tries; locks 15 min after 5. |
 | 3 | (automatic) | Checks `users.status = ACTIVE`. |
-| 4 | (automatic, owner) | Follows `restaurant_id`; reads `restaurants.status`. `SUSPENDED` / `DEACTIVATED` → login allowed but shows "restaurant suspended, contact support"; menu editing blocked. |
+| 4 | (automatic, owner) | Follows `restaurant_id`; reads `restaurants.status` and `subscription_ends_at`. `SUSPENDED` / `DEACTIVATED` → login allowed but shows "restaurant suspended, contact support"; menu editing blocked. `ACTIVE` with `subscription_ends_at <= now` → login allowed, shows "subscription expired, contact support". |
 | 5 | (automatic) | Issues JWT in httpOnly cookie with `userId`, `role`, `restaurantId`. |
 | 6 | Uses dashboard. | Every query adds `WHERE restaurant_id = session.restaurantId`. |
 
@@ -151,19 +151,22 @@ flowchart TD
 
 ---
 
-## Workflow 3: Approve, suspend, deactivate
+## Workflow 3: Approve, suspend, deactivate, extend subscription
 
 **Who:** Admin.
 
 | # | Admin does | System does |
 |---|---|---|
 | 1 | Opens restaurant list, filters `PENDING`. | Reads `restaurants`. |
-| 2 | Reviews profile, menu preview, WhatsApp number. | Reads restaurant, items. Warns if no items, no WhatsApp number, no delivery area, no hours. |
-| 3 | Presses Approve / Suspend / Deactivate, writes a reason for suspend/deactivate. | Updates `status`. Stores `status_reason`, `status_changed_at`. Writes `audit_logs` (actor, old, new, reason). |
-| 4 | (automatic) | Public API hides restaurants that are not `ACTIVE` immediately. Existing OrderIntents stay as they are. |
+| 2 | Reviews profile, menu preview, WhatsApp number. | Reads restaurant, items. Shows which approval requirements are missing. |
+| 3 | Presses Approve. | **Refuses** unless: valid WhatsApp number, hours configured, at least one active menu item, at least one active delivery area. On success: `status = ACTIVE`, `trial_started_at = now`, `subscription_ends_at = now + 30 days`. Writes `audit_logs`. |
+| 4 | Presses Suspend / Deactivate with a reason. | Updates `status`, `status_reason`, `status_changed_at`. **Dates are not touched** (the trial keeps running while suspended). Writes `audit_logs`. |
+| 5 | Presses Reactivate on a suspended restaurant. | `SUSPENDED` → `ACTIVE`. Dates unchanged. The restaurant is public again only if `subscription_ends_at > now`. |
+| 6 | After receiving payment outside the platform, enters a new `subscription_ends_at`. | Updates only that column and writes `audit_logs` (old → new). **Does not change `status`**: extending a suspended restaurant does not reactivate it. |
+| 7 | (automatic) | Public API hides restaurants that are not eligible (`ACTIVE` and `subscription_ends_at > now`) at once. Existing OrderIntents stay as they are. |
 
 **Status meaning:** `PENDING` (new, hidden) → `ACTIVE` (public) ↔ `SUSPENDED` (temporarily hidden, owner can log in read-only) → `DEACTIVATED` (closed for good, hidden, data kept).
-**Rules:** only admin changes status; the owner never sees an edit field for it.
+**Rules:** only admin changes status and dates; the owner sees the dates read only. Eligibility = `status = ACTIVE` AND `subscription_ends_at IS NOT NULL` AND `subscription_ends_at > now`, checked on each request. No grace period, no expiry scheduler, no stored price, no payment ledger. Suspension overrides subscription validity.
 
 ---
 
@@ -236,7 +239,7 @@ flowchart TD
 | # | Customer does | System does |
 |---|---|---|
 | 1 | Opens homepage. | Frontend loads active areas. |
-| 2 | Chooses an area or taps "All". | API selects restaurants with `status = ACTIVE` that deliver to the area (join `restaurant_delivery_areas`, active). |
+| 2 | Chooses an area or taps "All". | API selects eligible restaurants (`status = ACTIVE` and `subscription_ends_at > now`) that deliver to the area (join `restaurant_delivery_areas`, active). |
 | 3 | Filters cuisine, searches name, toggles "Open now". | Case-insensitive name search; cuisine filter on the cuisines list; open-now calculated from hours. |
 | 4 | Sees cards: name, cuisines, logo, open/closed badge, min order. | Allowlisted fields only. Paginated (default 20, max 50). Open restaurants first. |
 | 5 | Opens a restaurant. | `GET /public/restaurants/:slug` returns profile, today's hours, delivery areas + fees. |
@@ -245,7 +248,7 @@ flowchart TD
 - No match → empty state "No restaurants found" with a clear-filters button.
 - Closed → badge "Closed, opens at 6:00 PM", menu readable, ordering disabled.
 - Temporarily unavailable → badge with owner's note.
-- Suspended / pending / deactivated / unknown slug → `404` "Restaurant not available" (same answer for all).
+- Suspended / pending / deactivated / subscription expired / unknown slug → `404` "Restaurant not available" (same answer for all).
 
 ---
 
@@ -261,7 +264,7 @@ flowchart TD
 | 4 | Tries an item from another restaurant. | Frontend asks: "Your cart has items from X. Clear it and start a new one?" Backend also rejects mixed carts. |
 | 5 | Opens cart. | Frontend calls `POST /public/cart/validate` (nothing saved). Server returns current prices, unavailable items and `priceChanged` flags and the subtotal. |
 
-**Rules:** unavailable item cannot be added; if it becomes unavailable later the cart marks it and blocks checkout until removed; a price change shows "Price updated from Rs 500 to Rs 550" and the customer must see it before continuing; an empty cart disables the order button; carts older than 24 h are cleared.
+**Rules:** unavailable item cannot be added; if it becomes unavailable later the cart marks it and blocks checkout until removed; a price change shows "Price updated from Rs 500 to Rs 550" and the customer must review it and reconfirm before continuing (the new subtotal becomes the next `expectedSubtotal`); an empty cart disables the order button; carts older than 24 h are cleared.
 
 ---
 
@@ -286,24 +289,24 @@ flowchart TD
 | # | Customer / frontend does | System does |
 |---|---|---|
 | 1 | Frontend generates `clientRequestId` once per review screen and disables the button. | |
-| 2 | Sends restaurant slug, items (`menuItemId`, `variantId`, `quantity`), customer details, `areaId`. | Rate limit check. DTO validation (quantity 1–50, max 30 lines, phone format). |
+| 2 | Sends restaurant slug, items (`menuItemId`, `variantId`, `quantity`), customer details, `areaId` and the **required** `expectedSubtotal` the customer last reviewed. | Rate limit check. DTO validation (quantity 1–50, max 30 lines, phone format, `expectedSubtotal` integer paisa). |
 | 3 | (automatic) | If `clientRequestId` already exists → return the first intent (no second row). |
-| 4 | (automatic) | Loads restaurant (must be `ACTIVE`), hours (must be open), WhatsApp number (must be valid), area (must be an active delivery area of this restaurant). |
+| 4 | (automatic) | Loads restaurant (must be eligible: `ACTIVE` and `subscription_ends_at > now`), hours (must be open), WhatsApp number (must be valid), area (must be an active delivery area of this restaurant). |
 | 5 | (automatic) | Loads each item with `restaurant_id = this restaurant`, active and available; each variant active and belonging to the item. Any failure → `422` with a list of the problems. |
-| 6 | (automatic) | Recalculates every line from DB prices. Subtotal. Checks minimum order. Gets delivery fee from the area row (null = to be confirmed). |
+| 6 | (automatic) | Recalculates every line from DB prices. Subtotal. **If `expectedSubtotal` differs from the calculated subtotal → `409 PRICE_CHANGED` with the current lines and subtotal; nothing is saved.** Checks minimum order. Gets delivery fee from the area row (`0` = free, null = to be confirmed). |
 | 7 | (automatic) | Generates reference (`TM-` + 6 chars from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, retry on unique clash). |
-| 8 | (automatic) | Builds the message text (below) and saves `order_intents` (status `WHATSAPP_HANDOFF_READY`, `expires_at = now + 24 h`) with snapshots, plus `order_intent_items`, in one transaction. |
+| 8 | (automatic) | Saves `order_intents` (status `WHATSAPP_HANDOFF_READY`, `expires_at = now + 24 h`) with snapshots, plus `order_intent_items`, in one transaction. The message text is built from the snapshot (below) for the response; **the complete message is not stored**. |
 | 9 | Receives `reference`, validated summary, `whatsappUrl`. | |
 | 10 | Frontend shows a short "Opening WhatsApp..." screen and opens `whatsappUrl` (`https://wa.me/923001234567?text=<url-encoded message>`). | Optional `POST /public/order-intents/:reference/whatsapp-opened` sets status `WHATSAPP_OPENED` and `whatsapp_opened_at`. |
 | 11 | Customer presses Send in WhatsApp. | **Nothing — the platform cannot see this.** |
 | 12 | Frontend clears the cart only after the response succeeds, and shows a screen: "Your message is NOT sent until you press Send in WhatsApp. Reference TM-7K4P9Q" with buttons **Open WhatsApp again** and **Back to menu**. | |
 
-**WhatsApp not installed:** `wa.me` opens WhatsApp Web / store page. The result screen also shows the message text with a **Copy message** button and the restaurant phone number.
-**Customer returns without sending:** the intent stays `WHATSAPP_OPENED` or `WHATSAPP_HANDOFF_READY` until it expires. The result screen's "Open WhatsApp again" reuses the same reference (no new row).
-**Customer never presses Send:** the restaurant never receives anything; nothing is promised to the customer; intent expires.
+**WhatsApp not installed:** `wa.me` opens WhatsApp Web / store page. The result screen also shows the message text (rebuilt from the snapshot) with a **Copy message** button and the restaurant phone number.
+**Customer returns without sending:** the intent stays `WHATSAPP_OPENED` or `WHATSAPP_HANDOFF_READY`. Until `expires_at` the result screen's "Open WhatsApp again" reuses the same reference (no new row); after it the API answers `410 INTENT_EXPIRED`.
+**Customer never presses Send:** the restaurant never receives anything; nothing is promised to the customer; the reference simply stops being reusable after 24 h. The row is kept.
 **Restaurant must confirm manually (on WhatsApp):** the order is accepted, delivery charge, preparation time, final total, payment method, delivery arrangement.
 
-**Example message** (built from the saved snapshot):
+**Example message** (rebuilt from the saved snapshot fields each time; the "Location pin" line appears only when a valid map pin was provided):
 
 ```
 Assalam o Alaikum, Hotel Al-Noor!
@@ -328,15 +331,16 @@ Please confirm the order, delivery charge, time and payment. Thank you.
 
 ---
 
-## Workflow 12: Abandoned handoff, expiry
+## Workflow 12: Abandoned handoff and intent expiry
 
-**Who:** System.
+**Who:** System, at request time. **No scheduler, no background job.**
 
 | # | System does | Why |
 |---|---|---|
-| 1 | On relevant operations (or via a lightweight expiry check): mark intents as `EXPIRED` when `expires_at < now()` and status is `WHATSAPP_HANDOFF_READY` or `WHATSAPP_OPENED`. This is enforced at request time/read paths as needed; no continuous scheduler is required for expiry enforcement. | Old references are marked old. It says nothing about the real order. |
+| 1 | When an intent is read or its click is reported, compares `expires_at` with `now()`. Past it → `410 INTENT_EXPIRED` (read) or `409 INTENT_EXPIRED` (click report). No row is changed. | A reference stays reusable for 24 h only. It says nothing about the real order. |
+| 2 | Owner and admin lists show every intent, labelling those past `expires_at` as "Expired reference". | The record stays available for support. |
 
-**Customer data retention (future work):** Automated personal-data deletion is deferred from the MVP. Minimize collection and avoid storing complete WhatsApp messages. Any future retention/cleanup will be defined separately and implemented only with explicit approval.
+**Expiry is not data deletion.** Nothing is erased or anonymised. Automated customer-data deletion and historical-data deletion are deferred from the MVP; the retention policy and applicable legal obligations must be reviewed before launch, and any deletion feature will be specified and approved separately. Meanwhile, collection stays minimal and the complete WhatsApp message is never stored.
 
 ---
 
@@ -346,10 +350,10 @@ Please confirm the order, delivery charge, time and payment. Thank you.
 
 | # | Owner does | System does |
 |---|---|---|
-| 1 | Opens "WhatsApp requests". | Reads `order_intents` where `restaurant_id = session`, newest first, paginated, last 30 days. |
+| 1 | Opens "WhatsApp requests". | Reads `order_intents` where `restaurant_id = session`, newest first, paginated; default display filter is the last 30 days (a view filter only, nothing is deleted). |
 | 2 | Sees each row: reference, time, customer name, phone, area, items total, badge "Opened WhatsApp" or "Ready", with a permanent notice: **"These are requests prepared by the website. They are not confirmed orders. Confirm each one with the customer on WhatsApp."** | |
 | 3 | Searches a reference the customer quoted. | Looks up `public_ref` within this restaurant only. |
-| 4 | Opens details. | Shows the item snapshot and the saved message. |
+| 4 | Opens details. | Shows the item snapshot and the message rebuilt from it. |
 | 5 | Opens Stats (7 / 30 days). | Counts requests created, WhatsApp opened, top 10 requested items. Labelled "requested", not "sold". |
 
 **Rules:** the owner cannot edit or delete an intent; no `CONFIRMED` status exists in Phase A.
@@ -375,10 +379,10 @@ Please confirm the order, delivery charge, time and payment. Thank you.
 
 | Case | Expected behaviour |
 |---|---|
-| Restaurant not found / inactive | `404` `RESTAURANT_NOT_AVAILABLE` (same message for missing, pending, suspended). |
+| Restaurant not found / not eligible | `404` `RESTAURANT_NOT_AVAILABLE` (same message for missing, pending, suspended, deactivated, subscription expired). |
 | Restaurant closed at submit time | `409` `RESTAURANT_CLOSED` with next opening time; cart kept. |
 | Item unavailable or inactive | `422` `ITEMS_UNAVAILABLE` + list of item ids; frontend marks them and asks to remove. |
-| Price changed after adding | Backend uses DB price; response `priceChanged: [{menuItemId, oldPrice, newPrice}]`; frontend shows the review again before the customer confirms. If the frontend sent `expectedSubtotal` and it differs, backend returns `409 PRICE_CHANGED` and saves nothing. |
+| Price changed after adding | `expectedSubtotal` is required. If it differs from the backend-calculated subtotal, backend returns `409 PRICE_CHANGED` with current lines and subtotal (including `priceChanged: [{menuItemId, oldPrice, newPrice}]`) and saves **no** intent. The customer reviews and reconfirms, then the frontend resubmits with the new subtotal. |
 | Invalid quantity | `422`, per-line error. |
 | Invalid phone | `422` with message "Enter a valid Pakistani mobile number". |
 | Unsupported delivery area | `422` `AREA_NOT_SERVED`. |
@@ -386,11 +390,13 @@ Please confirm the order, delivery charge, time and payment. Thank you.
 | Restaurant WhatsApp number missing / invalid | Restaurant cannot become `ACTIVE`; if it happens later the API returns `503` `WHATSAPP_NOT_AVAILABLE` and shows the restaurant phone instead. |
 | Database / API failure | `500` with a generic message; nothing partial is saved (transaction); frontend keeps the cart and the same `clientRequestId` so retry is safe. |
 | Duplicate submission | Same `clientRequestId` returns the same reference with `200`. Repeat spam from one phone is rate limited (`429`). |
-| Customer abandons WhatsApp | Intent expires; no side effect. |
+| Customer abandons WhatsApp | Reference stops being reusable after 24 h; no side effect, nothing deleted. |
 | Owner touches another restaurant's data | `404`; attempt logged at warn level. |
 | Admin attempts an unauthorised action (owner token on `/admin`) | `403`; logged. |
-| Item edited or deactivated after an intent | Intent keeps its name and price snapshot; `menu_item_id` may become `NULL`; the saved WhatsApp message is never regenerated. |
+| Item edited or deactivated after an intent | Intent keeps its name and price snapshot (items are deactivated, never hard-deleted, so the link remains); the message is always rebuilt from the snapshot, never from live menu rows. |
 | Restaurant becomes suspended after intent | Old intents stay readable by admin; owner sees them read-only. |
+| Subscription expires while status is `ACTIVE` | Restaurant is hidden and refuses new requests at once (checked per request). Status is not rewritten. Admin extends the date; the restaurant is public again only if its status is still `ACTIVE`. |
+| Admin extends subscription of a suspended restaurant | Date changes; status stays `SUSPENDED`; restaurant remains hidden until explicitly reactivated. |
 
 ## API at a glance
 
