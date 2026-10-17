@@ -1,0 +1,217 @@
+# Dir Food Ordering — Phase A Requirements (v1)
+
+WhatsApp-first food discovery and ordering for Timergara and nearby areas, Lower Dir, KPK.
+Stack: Next.js (frontend), NestJS (API), PostgreSQL + Prisma. Same style as Dukaan Pro: one shared database, `restaurant_id` on every private table, money in paisa.
+
+Files in this pack: `01_Requirements_and_Scope.md` (this file), `02_Workflows.md`, `03_ERD_and_Data_Dictionary.md`, `04_API_and_Architecture.md`.
+
+---
+
+## 1. Product summary
+
+A public website where anyone can find local hotels, restaurants and stalls, read their menus, build a cart and press **Order on WhatsApp**. WhatsApp opens with a ready message. The customer presses Send. The restaurant replies, confirms the order, tells the delivery charge and time, and delivers with its own bike.
+
+**The platform is a menu + a smart WhatsApp message + a restaurant dashboard.** It is not a delivery company and not a payment system.
+
+What Phase A is NOT: no rider app, no live tracking, no online payment, no refunds, no customer accounts, no order status shown to customers, no WhatsApp Business API.
+
+**Important honesty rule:** the website can never know whether the customer pressed Send. Opening WhatsApp is not an order, and an `OrderIntent` is not a confirmed order. Every screen and every report must use the wording "WhatsApp request", never "confirmed order".
+
+## 2. Key decision: save an OrderIntent first? (Option A vs B)
+
+| | Option A: WhatsApp-first (nothing saved) | Option B: save an OrderIntent first |
+|---|---|---|
+| Prices | Computed in the browser. Anyone can edit them. | Backend recalculates every price from the database. |
+| Reference number | None | Short code like `TM-7K4P9Q`, printed in the WhatsApp message |
+| Disputes ("you said Rs 400") | Only WhatsApp chat as proof | Restaurant can look up the reference and see the exact snapshot |
+| Stats for restaurants and for you | Almost none | Requests created, WhatsApp opened, popular items |
+| Customer data stored | None | Name, phone, area, landmark (needs a retention rule) |
+| Build cost | Lowest | About 2 extra tables and 3 endpoints |
+| Risk | Wrong or fake prices in message | Spam rows (solved by rate limits and expiry) |
+
+**Recommendation: Option B.** The extra cost is small. You get server-side price checking, a reference number, restaurant-side lookup and the only real numbers you will have to show restaurants ("12 WhatsApp requests this week"). Customer data is kept for 30 days only, then erased (section 9).
+
+An OrderIntent means: "the server checked this cart and prepared a WhatsApp message". Statuses: `WHATSAPP_HANDOFF_READY`, `WHATSAPP_OPENED`, `EXPIRED`. There is no `CONFIRMED` status, because Phase A has no confirmation workflow. No `DRAFT` either, because the cart is validated before anything is saved.
+
+## 3. Assumptions and open questions
+
+Each item has a recommended default so work can start.
+
+| # | Question | Default used in this design |
+|---|---|---|
+| 1 | Are food stalls and hotels treated the same as restaurants? | Yes, one `restaurants` table. A text `cuisines` list covers "Fast food", "Karahi", "Chai". |
+| 2 | Who creates restaurants? | Admin-assisted onboarding (same as Dukaan Pro). Owner sets own password through a one-time link. |
+| 3 | Restaurant staff accounts? | No. One OWNER per restaurant. Staff can share the phone later; real staff roles come in Phase B. |
+| 4 | Delivery fee | Never invented. Per delivery area the restaurant may set a fee (known) or leave empty ("restaurant will confirm on WhatsApp"). |
+| 5 | Minimum order amount | Optional per restaurant. If set, enforced by the backend. |
+| 6 | Menu variants / add-ons | Variants only (Half / Full, Small / Large). No add-ons in Phase A. |
+| 7 | Areas | Admin-managed list (Timergara, Balambat, Munda, ...). Customers choose an area plus type a landmark. Map pin is optional because Google Maps coverage in Dir is weak. |
+| 8 | Language | English UI first. Urdu/Pashto labels are a Phase A "should have" if time allows. Keep all UI text in one translation file from day one. |
+| 9 | Payment | Cash on delivery or whatever the restaurant arranges on WhatsApp. The platform stores nothing about payment. |
+| 10 | Customer order status page | Postponed. It needs the restaurant to confirm inside the system, which is a Phase B feature. |
+| 11 | Restaurant WhatsApp number | Must be a Pakistani mobile number saved as digits with country code, e.g. `923001234567`. |
+| 12 | Subscription or commission | Not in Phase A. A `status` field on restaurants is enough to suspend anyone. |
+| 13 | Time zone | `Asia/Karachi` for opening hours. Timestamps stored in UTC. |
+
+## 4. Scope
+
+### Must have (to test with real restaurants)
+- Public: restaurant list, filter by area / cuisine, search by name, restaurant page, menu with categories, cart (one restaurant only), delivery details form, review screen, **Order on WhatsApp**.
+- Backend: server-side price validation, OrderIntent with reference number, duplicate-submission protection, rate limiting.
+- Restaurant dashboard: login, profile and WhatsApp number, categories, items (create, edit, deactivate, reorder), item availability switch, opening hours, open / closed / temporarily unavailable switch, delivery areas with optional fee, list of recent WhatsApp requests (with a clear "not confirmed" label).
+- Admin: login, create restaurant + owner, approve / suspend / deactivate, edit restaurant details, manage areas, audit log.
+
+### Should have (cheap, clear value)
+- Food images with upload (resize, strip GPS, max 1 per item in Phase A, 1 logo, 1 cover).
+- Item variants (Half / Full).
+- Minimum order amount.
+- Copy-link / QR code for each restaurant (restaurants advertise it on their own WhatsApp status).
+- Basic restaurant stats: requests created, WhatsApp opened, top items, last 7 / 30 days.
+- Admin note field for complaints and support.
+- Urdu / Pashto UI labels.
+
+### Future phases (design does not block them)
+- Restaurant confirms or rejects a request inside the dashboard, customer status page (`CONFIRMED`, `REJECTED` statuses added then).
+- WhatsApp Business API (automatic messages, delivery of "your order is on its way"). Needs Meta business verification, an approved template and per-conversation fees.
+- Online payment, refunds, coupons, loyalty.
+- Rider management and live tracking, automatic delivery fee by distance.
+- Customer accounts and order history, multi-restaurant cart, mobile apps.
+- Staff roles (`restaurant_members` table), add-ons / option groups.
+
+### Database choices that keep the future open
+- `users.restaurant_id` + role now; a `restaurant_members` table can replace it later without touching menu or order tables.
+- `order_intents` already stores snapshots, so a later `orders` table can copy from it, or `order_intents` can simply gain new statuses.
+- Money is always integer paisa with a `currency` column.
+- Customer fields live on `order_intents` only. A later `customers` table can be linked without rewriting history.
+
+## 5. Actors and permissions
+
+| Role | Auth | Can | Cannot |
+|---|---|---|---|
+| **Guest customer** | None | Read public restaurants, menus, areas. Validate a cart. Create an OrderIntent. | See any private data, see other customers' requests, edit menus. |
+| **Restaurant owner** (`RESTAURANT_OWNER`) | Phone + password | Everything about **their own** restaurant: profile, hours, availability, menu, delivery areas, own WhatsApp requests, own stats. | Touch another restaurant. Change own `status`. Approve themselves. Edit areas list. Pass a `restaurantId` in any request. |
+| **Platform admin** (`PLATFORM_ADMIN`) | Phone + password | Create / approve / suspend / deactivate restaurants, edit restaurant records, create setup links, manage areas, view platform activity, read audit log. | Read passwords. Edit a restaurant's menu day to day (support edits are allowed but are written to the audit log). |
+
+No `STAFF` role in Phase A: it adds permission rules, invitations and screens, but no new business value yet.
+
+**Who manages what**
+
+| Item | Owner | Admin |
+|---|---|---|
+| Name, description, logo, cover, cuisines | ✔ | ✔ (support) |
+| Contact phone, WhatsApp number | ✔ | ✔ |
+| Slug (public link) | read only | ✔ |
+| Status (PENDING / ACTIVE / SUSPENDED / DEACTIVATED) | ✘ | ✔ |
+| Menu, prices, availability | ✔ | support only |
+| Opening hours, open / closed switch | ✔ | support only |
+| Delivery areas + fees | ✔ (choose from admin list) | ✔ |
+| Areas master list | ✘ | ✔ |
+| Password reset link | ✘ | ✔ |
+
+## 6. Authorization rules (how one restaurant cannot see another)
+
+1. The `restaurant_id` comes from the logged-in session (JWT claim), **never** from URL, body or query. Dashboard routes are `/me/restaurant/...`, not `/restaurants/:id/...`.
+2. One reusable `RestaurantScopeGuard` loads `req.user.restaurantId` and puts it on the request. Every dashboard service method takes `restaurantId` as its first argument and puts it in every Prisma `where`.
+3. Updating a record by id always uses `where: { id, restaurantId }`. Zero rows found means `404` (not `403`), so ids do not leak.
+4. When a request contains a foreign id (a `categoryId` for a menu item), the service checks that id belongs to the same restaurant before saving.
+5. DTOs use an allowlist (`whitelist: true`, `forbidNonWhitelisted: true`). `status`, `restaurantId`, `role`, `slug` are never accepted from the owner.
+6. Public routes use explicit `select` lists and separate response DTOs (no reuse of dashboard services).
+7. Admin routes need `role = PLATFORM_ADMIN`. The admin is a different login route and different cookie name.
+8. Tests: owner A calling every dashboard endpoint with an id owned by restaurant B must get `404`.
+
+## 7. Security and validation rules
+
+| Area | Rule |
+|---|---|
+| Passwords | `argon2id` (or bcrypt cost 12). Min length 8. Owner sets own password via one-time setup link (hash of token stored, 48 h expiry). Admin never sees passwords. |
+| Session | JWT in `httpOnly`, `Secure`, `SameSite=Lax` cookie. Access lifetime 12 h in MVP; add refresh tokens later. Logout clears cookie. Login lockout: 5 wrong tries then 15 min wait. |
+| Roles | Global `JwtAuthGuard` (everything private by default). Public routes marked `@Public()`. `@Roles()` + `RolesGuard`. |
+| Validation | `class-validator` DTOs, `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })`. Trim strings; strip HTML from names, landmarks and descriptions. |
+| Phone | Customers: accept `03XXXXXXXXX`, `+923XXXXXXXXX`, `923XXXXXXXXX`; store as `923XXXXXXXXX`. Same normalisation for restaurant WhatsApp. DB CHECK: 10–15 digits. |
+| Rate limits | Public GET: 120 / min / IP. `POST /public/order-intents`: 5 per 10 min per IP and 3 per hour per (phone + restaurant). Login: 10 / 15 min / IP. |
+| Duplicates | Frontend sends `clientRequestId` (uuid) per submit; unique in DB; repeat call returns the first intent. |
+| Images | Only JPEG / PNG / WebP checked by content. Max 3 MB after client resize (~1200 px). Strip EXIF/GPS. Random filenames. Stored in S3-compatible bucket; DB stores https URL. |
+| Secrets | `.env` never committed; validate env at start (`@nestjs/config` + schema); separate DB users for app and migrations. |
+| DB safety | FKs, CHECK constraints (quantity > 0, price >= 0), unique constraints, transactions for intent + items. No hard delete for restaurants, menu items used in intents, users. |
+| CORS / headers | CORS only for your frontend domains. `helmet`. HTTPS only. |
+| Audit log | Every admin action and every restaurant status change, slug change, password-link creation is written to `audit_logs`. |
+| Public data | Never return: owner phone, password fields, `status` internals, other restaurant data, customer data. |
+
+## 8. Analytics (keep tiny)
+
+| Metric | Source | Note |
+|---|---|---|
+| Active restaurants | `restaurants.status = ACTIVE` | |
+| WhatsApp requests created | `order_intents` count | Means "cart validated", not "order". |
+| WhatsApp opened | `order_intents.whatsapp_opened_at` not null | Customer pressed the button. **Not proof of a sent or accepted order.** |
+| Popular items | `order_intent_items` grouped by item name | Only from requests created; label as "requested", not "sold". |
+| Page and menu visits | Free privacy-friendly tool (Plausible / Umami) or skip | Not stored in your database in Phase A. |
+
+## 9. Customer data retention
+
+Collect only: name, phone, area, landmark, directions, optional map pin.
+- **MVP:** Do not implement automatic personal-data deletion. Minimize collection of customer personal information and avoid storing complete WhatsApp message text unnecessarily. 
+- **Future work:** Automated personal-data deletion and historical data retention (including any long-term retention of non-personal request data) are deferred pending a formal retention policy decision and explicit approval. These will not be implemented in the MVP.
+- Intents expire (`EXPIRED`) 24 hours after creation; expiry only means "the reference is old", nothing about the real order.
+
+## 10. Implementation plan
+
+| Milestone | Work | Result |
+|---|---|---|
+| M0 | Repo, NestJS + Prisma + Postgres, env config, Docker compose, global pipes / guards, response format | Empty API running |
+| M1 | Prisma schema + migrations + SQL constraints, seed (areas, one admin) | Database ready |
+| M2 | Auth: login, logout, guards, setup-link flow, admin routes skeleton, audit log | Protected access |
+| M3 | Admin: create / approve / suspend restaurants, areas CRUD | Restaurants can exist |
+| M4 | Restaurant dashboard API: profile, hours, availability, delivery areas | Restaurant configured |
+| M5 | Menu: categories, items, variants, images, reorder | Menu managed |
+| M6 | Public API: list, detail, menu, areas, cart validation | Customers can browse |
+| M7 | OrderIntent creation, reference code, message builder, rate limit, dedupe, expiry job, retention job | Handoff works |
+| M8 | Next.js public site: list, restaurant page, cart, details, review, WhatsApp button | Customer flow done |
+| M9 | Next.js dashboards (restaurant and admin) | Operations done |
+| M10 | Tests, seed with 3 real restaurants, pilot in Timergara | Launch |
+
+## 11. Testing checklist
+
+**Business rules**
+- Cart from two restaurants is blocked on the frontend and rejected by the backend.
+- Closed / suspended / temporarily unavailable restaurant → intent refused with clear code.
+- Unavailable or inactive item → refused, response lists the item.
+- Browser price differs from DB price → backend uses DB price and returns `priceChanged` list.
+- Quantity 0, negative, 100 → `422`.
+- Area not served by restaurant → `422`.
+- Delivery fee empty → intent has `delivery_fee_status = TO_BE_CONFIRMED`; message says "Delivery charge: restaurant will confirm".
+- Minimum order not reached → `422`.
+- Same `clientRequestId` twice → same reference, one row.
+
+**API / authorization**
+- Every dashboard endpoint without cookie → `401`.
+- Owner A with restaurant B's category / item / area / intent ids → `404`.
+- Owner sends `restaurantId`, `status`, `role`, `slug` in body → `400` (forbidden property).
+- Owner on `/admin/*` → `403`. Suspended restaurant owner can still log in but sees "suspended"; public pages hide the restaurant.
+- Public responses never contain `password`, owner phone, `status`, customer data.
+- Rate limits trigger `429`.
+
+**Intent data integrity**
+- Edit item price after intent → intent snapshot unchanged.
+- Deactivate item used in an intent → intent still readable; item link may be null.
+- Expiry job marks old intents; retention job nulls personal fields.
+
+**End-to-end**
+1. Admin creates restaurant, owner sets password, adds menu and hours.
+2. Customer finds it by area, builds cart, enters details, presses WhatsApp, `wa.me` URL contains reference and correct totals.
+3. Owner sees the request in the dashboard labelled "WhatsApp request (not confirmed)".
+4. Owner marks item unavailable → customer cart review blocks it.
+5. Admin suspends restaurant → public page returns "not available".
+
+## 12. Final recommendations
+
+**Unnecessary complexity to avoid in Phase A:** separate `restaurant_members` table, add-ons / option groups, a `customers` table, order status workflow, analytics tables, microservices, queues (a nightly cron is enough), real-time sockets.
+
+**Decide before coding (the five that matter)**
+1. Confirm Option B (OrderIntent) and the 30-day retention rule.
+2. Confirm admin-assisted onboarding and one owner per restaurant.
+3. Confirm the delivery-fee rule: restaurant either sets a fee per area or the message says "to be confirmed".
+4. Pick the first list of areas and the 3–5 pilot restaurants.
+5. Decide where images are stored (any S3-compatible bucket) and the domain / URL style (`/r/:slug` is simplest; no subdomains).
+
+**Inconsistency check done:** the "customer sees order status and expected time" idea is not part of Phase A (it needs restaurant confirmation inside the system). Everything here (ERD statuses, API, screens) agrees on that.
