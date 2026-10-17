@@ -25,7 +25,7 @@ What Phase A is NOT: no rider app, no live tracking, no online payment, no refun
 | Reference number | None | Short code like `TM-7K4P9Q`, printed in the WhatsApp message |
 | Disputes ("you said Rs 400") | Only WhatsApp chat as proof | Restaurant can look up the reference and see the exact snapshot |
 | Stats for restaurants and for you | Almost none | Requests created, WhatsApp opened, popular items |
-| Customer data stored | None | Name, phone, area, landmark, directions, optional map pin (kept minimal; retention and legal review before launch, section 9) |
+| Customer data stored | None | Landmark and area (required); name, phone, directions and map pin (all optional). Kept minimal; retention and legal review before launch (section 9) |
 | Build cost | Lowest | About 2 extra tables and 3 endpoints |
 | Risk | Wrong or fake prices in message | Spam rows (solved by rate limits and expiry) |
 
@@ -130,7 +130,7 @@ No `STAFF` role in Phase A: it adds permission rules, invitations and screens, b
 | Roles | Global `JwtAuthGuard` (everything private by default). Public routes marked `@Public()`. `@Roles()` + `RolesGuard`. |
 | Validation | `class-validator` DTOs, `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })`. Trim strings; strip HTML from names, landmarks and descriptions. |
 | Phone | Customers: accept `03XXXXXXXXX`, `+923XXXXXXXXX`, `923XXXXXXXXX`; store as `923XXXXXXXXX`. Same normalisation for restaurant WhatsApp. DB CHECK: 10–15 digits. |
-| Rate limits | Public GET: 120 / min / IP. `POST /public/order-intents`: 5 per 10 min per IP and 3 per hour per (phone + restaurant). Login: 10 / 15 min / IP. |
+| Rate limits | Public GET: 120 / min / IP. Login: 10 / 15 min / IP. `POST /public/order-intents`: Rate limits are layered. (1) **IP-based** (always applied, where the client IP is reliable behind the proxy): `POST /public/order-intents` 5 per 10 min per IP. (2) **Phone-based, only when the customer actually supplied a phone number**: 3 per hour per (phone + restaurant). A request without a phone is limited by IP only. Limitations: IP limits can block several customers behind one mobile-carrier NAT and are bypassed by changing network; phone limits are bypassed by omitting the (optional) phone or typing a different number, and prove nothing about who owns the number. Neither is authentication; they only slow down spam. Phone numbers are never written to application logs, including in rate-limit keys (use a salted hash or a short-lived in-memory counter) and error messages. |
 | Duplicates | Frontend sends `clientRequestId` (uuid) per submit; unique in DB; repeat call returns the first intent. |
 | Images | Only JPEG / PNG / WebP checked by content. Max 3 MB after client resize (~1200 px). Strip EXIF/GPS. Random filenames. Stored in S3-compatible bucket; DB stores https URL. |
 | Secrets | `.env` never committed; validate env at start (`@nestjs/config` + schema); separate DB users for app and migrations. |
@@ -151,7 +151,7 @@ No `STAFF` role in Phase A: it adds permission rules, invitations and screens, b
 
 ## 9. Customer data, retention and intent expiry
 
-**Data minimisation (MVP).** Collect only: name, phone, area, landmark, directions, optional map pin. The complete WhatsApp message is **not stored**; it is rebuilt on demand from the saved snapshot fields (restaurant name and WhatsApp number, customer fields, area name, item snapshots, totals, reference). Sensitive customer fields are never written to application logs.
+**Data minimisation (MVP).** What is actually necessary in the WhatsApp-handoff model: the cart, the delivery **area** (must be served by the restaurant) and a **landmark** (the restaurant needs somewhere to deliver). The message arrives from the customer's own WhatsApp account, so the restaurant already sees the customer's number and profile name there; **customer name and phone are therefore optional** and are only an extra convenience (for example, a different contact number). Directions and the map pin are optional. Nothing else is collected. The complete WhatsApp message is **not stored**; it is rebuilt on demand from the saved snapshot fields (restaurant name and WhatsApp number, whichever customer fields were provided, area name, item snapshots, totals, reference). Optional lines (Name, Phone, Directions, Location pin) appear in the message only when provided. Customer fields are never written to application logs.
 
 **Retention (deferred).** Automated personal-data deletion and historical-data deletion are **deferred from the MVP**. The MVP has no retention job, no retention endpoint and no retention-specific secrets or columns. Before launch, the retention policy and any applicable Pakistani privacy / legal obligations must be reviewed and a decision recorded; any resulting deletion feature will be designed and approved separately.
 
@@ -179,8 +179,13 @@ Rules:
 4. **Suspension overrides subscription validity.** A suspended restaurant is never eligible, even with a future end date.
 5. **Extending the subscription never changes `status`.** A suspended restaurant stays suspended until the admin explicitly reactivates it. Reactivation (`SUSPENDED` → `ACTIVE`) does not modify the dates.
 6. Trial and subscription dates keep running while a restaurant is suspended.
-7. Payments happen outside the platform. The admin records only the new end date; every extension is written to `audit_logs` (old and new value). No payment ledger, invoice or price is stored. The subscription price is undecided and must not be hard-coded.
-8. If the subscription has expired and the status is still `ACTIVE`, the owner can log in and sees "subscription expired, contact support"; the restaurant is hidden from customers and new requests are refused with `RESTAURANT_NOT_AVAILABLE`.
+7. Payments happen outside the platform. The admin records only the resulting end date. No payment ledger, invoice or price is stored. The subscription price is undecided and must not be hard-coded.
+8. **Extending** (admin action, audit-logged with old and new value) has two forms: (a) set an explicit new `subscription_ends_at` (must be later than the current value and in the future); or (b) **add N days** as a convenience: the new end = `max(current subscription_ends_at, now) + N days`, i.e. from the existing end if it is still in the future, otherwise from the current time. Either form changes only the date and never changes `status`.
+9. **Shortening** an end date is not an extension. It is a separate corrective admin action that needs a reason and an explicit confirmation flag, and is audit-logged as `RESTAURANT_SUBSCRIPTION_SHORTENED`. It does not change `status`.
+10. Extension and shortening are refused for a restaurant that was never approved (dates NULL) and for a `DEACTIVATED` restaurant.
+11. **`DEACTIVATED` is terminal in the MVP.** There is no normal reactivation flow; the service refuses any transition out of it and a database trigger enforces this as a safety net. `PENDING` restaurants may be rejected by moving them to `DEACTIVATED`.
+12. **Expired subscription (status still `ACTIVE`):** the owner can log in, sees "subscription expired, contact support", and **may still edit menu, prices, availability, opening hours and delivery areas** (and profile data). The restaurant is not eligible: it is hidden from public discovery and menu pages, and new WhatsApp handoff requests are refused with `RESTAURANT_NOT_AVAILABLE`.
+13. **Suspended** restaurants stay blocked regardless of subscription validity (hidden, no new requests, owner editing blocked). **Deactivated** restaurants are blocked the same way. `PENDING` owners can edit while preparing for approval.
 
 ## 10. Implementation plan
 
@@ -209,6 +214,10 @@ Rules:
 - Area not served by restaurant → `422`.
 - Delivery fee empty → intent has `delivery_fee_status = TO_BE_CONFIRMED`; message says "Delivery charge: restaurant will confirm".
 - Minimum order not reached → `422`.
+- Request without customer name and phone but with area and landmark → accepted; message omits the Name and Phone lines. Missing landmark or area → `422`. Invalid phone supplied → `422`. Only one of latitude / longitude → `422`.
+- **Opening hours (service-level checks):** a range with close earlier than open is an overnight range (e.g. 18:00–02:00). Tests: "open now" at 23:30 and at 01:00 (next calendar day) for an overnight range; closed at 03:00; Monday's overnight range keeps the restaurant open early Tuesday; open = close is rejected; two ranges on one day that overlap are rejected (`10:00–15:00` + `14:00–18:00`); touching ranges (`10:00–14:00` + `14:00–18:00`) accepted; an overnight range overlapping the next day's early range is rejected (Mon `22:00–02:00` + Tue `01:00–05:00`); a day with no ranges is closed.
+- **Name search:** prefix and plain (contains) case-insensitive search return expected rows; no `pg_trgm` is installed.
+- **Subscription:** approval sets 30-day dates; extend by date; extend by N days from a future end and from an expired end; shortening needs reason + confirmation and is audited; extending a suspended restaurant leaves it suspended and hidden; expired `ACTIVE` restaurant is hidden and refuses requests but its owner can still edit; `DEACTIVATED` cannot be reactivated or extended.
 - Same `clientRequestId` twice → same reference, one row.
 
 **API / authorization**

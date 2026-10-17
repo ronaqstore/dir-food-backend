@@ -56,7 +56,7 @@ flowchart TD
   G -- Yes --> G1[Ask: clear cart and switch?]
   G -- No --> H[Cart review]
   G1 --> H
-  H --> I[Enter name, phone, area, landmark, directions]
+  H --> I[Enter area and landmark; name, phone, directions optional]
   I --> J[Press Order on WhatsApp]
   J --> K[API validates cart and creates OrderIntent]
   K -- Problem --> K1[Show what changed: price, item, closed, area]
@@ -142,7 +142,7 @@ flowchart TD
 | 1 | Types phone and password. | Finds `users` by phone. |
 | 2 | (automatic) | Compares with `password_hash`; generic error "phone or password is wrong". Counts failed tries; locks 15 min after 5. |
 | 3 | (automatic) | Checks `users.status = ACTIVE`. |
-| 4 | (automatic, owner) | Follows `restaurant_id`; reads `restaurants.status` and `subscription_ends_at`. `SUSPENDED` / `DEACTIVATED` → login allowed but shows "restaurant suspended, contact support"; menu editing blocked. `ACTIVE` with `subscription_ends_at <= now` → login allowed, shows "subscription expired, contact support". |
+| 4 | (automatic, owner) | Follows `restaurant_id`; reads `restaurants.status` and `subscription_ends_at`. `SUSPENDED` / `DEACTIVATED` → login allowed but shows "restaurant suspended, contact support"; menu editing blocked. `ACTIVE` with `subscription_ends_at <= now` (expired) → login allowed, shows "subscription expired, contact support", and the owner **may still edit** menu, prices, hours and delivery areas; the restaurant is just not public and takes no new requests. |
 | 5 | (automatic) | Issues JWT in httpOnly cookie with `userId`, `role`, `restaurantId`. |
 | 6 | Uses dashboard. | Every query adds `WHERE restaurant_id = session.restaurantId`. |
 
@@ -162,10 +162,11 @@ flowchart TD
 | 3 | Presses Approve. | **Refuses** unless: valid WhatsApp number, hours configured, at least one active menu item, at least one active delivery area. On success: `status = ACTIVE`, `trial_started_at = now`, `subscription_ends_at = now + 30 days`. Writes `audit_logs`. |
 | 4 | Presses Suspend / Deactivate with a reason. | Updates `status`, `status_reason`, `status_changed_at`. **Dates are not touched** (the trial keeps running while suspended). Writes `audit_logs`. |
 | 5 | Presses Reactivate on a suspended restaurant. | `SUSPENDED` → `ACTIVE`. Dates unchanged. The restaurant is public again only if `subscription_ends_at > now`. |
-| 6 | After receiving payment outside the platform, enters a new `subscription_ends_at`. | Updates only that column and writes `audit_logs` (old → new). **Does not change `status`**: extending a suspended restaurant does not reactivate it. |
-| 7 | (automatic) | Public API hides restaurants that are not eligible (`ACTIVE` and `subscription_ends_at > now`) at once. Existing OrderIntents stay as they are. |
+| 6 | After receiving payment outside the platform, **extends**: enters a new `subscription_ends_at`, or presses "add N days". | Explicit date must be later than the current one and in the future. N days: new end = `max(current end, now) + N days`. Updates only that column and writes `audit_logs` (old → new). **Does not change `status`**: extending a suspended restaurant does not reactivate it. Refused if never approved or `DEACTIVATED`. |
+| 7 | (rare, corrective) Shortens an end date after a mistake. | Separate action: requires a reason and an explicit confirmation; writes `RESTAURANT_SUBSCRIPTION_SHORTENED` to `audit_logs`. Does not change `status`. |
+| 8 | (automatic) | Public API hides restaurants that are not eligible (`ACTIVE` and `subscription_ends_at > now`) at once. Existing OrderIntents stay as they are. |
 
-**Status meaning:** `PENDING` (new, hidden) → `ACTIVE` (public) ↔ `SUSPENDED` (temporarily hidden, owner can log in read-only) → `DEACTIVATED` (closed for good, hidden, data kept).
+**Status meaning:** `PENDING` (new, hidden) → `ACTIVE` (public) ↔ `SUSPENDED` (temporarily hidden, owner can log in read-only) → `DEACTIVATED` (closed for good, hidden, data kept; **terminal in the MVP**: no reactivation flow).
 **Rules:** only admin changes status and dates; the owner sees the dates read only. Eligibility = `status = ACTIVE` AND `subscription_ends_at IS NOT NULL` AND `subscription_ends_at > now`, checked on each request. No grace period, no expiry scheduler, no stored price, no payment ledger. Suspension overrides subscription validity.
 
 ---
@@ -240,7 +241,7 @@ flowchart TD
 |---|---|---|
 | 1 | Opens homepage. | Frontend loads active areas. |
 | 2 | Chooses an area or taps "All". | API selects eligible restaurants (`status = ACTIVE` and `subscription_ends_at > now`) that deliver to the area (join `restaurant_delivery_areas`, active). |
-| 3 | Filters cuisine, searches name, toggles "Open now". | Case-insensitive name search; cuisine filter on the cuisines list; open-now calculated from hours. |
+| 3 | Filters cuisine, searches name, toggles "Open now". | Case-insensitive name search: prefix match (uses an index) and plain contains match (`ILIKE`, fine for the small MVP table). No `pg_trgm` / fuzzy search yet. Cuisine filter on the cuisines list; open-now calculated from hours. |
 | 4 | Sees cards: name, cuisines, logo, open/closed badge, min order. | Allowlisted fields only. Paginated (default 20, max 50). Open restaurants first. |
 | 5 | Opens a restaurant. | `GET /public/restaurants/:slug` returns profile, today's hours, delivery areas + fees. |
 
@@ -274,7 +275,7 @@ flowchart TD
 
 | # | Customer does | System does |
 |---|---|---|
-| 1 | Enters name, phone. | Frontend validates; backend re-validates and normalises phone. |
+| 1 | Optionally enters name and phone. | Both optional. If a phone is given, frontend validates and backend re-validates and normalises it; an invalid phone is rejected, an empty one is simply absent. |
 | 2 | Chooses delivery area from this restaurant's areas. | Only areas from `restaurant_delivery_areas` (active) are offered. |
 | 3 | Types landmark (required) and directions (optional). Optionally taps "Share exact location". | Landmark 3–150 chars. Browser location is optional; a lat/lng pair is saved only if both are valid. |
 | 4 | Reviews summary. | Shows items, subtotal and the delivery line: **known fee** ("Delivery: Rs 100") or **to confirm** ("Restaurant will confirm the delivery charge on WhatsApp"). Total is shown as "Items total", never as a final bill. |
@@ -289,7 +290,7 @@ flowchart TD
 | # | Customer / frontend does | System does |
 |---|---|---|
 | 1 | Frontend generates `clientRequestId` once per review screen and disables the button. | |
-| 2 | Sends restaurant slug, items (`menuItemId`, `variantId`, `quantity`), customer details, `areaId` and the **required** `expectedSubtotal` the customer last reviewed. | Rate limit check. DTO validation (quantity 1–50, max 30 lines, phone format, `expectedSubtotal` integer paisa). |
+| 2 | Sends restaurant slug, items (`menuItemId`, `variantId`, `quantity`), customer details, `areaId` and the **required** `expectedSubtotal` the customer last reviewed. | Rate limit check (IP always; phone-based only if a phone was supplied). DTO validation (quantity 1–50, max 30 lines, phone format if given, landmark required, `expectedSubtotal` integer paisa). |
 | 3 | (automatic) | If `clientRequestId` already exists → return the first intent (no second row). |
 | 4 | (automatic) | Loads restaurant (must be eligible: `ACTIVE` and `subscription_ends_at > now`), hours (must be open), WhatsApp number (must be valid), area (must be an active delivery area of this restaurant). |
 | 5 | (automatic) | Loads each item with `restaurant_id = this restaurant`, active and available; each variant active and belonging to the item. Any failure → `422` with a list of the problems. |
@@ -319,8 +320,8 @@ I want to place an order (Ref: TM-7K4P9Q)
 Items total: Rs 1,420
 Delivery charge: please confirm
 
-Name: Ahmad Khan
-Phone: 03001234567
+Name: Ahmad Khan            (only if provided)
+Phone: 03001234567          (only if provided)
 Area: Timergara
 Landmark: Near Girls Degree College gate
 Directions: Blue gate, 2nd house on the left
@@ -351,7 +352,7 @@ Please confirm the order, delivery charge, time and payment. Thank you.
 | # | Owner does | System does |
 |---|---|---|
 | 1 | Opens "WhatsApp requests". | Reads `order_intents` where `restaurant_id = session`, newest first, paginated; default display filter is the last 30 days (a view filter only, nothing is deleted). |
-| 2 | Sees each row: reference, time, customer name, phone, area, items total, badge "Opened WhatsApp" or "Ready", with a permanent notice: **"These are requests prepared by the website. They are not confirmed orders. Confirm each one with the customer on WhatsApp."** | |
+| 2 | Sees each row: reference, time, customer name and phone (if given), area, items total, badge "Opened WhatsApp" or "Ready", with a permanent notice: **"These are requests prepared by the website. They are not confirmed orders. Confirm each one with the customer on WhatsApp."** | |
 | 3 | Searches a reference the customer quoted. | Looks up `public_ref` within this restaurant only. |
 | 4 | Opens details. | Shows the item snapshot and the message rebuilt from it. |
 | 5 | Opens Stats (7 / 30 days). | Counts requests created, WhatsApp opened, top 10 requested items. Labelled "requested", not "sold". |
@@ -386,10 +387,10 @@ Please confirm the order, delivery charge, time and payment. Thank you.
 | Invalid quantity | `422`, per-line error. |
 | Invalid phone | `422` with message "Enter a valid Pakistani mobile number". |
 | Unsupported delivery area | `422` `AREA_NOT_SERVED`. |
-| Missing landmark / name | `422` listing missing fields. |
+| Missing landmark or area | `422` listing missing fields. Name and phone are optional; a supplied phone must be valid. |
 | Restaurant WhatsApp number missing / invalid | Restaurant cannot become `ACTIVE`; if it happens later the API returns `503` `WHATSAPP_NOT_AVAILABLE` and shows the restaurant phone instead. |
 | Database / API failure | `500` with a generic message; nothing partial is saved (transaction); frontend keeps the cart and the same `clientRequestId` so retry is safe. |
-| Duplicate submission | Same `clientRequestId` returns the same reference with `200`. Repeat spam from one phone is rate limited (`429`). |
+| Duplicate submission | Same `clientRequestId` returns the same reference with `200`. Spam is rate limited (`429`) by IP, and by phone when one was supplied. |
 | Customer abandons WhatsApp | Reference stops being reusable after 24 h; no side effect, nothing deleted. |
 | Owner touches another restaurant's data | `404`; attempt logged at warn level. |
 | Admin attempts an unauthorised action (owner token on `/admin`) | `403`; logged. |

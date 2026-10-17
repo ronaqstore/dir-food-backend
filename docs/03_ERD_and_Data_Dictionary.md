@@ -157,8 +157,8 @@ erDiagram
     enum status "WHATSAPP_HANDOFF_READY WHATSAPP_OPENED"
     text restaurant_name_snapshot
     text restaurant_whatsapp_snapshot
-    text customer_name
-    text customer_phone
+    text customer_name "optional"
+    text customer_phone "optional"
     uuid delivery_area_id FK "area served by this restaurant"
     text delivery_area_name_snapshot
     text landmark
@@ -258,7 +258,9 @@ Legend: **R** required, **N** nullable. All `created_at` default `now()`.
 | admin_notes | text | N | never public |
 | created_at, updated_at | timestamptz | R | |
 
-Indexes: `UNIQUE(slug)`, `(status, subscription_ends_at)` (eligibility listing), GIN on `cuisines`, `(lower(name))` for search. Soft deletion: `status = DEACTIVATED`.
+Indexes: `UNIQUE(slug)`, `(status, subscription_ends_at)` (eligibility listing), GIN on `cuisines`, `(lower(name))` and `(lower(name) text_pattern_ops)` for prefix search (plain `LIKE 'abc%'` can use a btree only with `text_pattern_ops` under a non-C collation). Plain "contains" search uses `ILIKE '%abc%'` without an index, which is fine for the small MVP table; `pg_trgm` is deliberately not installed. Soft deletion: `status = DEACTIVATED`.
+
+**`DEACTIVATED` is terminal:** a `BEFORE UPDATE` trigger on `restaurants` raises an error if a row with `status = 'DEACTIVATED'` is updated to any other status (safety net behind the service rule).
 
 **Eligibility (computed per request, never stored):** `status = 'ACTIVE' AND subscription_ends_at IS NOT NULL AND subscription_ends_at > now()`. The time-dependent part cannot be a CHECK constraint. No grace period; no expiry job; suspension overrides subscription validity; extending `subscription_ends_at` never changes `status`; dates keep running while suspended. No price, ledger or invoice columns exist.
 
@@ -327,8 +329,8 @@ Also `UNIQUE(id, restaurant_id)` (target of composite FKs). Indexes: `(restauran
 | status | enum | R | default `WHATSAPP_HANDOFF_READY`; values `WHATSAPP_HANDOFF_READY`, `WHATSAPP_OPENED`. No `EXPIRED` value: expiry is derived from `expires_at` |
 | restaurant_name_snapshot | text | R | |
 | restaurant_whatsapp_snapshot | text | R | number the link opened |
-| customer_name | text | R | 2–60 |
-| customer_phone | text | R | CHECK digits 10–15 |
+| customer_name | text | N | optional; 2–60 when present |
+| customer_phone | text | N | optional; CHECK digits 10–15 when present. Not required for rate limiting |
 | delivery_area_id | uuid | R | Composite FK `(restaurant_id, delivery_area_id)` → `restaurant_delivery_areas (restaurant_id, area_id)` |
 | delivery_area_name_snapshot | text | R | |
 | landmark | text | R | 3–150 |
@@ -343,7 +345,7 @@ Also `UNIQUE(id, restaurant_id)` (target of composite FKs). Indexes: `(restauran
 
 **No `whatsapp_message` column.** The message is rebuilt from the snapshot fields above (restaurant name and WhatsApp number, customer name / phone, area name, landmark, directions, optional map pin, item snapshots, subtotal, delivery fee and status, reference). The Google Maps link is included only when `map_lat` and `map_lng` are both present.
 
-Also `UNIQUE(id, restaurant_id)` (target of the line FK). Indexes: `UNIQUE(public_ref)`, `UNIQUE(client_request_id)`, `(restaurant_id, created_at DESC)`, `(restaurant_id, customer_phone, created_at)` (per-phone rate limit), `(expires_at)`. No `(status, expires_at)` index: there is no job that scans by expiry.
+Also `UNIQUE(id, restaurant_id)` (target of the line FK). Indexes: `UNIQUE(public_ref)`, `UNIQUE(client_request_id)`, `(restaurant_id, created_at DESC)`, `(restaurant_id, customer_phone, created_at)` (per-phone rate limit; rows without a phone are simply never matched), `(expires_at)`. No `(status, expires_at)` index: there is no job that scans by expiry.
 
 ### order_intent_items
 | Column | Type | Notes |
@@ -375,6 +377,20 @@ Index: `(order_intent_id)`, `(menu_item_id)` for popular items.
 - **Reference number:** random, short, unambiguous letters and digits; unique index; retry on clash. Not guessable in sequence, so nobody can read other references by counting.
 - **Duplicates:** `client_request_id` unique; second call returns the first row.
 - **No `CONFIRMED` status:** there is no confirmation workflow in Phase A.
+
+## UUID v7 strategy (Prisma records and seeds)
+
+- Prisma-created records: `@default(uuid(7))` is evaluated by Prisma Client in the application, so every `create` / `createMany` gets a v7 id with no DB default.
+- Seed scripts must use the Prisma Client (same behaviour) or generate ids with a v7 generator (the `uuid` package's `v7()`) when they use raw SQL. PostgreSQL 16 has no built-in `uuidv7()`, so there is deliberately no database default; raw inserts that omit `id` fail loudly instead of silently producing v4 values.
+- Foreign keys reference ids that are already known, so ids never depend on insertion order. v7 is time-ordered, which keeps btree indexes append-friendly.
+- `client_request_id` is the one client-generated UUID (idempotency key; any valid UUID).
+
+## Audit-log trigger and test / reset strategy
+
+- `audit_logs` is append-only: `BEFORE UPDATE OR DELETE` row trigger and `BEFORE TRUNCATE` statement trigger raise an exception. Corrections are new rows.
+- Because `TRUNCATE` is blocked, **test and local databases are reset by dropping and recreating the schema / database** (`prisma migrate reset` does this), never by truncating tables. Per-test cleanup in integration tests uses a fresh schema or database per run, or restaurant-scoped test data that is never deleted from `audit_logs`.
+- The `DEACTIVATED` terminal trigger and the audit triggers are raw-SQL objects that Prisma does not track. Every later migration is generated with `--create-only` and reviewed so Prisma does not emit `DROP` statements for these raw objects (partial / expression indexes, CHECKs, triggers).
+- Production never resets; it only runs `prisma migrate deploy`.
 
 ## Prisma notes (no code yet)
 
