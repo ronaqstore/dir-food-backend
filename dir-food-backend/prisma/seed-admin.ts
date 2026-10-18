@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
+loadEnv({ path: `.env.${process.env.NODE_ENV ?? 'development'}` });
+loadEnv({ path: '.env' });
+
 import bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
@@ -6,15 +9,28 @@ import { UserRole, UserStatus } from '../src/generated/prisma/enums.js';
 import { normalizePhone, isValidPakistaniMobile } from '../src/common/utils/phone.js';
 
 async function bootstrapAdmin() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.error('DATABASE_URL is not set.');
+    process.exit(1);
+  }
+
+  try {
+    const parsed = new URL(dbUrl);
+    console.log(`Connecting to database at host: ${parsed.host}, db: ${parsed.pathname}`);
+  } catch {
+    console.log(`Connecting to database...`);
+  }
+
   const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl,
     connectionTimeoutMillis: 15_000,
   });
   const prisma = new PrismaClient({ adapter });
 
-  const phone = process.env.BOOTSTRAP_ADMIN_PHONE || '923000000000';
-  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'AdminPass123!';
-  const name = process.env.BOOTSTRAP_ADMIN_NAME || 'Platform Admin';
+  const phone = process.env.BOOTSTRAP_ADMIN_PHONE || process.env.SEED_ADMIN_PHONE || '923000000000';
+  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD || 'AdminPass123!';
+  const name = process.env.BOOTSTRAP_ADMIN_NAME || process.env.SEED_ADMIN_NAME || 'Platform Admin';
 
   const normalizedPhone = normalizePhone(phone);
   if (!isValidPakistaniMobile(normalizedPhone)) {

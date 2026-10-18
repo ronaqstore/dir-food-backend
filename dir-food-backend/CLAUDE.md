@@ -12,5 +12,4 @@
 6. **Currency:** `BigInt` paisa (Rs 1 = 100 paisa). Never use floats.
 7. **Auth & Token Flow:** Separate endpoints for Owner (`/auth/login`) and Platform Admin (`/auth/platform-admin/login`). JWT handled via `@nestjs/jwt`. Per-request DB verification in `RestaurantAuthGuard` (read-only on suspension, blocks deactivated, allows pending/expired setup) and `PlatformAdminGuard`.
 8. **Prisma Schema:** Multi-file structure under `prisma/` (`enums.prisma`, `models/*.prisma`, `schema: 'prisma'`).
-
-
+9. **Workflow & SDD:** Use `/feature-dev` for new features. All features must have an approved spec in `docs/specs/` before coding. Execute via `tasks.md` in batches with green verify loops (`tsc`, `lint`, `test`).
