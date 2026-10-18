@@ -152,11 +152,11 @@ describe('MenuItemsService (unit)', () => {
         ],
       });
 
-      expect(mockPrisma.menuItemVariant.createMany).toHaveBeenCalledWith({
-        data: [
-          expect.objectContaining({ name: 'Half', price: 60000n, sortOrder: 0 }),
-          expect.objectContaining({ name: 'Full', price: 120000n, sortOrder: 1 }),
-        ],
+      expect(mockPrisma.menuItemVariant.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ name: 'Half', price: 60000n, sortOrder: 0 }),
+      });
+      expect(mockPrisma.menuItemVariant.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ name: 'Full', price: 120000n, sortOrder: 1 }),
       });
       expect(res?.name).toBe('Karahi');
     });

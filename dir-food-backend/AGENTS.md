@@ -116,15 +116,17 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
    - Self-registration **never** directly activates a restaurant and **never** starts the 30-day trial.
    - Passwords must be hashed with bcrypt (salt rounds: 12). Plaintext passwords and password hashes must never be returned in responses.
 
-2. **Approval Prerequisites (`PENDING` -> `ACTIVE`):**
-   Approval requires all 4 prerequisites to be satisfied:
+2. **Approval & Self-Serve Publishing Prerequisites (`PENDING` -> `ACTIVE`):**
+   Publishing (by owner via `POST /me/restaurant/publish`) or approval (by admin via `PATCH /admin/restaurants/:id/status`) requires all 4 prerequisites to be satisfied:
    1. Valid WhatsApp contact number configured on restaurant.
    2. Configured opening hours.
-   3. At least one category with an active menu item.
-   4. At least one configured delivery area.
-   - If any prerequisite is missing, throw HTTP 422 `APPROVAL_PREREQUISITES_NOT_MET` detailing the missing items.
-   - Approval starts the 30-day trial (`trialStartedAt = now`, `subscriptionEndsAt = now + 30 days`).
-   - Approval records `RESTAURANT_APPROVED` in the audit log.
+   3. At least one active menu item.
+   4. At least one active delivery area.
+   - Owners can check readiness beforehand via `GET /me/restaurant/readiness`.
+   - If any prerequisite is missing on self-publishing, throws HTTP 422 `PUBLISH_PREREQUISITES_NOT_MET` (or `APPROVAL_PREREQUISITES_NOT_MET` for admin).
+   - If already active, `POST /me/restaurant/publish` throws HTTP 409 `ALREADY_ACTIVE`.
+   - Publishing/approval starts the 30-day trial (`trialStartedAt = now`, `subscriptionEndsAt = now + 30 days`).
+   - Self-publishing records `RESTAURANT_SELF_PUBLISHED` in the audit log; admin approval records `RESTAURANT_APPROVED`.
 
 3. **Status Transitions:**
    - `DEACTIVATED` is terminal through normal workflows. Any attempt to modify or reactivate throws HTTP 409 `ConflictException`.

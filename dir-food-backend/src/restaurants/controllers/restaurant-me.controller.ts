@@ -45,6 +45,27 @@ export class RestaurantMeController {
     return this.restaurantsService.getMyRestaurant(user.restaurantId);
   }
 
+  @Get('readiness')
+  @ApiOperation({ summary: 'Check onboarding readiness prerequisites before self-publishing' })
+  async getPublishReadiness(@CurrentUser() user: AuthenticatedUser) {
+    return this.restaurantsService.getPublishReadiness(user.restaurantId);
+  }
+
+  @Post('publish')
+  @ApiOperation({
+    summary: 'Self-publish restaurant (PENDING -> ACTIVE) and start 30-day trial',
+  })
+  async publishRestaurant(
+    @CurrentUser() user: AuthenticatedUser,
+    @Ip() ipAddress: string,
+  ) {
+    return this.restaurantsService.publishRestaurant(
+      user.restaurantId,
+      user.userId,
+      ipAddress,
+    );
+  }
+
   @Patch()
   @ApiOperation({ summary: 'Update restaurant profile details (name, WhatsApp, description, etc.)' })
   async updateProfile(

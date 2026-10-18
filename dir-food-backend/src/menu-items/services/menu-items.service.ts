@@ -133,15 +133,18 @@ export class MenuItemsService {
       });
 
       if (hasVariants) {
-        await tx.menuItemVariant.createMany({
-          data: dto.variants!.map((v, index) => ({
-            restaurantId,
-            menuItemId: item.id,
-            name: v.name.trim(),
-            price: BigInt(v.price),
-            sortOrder: index,
-          })),
-        });
+        for (let index = 0; index < dto.variants!.length; index++) {
+          const v = dto.variants![index];
+          await tx.menuItemVariant.create({
+            data: {
+              restaurantId,
+              menuItemId: item.id,
+              name: v.name.trim(),
+              price: BigInt(v.price),
+              sortOrder: index,
+            },
+          });
+        }
       }
 
       return tx.menuItem.findUnique({

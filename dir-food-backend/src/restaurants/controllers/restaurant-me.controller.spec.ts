@@ -10,6 +10,8 @@ describe('RestaurantMeController (unit)', () => {
   beforeEach(() => {
     mockRestaurantsService = {
       getMyRestaurant: vi.fn(),
+      getPublishReadiness: vi.fn(),
+      publishRestaurant: vi.fn(),
       updateProfile: vi.fn(),
       updateAvailability: vi.fn(),
     };
@@ -32,6 +34,42 @@ describe('RestaurantMeController (unit)', () => {
 
     const result = await controller.getMyRestaurant(mockUser);
     expect(mockRestaurantsService.getMyRestaurant).toHaveBeenCalledWith('rest-123');
+    expect(result).toEqual(mockResult);
+  });
+
+  it('delegates getPublishReadiness to RestaurantsService with user.restaurantId', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-123',
+    };
+    const mockResult = { isReadyToPublish: true, missingPrerequisites: [] };
+    mockRestaurantsService.getPublishReadiness.mockResolvedValue(mockResult);
+
+    const result = await controller.getPublishReadiness(mockUser);
+    expect(mockRestaurantsService.getPublishReadiness).toHaveBeenCalledWith('rest-123');
+    expect(result).toEqual(mockResult);
+  });
+
+  it('delegates publishRestaurant to RestaurantsService with user details and IP', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-123',
+    };
+    const mockResult = {
+      id: 'rest-123',
+      name: 'Timergara Delight',
+      status: 'ACTIVE',
+    };
+    mockRestaurantsService.publishRestaurant.mockResolvedValue(mockResult);
+
+    const result = await controller.publishRestaurant(mockUser, '127.0.0.1');
+    expect(mockRestaurantsService.publishRestaurant).toHaveBeenCalledWith(
+      'rest-123',
+      'user-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual(mockResult);
   });
 

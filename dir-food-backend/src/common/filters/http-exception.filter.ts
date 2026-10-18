@@ -35,6 +35,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = 'Validation failed';
         }
       }
+    } else {
+      console.error('UNHANDLED_EXCEPTION_IN_FILTER:', exception);
     }
 
     const payload = serializeBigInts({

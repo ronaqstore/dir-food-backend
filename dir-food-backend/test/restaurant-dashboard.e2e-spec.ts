@@ -411,6 +411,63 @@ describe('Restaurant Dashboard & Menu Management (e2e)', () => {
     });
   });
 
+  describe('Self-Serve Restaurant Publishing (Readiness & Go-Live)', () => {
+    it('returns readiness true when all prerequisites are met for Owner 1', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/me/restaurant/readiness')
+        .set('Authorization', `Bearer ${owner1Token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.isReadyToPublish).toBe(true);
+      expect(res.body.data.missingPrerequisites).toEqual([]);
+    });
+
+    it('returns readiness false for Owner 2 who has not configured hours, areas, or menu', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/me/restaurant/readiness')
+        .set('Authorization', `Bearer ${owner2Token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.isReadyToPublish).toBe(false);
+      expect(res.body.data.missingPrerequisites.length).toBeGreaterThan(0);
+    });
+
+    it('rejects self-publishing with 422 when Owner 2 attempts to publish without prerequisites', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/me/restaurant/publish')
+        .set('Authorization', `Bearer ${owner2Token}`);
+
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('PUBLISH_PREREQUISITES_NOT_MET');
+    });
+
+    it('successfully self-publishes restaurant and starts 30-day trial for Owner 1', async () => {
+      // Reset Restaurant 1 to PENDING to test owner self-publishing transition
+      await prisma.restaurant.update({
+        where: { id: owner1RestId },
+        data: { status: 'PENDING', trialStartedAt: null, subscriptionEndsAt: null },
+      });
+
+      const res = await request(app.getHttpServer())
+        .post('/me/restaurant/publish')
+        .set('Authorization', `Bearer ${owner1Token}`);
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.status).toBe('ACTIVE');
+      expect(res.body.data.trialStartedAt).toBeDefined();
+      expect(res.body.data.subscriptionEndsAt).toBeDefined();
+    });
+
+    it('rejects subsequent self-publishing with 409 Conflict when already active', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/me/restaurant/publish')
+        .set('Authorization', `Bearer ${owner1Token}`);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error.code).toBe('ALREADY_ACTIVE');
+    });
+  });
+
   describe('Lifecycle State Protections (SUSPENDED & DEACTIVATED)', () => {
     it('allows read-only access but blocks mutations when restaurant is SUSPENDED', async () => {
       // 1. Admin suspends Restaurant 1

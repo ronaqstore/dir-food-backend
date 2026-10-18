@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service.js';
-import { ManualStatus } from '../../generated/prisma/enums.js';
+import { ManualStatus, RestaurantStatus } from '../../generated/prisma/enums.js';
 
 describe('RestaurantsService (unit)', () => {
   let service: RestaurantsService;
@@ -255,6 +260,167 @@ describe('RestaurantsService (unit)', () => {
       expect(mockR2.deleteByUrl).toHaveBeenCalledWith(
         'https://images.dirfood.test/restaurants/res-1/profile/cover-123.jpg',
         'res-1',
+      );
+    });
+  });
+
+  describe('getPublishReadiness', () => {
+    it('throws ForbiddenException when restaurantId is missing', async () => {
+      await expect(service.getPublishReadiness(null)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+
+    it('throws NotFoundException when restaurant is not found', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+      await expect(
+        service.getPublishReadiness('res-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('returns isReadyToPublish: false with missing prerequisites when incomplete', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        whatsappNumber: null,
+        hours: [],
+        _count: { items: 0, deliveryAreas: 0 },
+      });
+
+      const result = await service.getPublishReadiness('res-1');
+      expect(result.isReadyToPublish).toBe(false);
+      expect(result.missingPrerequisites).toHaveLength(4);
+      expect(result.missingPrerequisites).toContain(
+        'A valid WhatsApp contact number is required',
+      );
+      expect(result.missingPrerequisites).toContain(
+        'Configured opening hours are required',
+      );
+      expect(result.missingPrerequisites).toContain(
+        'At least one active menu item is required',
+      );
+      expect(result.missingPrerequisites).toContain(
+        'At least one active delivery area is required',
+      );
+    });
+
+    it('returns isReadyToPublish: true when all 4 prerequisites are met', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        whatsappNumber: '923001234567',
+        hours: [{ id: 'hour-1' }],
+        _count: { items: 3, deliveryAreas: 1 },
+      });
+
+      const result = await service.getPublishReadiness('res-1');
+      expect(result.isReadyToPublish).toBe(true);
+      expect(result.missingPrerequisites).toEqual([]);
+    });
+  });
+
+  describe('publishRestaurant', () => {
+    it('throws ForbiddenException when restaurantId is missing', async () => {
+      await expect(service.publishRestaurant(null)).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+
+    it('throws NotFoundException when restaurant is not found', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+      await expect(
+        service.publishRestaurant('res-1'),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws ConflictException when restaurant is already active', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        status: RestaurantStatus.ACTIVE,
+        hours: [{ id: 'hour-1' }],
+        items: [{ id: 'item-1' }],
+        deliveryAreas: [{ id: 'area-1' }],
+      });
+
+      await expect(
+        service.publishRestaurant('res-1'),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('throws ForbiddenException when restaurant is suspended or deactivated', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        status: RestaurantStatus.SUSPENDED,
+        hours: [{ id: 'hour-1' }],
+        items: [{ id: 'item-1' }],
+        deliveryAreas: [{ id: 'area-1' }],
+      });
+
+      await expect(
+        service.publishRestaurant('res-1'),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('throws UnprocessableEntityException when prerequisites are missing', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        status: RestaurantStatus.PENDING,
+        whatsappNumber: '923001234567',
+        hours: [],
+        items: [],
+        deliveryAreas: [],
+      });
+
+      await expect(
+        service.publishRestaurant('res-1'),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+
+    it('successfully publishes restaurant, initializes 30-day trial, and writes audit log', async () => {
+      const mockRestaurant = {
+        id: 'res-1',
+        name: 'Khyber Shinwari',
+        slug: 'khyber-shinwari',
+        status: RestaurantStatus.PENDING,
+        whatsappNumber: '923001234567',
+        hours: [{ id: 'hour-1' }],
+        items: [{ id: 'item-1' }],
+        deliveryAreas: [{ id: 'area-1' }],
+      };
+      mockPrisma.restaurant.findUnique.mockResolvedValue(mockRestaurant);
+
+      const mockUpdated = {
+        ...mockRestaurant,
+        status: RestaurantStatus.ACTIVE,
+        statusChangedAt: new Date(),
+        trialStartedAt: new Date(),
+        subscriptionEndsAt: new Date(Date.now() + 30 * 86400000),
+      };
+      mockPrisma.restaurant.update.mockResolvedValue(mockUpdated);
+
+      const result = await service.publishRestaurant(
+        'res-1',
+        'user-owner-1',
+        '127.0.0.1',
+      );
+
+      expect(result.status).toBe(RestaurantStatus.ACTIVE);
+      expect(result.trialStartedAt).toBeDefined();
+      expect(result.subscriptionEndsAt).toBeDefined();
+      expect(mockPrisma.restaurant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'res-1' },
+          data: expect.objectContaining({
+            status: RestaurantStatus.ACTIVE,
+          }),
+        }),
+      );
+      expect(mockAudit.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'RESTAURANT_SELF_PUBLISHED',
+          actorUserId: 'user-owner-1',
+          restaurantId: 'res-1',
+          entityType: 'restaurant',
+          entityId: 'res-1',
+        }),
       );
     });
   });

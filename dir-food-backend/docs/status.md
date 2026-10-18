@@ -19,3 +19,4 @@ Log of completed feature batches and specs. Coding agents check this file before
 | Spec | Title | Completion Date | Commits | Notes |
 |---|---|---|---|---|
 | (Baseline) | Initial Phase 1–7 baseline implementation | 2026-10-17 | Baseline | All core modules operational |
+| 001 | Self-Serve Restaurant Publishing (Model 2) | 2026-10-18 | feat(restaurants) | `GET /me/restaurant/readiness` & `POST /me/restaurant/publish` |

@@ -3,9 +3,12 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
+import { RestaurantStatus } from '../../generated/prisma/enums.js';
 import { normalizePhone } from '../../common/utils/phone.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
 import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
@@ -209,6 +212,148 @@ export class RestaurantsService {
     }
 
     return updated;
+  }
+
+  async getPublishReadiness(restaurantId?: string | null) {
+    if (!restaurantId) {
+      throw new ForbiddenException('No restaurant linked to this account');
+    }
+
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      include: {
+        hours: true,
+        _count: {
+          select: {
+            items: { where: { isActive: true } },
+            deliveryAreas: { where: { isActive: true } },
+          },
+        },
+      },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    const missingPrerequisites: string[] = [];
+    if (!restaurant.whatsappNumber) {
+      missingPrerequisites.push('A valid WhatsApp contact number is required');
+    }
+    if (restaurant.hours.length === 0) {
+      missingPrerequisites.push('Configured opening hours are required');
+    }
+    if (restaurant._count.items === 0) {
+      missingPrerequisites.push('At least one active menu item is required');
+    }
+    if (restaurant._count.deliveryAreas === 0) {
+      missingPrerequisites.push('At least one active delivery area is required');
+    }
+
+    return {
+      isReadyToPublish: missingPrerequisites.length === 0,
+      missingPrerequisites,
+    };
+  }
+
+  async publishRestaurant(
+    restaurantId: string | null | undefined,
+    userId?: string,
+    ipAddress?: string,
+  ) {
+    if (!restaurantId) {
+      throw new ForbiddenException('No restaurant linked to this account');
+    }
+
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id: restaurantId },
+      include: {
+        hours: true,
+        items: { where: { isActive: true } },
+        deliveryAreas: { where: { isActive: true } },
+      },
+    });
+
+    if (!restaurant) {
+      throw new NotFoundException('Restaurant not found');
+    }
+
+    if (restaurant.status === RestaurantStatus.ACTIVE) {
+      throw new ConflictException({
+        code: 'ALREADY_ACTIVE',
+        message: 'Restaurant is already active and published',
+      });
+    }
+
+    if (
+      restaurant.status === RestaurantStatus.SUSPENDED ||
+      restaurant.status === RestaurantStatus.DEACTIVATED
+    ) {
+      throw new ForbiddenException(
+        `Cannot publish restaurant with status ${restaurant.status}`,
+      );
+    }
+
+    const missingPrerequisites: string[] = [];
+    if (!restaurant.whatsappNumber) {
+      missingPrerequisites.push('A valid WhatsApp contact number is required');
+    }
+    if (restaurant.hours.length === 0) {
+      missingPrerequisites.push('Configured opening hours are required');
+    }
+    if (restaurant.items.length === 0) {
+      missingPrerequisites.push('At least one active menu item is required');
+    }
+    if (restaurant.deliveryAreas.length === 0) {
+      missingPrerequisites.push('At least one active delivery area is required');
+    }
+
+    if (missingPrerequisites.length > 0) {
+      throw new UnprocessableEntityException({
+        code: 'PUBLISH_PREREQUISITES_NOT_MET',
+        message: 'Cannot publish restaurant: prerequisites not satisfied',
+        details: missingPrerequisites,
+      });
+    }
+
+    const now = new Date();
+    const subscriptionEndsAt = new Date(
+      now.getTime() + 30 * 24 * 60 * 60 * 1000,
+    );
+
+    const updated = await this.prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        status: RestaurantStatus.ACTIVE,
+        statusChangedAt: now,
+        trialStartedAt: now,
+        subscriptionEndsAt,
+      },
+    });
+
+    await this.auditService.log({
+      actorUserId: userId ?? null,
+      restaurantId: restaurant.id,
+      action: 'RESTAURANT_SELF_PUBLISHED',
+      entityType: 'restaurant',
+      entityId: restaurant.id,
+      details: {
+        oldStatus: restaurant.status,
+        newStatus: RestaurantStatus.ACTIVE,
+        trialStartedAt: now,
+        subscriptionEndsAt,
+      },
+      ipAddress,
+    });
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      slug: updated.slug,
+      status: updated.status,
+      trialStartedAt: updated.trialStartedAt,
+      subscriptionEndsAt: updated.subscriptionEndsAt,
+    };
   }
 }
 
