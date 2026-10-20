@@ -249,16 +249,17 @@ export class OrderIntentsService {
       });
     }
 
-    // 9. Minimum order amount validation
+    // 9. Minimum order amount validation (area-specific with fallback to restaurant default)
+    const effectiveMinOrder = deliveryArea.minOrderAmount ?? restaurant.minOrderAmount;
     if (
-      restaurant.minOrderAmount !== null &&
-      calculatedSubtotal < restaurant.minOrderAmount
+      effectiveMinOrder !== null &&
+      calculatedSubtotal < effectiveMinOrder
     ) {
       throw new UnprocessableEntityException({
         code: 'BELOW_MINIMUM_ORDER',
-        message: `Order subtotal does not meet restaurant minimum order amount`,
+        message: `Order subtotal does not meet minimum order amount for selected delivery area`,
         details: {
-          minOrderAmount: restaurant.minOrderAmount,
+          minOrderAmount: effectiveMinOrder,
           subtotal: calculatedSubtotal,
         },
       });

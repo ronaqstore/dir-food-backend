@@ -28,6 +28,16 @@ export class DeliveryAreaItemDto {
   @IsInt()
   @Min(0, { message: 'deliveryFee must be greater than or equal to 0' })
   deliveryFee?: number | null;
+
+  @ApiPropertyOptional({
+    example: 80000,
+    description: 'Minimum order amount in paisa for this area (Rs 800 = 80000). Set null to use restaurant default',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0, { message: 'minOrderAmount must be greater than or equal to 0' })
+  minOrderAmount?: number | null;
 }
 
 export class UpdateDeliveryAreasDto {

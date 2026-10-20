@@ -168,6 +168,8 @@ export class CartValidationService {
 
     // 4. Validate delivery area if provided
     let deliveryInfo: ValidatedCartResult['delivery'] = null;
+    let effectiveMinOrder = restaurant.minOrderAmount;
+
     if (deliveryAreaId) {
       const deliveryArea = await this.prisma.restaurantDeliveryArea.findUnique({
         where: {
@@ -193,7 +195,15 @@ export class CartValidationService {
               ? DeliveryFeeStatus.KNOWN
               : DeliveryFeeStatus.TO_BE_CONFIRMED,
         };
+
+        if (deliveryArea.minOrderAmount !== null) {
+          effectiveMinOrder = deliveryArea.minOrderAmount;
+        }
       }
+    }
+
+    if (effectiveMinOrder !== null && subtotal < effectiveMinOrder) {
+      problems.push('Order subtotal does not meet the minimum order requirement');
     }
 
     return {
@@ -202,14 +212,14 @@ export class CartValidationService {
         name: restaurant.name,
         slug: restaurant.slug,
         whatsappNumber: restaurant.whatsappNumber,
-        minOrderAmount: restaurant.minOrderAmount,
+        minOrderAmount: effectiveMinOrder,
         isOpenNow: status.isOpenNow,
         availabilityText: status.availabilityText,
         nextOpenAt: status.nextOpenAt,
       },
       lines,
       subtotal,
-      minOrderAmount: restaurant.minOrderAmount,
+      minOrderAmount: effectiveMinOrder,
       delivery: deliveryInfo,
       problems,
     };

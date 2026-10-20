@@ -42,6 +42,7 @@ export interface PublicRestaurantProfile {
     areaId: string;
     name: string;
     deliveryFee: bigint | null;
+    minOrderAmount: bigint | null;
   }>;
 }
 
@@ -213,6 +214,7 @@ export class PublicRestaurantsService {
           },
           select: {
             deliveryFee: true,
+            minOrderAmount: true,
             area: {
               select: {
                 id: true,
@@ -270,6 +272,7 @@ export class PublicRestaurantsService {
         areaId: da.area.id,
         name: da.area.name,
         deliveryFee: da.deliveryFee,
+        minOrderAmount: da.minOrderAmount,
       }));
 
     return {
@@ -372,6 +375,7 @@ export class PublicRestaurantsService {
         description: i.description,
         imageUrl: i.imageUrl,
         price: i.basePrice,
+        basePrice: i.basePrice,
         isAvailable: i.isAvailable,
         variants: i.variants.map((v) => ({
           id: v.id,

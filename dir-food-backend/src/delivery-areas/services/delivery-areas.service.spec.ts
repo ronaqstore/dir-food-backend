@@ -56,6 +56,7 @@ describe('DeliveryAreasService (unit)', () => {
         slug: 'timergara',
         isServed: true,
         deliveryFee: 10000,
+        minOrderAmount: null,
       });
       expect(res[1]).toEqual({
         areaId: 'area-2',
@@ -63,6 +64,7 @@ describe('DeliveryAreasService (unit)', () => {
         slug: 'balambat',
         isServed: false,
         deliveryFee: null,
+        minOrderAmount: null,
       });
     });
   });
@@ -107,10 +109,12 @@ describe('DeliveryAreasService (unit)', () => {
           restaurantId: 'res-1',
           areaId: 'area-1',
           deliveryFee: 8000n,
+          minOrderAmount: null,
           isActive: true,
         },
         update: {
           deliveryFee: 8000n,
+          minOrderAmount: null,
           isActive: true,
         },
       });

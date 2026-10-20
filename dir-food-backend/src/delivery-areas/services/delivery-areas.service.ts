@@ -30,9 +30,9 @@ export class DeliveryAreasService {
       }),
     ]);
 
-    const rMap = new Map<string, { deliveryFee: bigint | null; isActive: boolean }>();
+    const rMap = new Map<string, { deliveryFee: bigint | null; minOrderAmount: bigint | null; isActive: boolean }>();
     for (const ra of restaurantAreas) {
-      rMap.set(ra.areaId, { deliveryFee: ra.deliveryFee, isActive: ra.isActive });
+      rMap.set(ra.areaId, { deliveryFee: ra.deliveryFee, minOrderAmount: ra.minOrderAmount, isActive: ra.isActive });
     }
 
     return allAreas.map((area) => {
@@ -45,6 +45,10 @@ export class DeliveryAreasService {
         deliveryFee:
           config?.deliveryFee !== null && config?.deliveryFee !== undefined
             ? Number(config.deliveryFee)
+            : null,
+        minOrderAmount:
+          config?.minOrderAmount !== null && config?.minOrderAmount !== undefined
+            ? Number(config.minOrderAmount)
             : null,
       };
     });
@@ -91,6 +95,10 @@ export class DeliveryAreasService {
           item.deliveryFee !== null && item.deliveryFee !== undefined
             ? BigInt(item.deliveryFee)
             : null;
+        const minOrder =
+          item.minOrderAmount !== null && item.minOrderAmount !== undefined
+            ? BigInt(item.minOrderAmount)
+            : null;
 
         await tx.restaurantDeliveryArea.upsert({
           where: {
@@ -103,10 +111,12 @@ export class DeliveryAreasService {
             restaurantId,
             areaId: item.areaId,
             deliveryFee: fee,
+            minOrderAmount: minOrder,
             isActive: true,
           },
           update: {
             deliveryFee: fee,
+            minOrderAmount: minOrder,
             isActive: true,
           },
         });
