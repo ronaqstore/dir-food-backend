@@ -7,3 +7,7 @@ dist/
 *.tsbuildinfo
 
 local_pg_dev/
+
+# Frontend applications (separate git repos)
+dir-food-admin/
+dir-food-web/
