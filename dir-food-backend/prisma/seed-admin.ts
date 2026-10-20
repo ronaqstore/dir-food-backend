@@ -5,10 +5,15 @@ loadEnv({ path: '.env' });
 import bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.js';
-import { UserRole, UserStatus } from '../src/generated/prisma/enums.js';
+import {
+  UserRole,
+  UserStatus,
+  RestaurantStatus,
+  ManualStatus,
+} from '../src/generated/prisma/enums.js';
 import { normalizePhone, isValidPakistaniMobile } from '../src/common/utils/phone.js';
 
-async function bootstrapAdmin() {
+async function seed() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     console.error('DATABASE_URL is not set.');
@@ -28,51 +33,227 @@ async function bootstrapAdmin() {
   });
   const prisma = new PrismaClient({ adapter });
 
-  const phone = process.env.BOOTSTRAP_ADMIN_PHONE || process.env.SEED_ADMIN_PHONE || '923000000000';
-  const password = process.env.BOOTSTRAP_ADMIN_PASSWORD || process.env.SEED_ADMIN_PASSWORD || 'AdminPass123!';
-  const name = process.env.BOOTSTRAP_ADMIN_NAME || process.env.SEED_ADMIN_NAME || 'Platform Admin';
+  // ---------------------------------------------------------------------------
+  // 1. Credentials Setup (Simple and identical password: admin@123)
+  // ---------------------------------------------------------------------------
+  const sharedPassword =
+    process.env.SEED_ADMIN_PASSWORD || process.env.SEED_OWNER_PASSWORD || 'admin@123';
+  const passwordHash = await bcrypt.hash(sharedPassword, 12);
 
-  const normalizedPhone = normalizePhone(phone);
-  if (!isValidPakistaniMobile(normalizedPhone)) {
-    console.error(`Invalid mobile phone number: ${phone}`);
+  const adminPhone = normalizePhone(process.env.SEED_ADMIN_PHONE || '03000000000');
+  const adminName = process.env.SEED_ADMIN_NAME || 'Super Admin';
+
+  const ownerPhone = normalizePhone(process.env.SEED_OWNER_PHONE || '03111111111');
+  const ownerName = process.env.SEED_OWNER_NAME || 'Shop Owner';
+  const shopName = process.env.SEED_SHOP_NAME || 'Dukan Pro Restaurant';
+
+  if (!isValidPakistaniMobile(adminPhone)) {
+    console.error(`Invalid admin mobile phone number: ${adminPhone}`);
+    process.exit(1);
+  }
+  if (!isValidPakistaniMobile(ownerPhone)) {
+    console.error(`Invalid owner mobile phone number: ${ownerPhone}`);
     process.exit(1);
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { phone: normalizedPhone },
+  console.log('\n--- Seeding Database ---');
+
+  // ---------------------------------------------------------------------------
+  // 2. Default Area
+  // ---------------------------------------------------------------------------
+  const area = await prisma.area.upsert({
+    where: { slug: 'timergara' },
+    update: { isActive: true },
+    create: {
+      name: 'Timergara',
+      slug: 'timergara',
+      sortOrder: 1,
+      isActive: true,
+    },
   });
+  console.log(`✔ Base Area: ${area.name} (${area.slug})`);
 
-  if (existing) {
-    console.log(`Admin user with phone ${normalizedPhone} already exists. Skipping.`);
-    await prisma.$disconnect();
-    return;
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const admin = await prisma.user.create({
-    data: {
-      name,
-      phone: normalizedPhone,
+  // ---------------------------------------------------------------------------
+  // 3. Platform Admin User
+  // ---------------------------------------------------------------------------
+  const admin = await prisma.user.upsert({
+    where: { phone: adminPhone },
+    update: {
+      name: adminName,
+      passwordHash,
+      role: UserRole.PLATFORM_ADMIN,
+      status: UserStatus.ACTIVE,
+      restaurantId: null,
+      failedLoginCount: 0,
+      lockedUntil: null,
+    },
+    create: {
+      name: adminName,
+      phone: adminPhone,
       passwordHash,
       role: UserRole.PLATFORM_ADMIN,
       status: UserStatus.ACTIVE,
       restaurantId: null,
     },
   });
+  console.log(`✔ Platform Admin: ${admin.name} | Phone: ${admin.phone} (03000000000)`);
 
-  console.log(`Successfully created platform admin:`);
-  console.log(`ID:    ${admin.id}`);
-  console.log(`Name:  ${admin.name}`);
-  console.log(`Phone: ${admin.phone}`);
-  console.log(`Role:  ${admin.role}`);
-  console.log(`Note: Change the password immediately upon first login.`);
+  // ---------------------------------------------------------------------------
+  // 4. Restaurant for Owner
+  // ---------------------------------------------------------------------------
+  const restaurantSlug = 'dukan-pro';
+  const futureSubscription = new Date();
+  futureSubscription.setFullYear(futureSubscription.getFullYear() + 1);
+
+  const restaurant = await prisma.restaurant.upsert({
+    where: { slug: restaurantSlug },
+    update: {
+      name: shopName,
+      status: RestaurantStatus.ACTIVE,
+      manualStatus: ManualStatus.AUTO,
+      contactPhone: ownerPhone,
+      whatsappNumber: ownerPhone,
+      trialStartedAt: new Date(),
+      subscriptionEndsAt: futureSubscription,
+    },
+    create: {
+      name: shopName,
+      slug: restaurantSlug,
+      description: 'Your favorite local dishes delivered hot and fresh.',
+      cuisines: ['Traditional', 'Fast Food', 'BBQ'],
+      addressText: 'Main Bazaar, Timergara',
+      contactPhone: ownerPhone,
+      whatsappNumber: ownerPhone,
+      minOrderAmount: 50000n, // Rs 500
+      status: RestaurantStatus.ACTIVE,
+      manualStatus: ManualStatus.AUTO,
+      trialStartedAt: new Date(),
+      subscriptionEndsAt: futureSubscription,
+    },
+  });
+  console.log(`✔ Restaurant: ${restaurant.name} (Slug: ${restaurant.slug})`);
+
+  // ---------------------------------------------------------------------------
+  // 5. Restaurant Owner User
+  // ---------------------------------------------------------------------------
+  const owner = await prisma.user.upsert({
+    where: { phone: ownerPhone },
+    update: {
+      name: ownerName,
+      passwordHash,
+      role: UserRole.RESTAURANT_OWNER,
+      status: UserStatus.ACTIVE,
+      restaurantId: restaurant.id,
+      failedLoginCount: 0,
+      lockedUntil: null,
+    },
+    create: {
+      name: ownerName,
+      phone: ownerPhone,
+      passwordHash,
+      role: UserRole.RESTAURANT_OWNER,
+      status: UserStatus.ACTIVE,
+      restaurantId: restaurant.id,
+    },
+  });
+  console.log(`✔ Restaurant Owner: ${owner.name} | Phone: ${owner.phone} (03111111111)`);
+
+  // ---------------------------------------------------------------------------
+  // 6. Connect Restaurant to Delivery Area
+  // ---------------------------------------------------------------------------
+  const existingRda = await prisma.restaurantDeliveryArea.findFirst({
+    where: {
+      restaurantId: restaurant.id,
+      areaId: area.id,
+    },
+  });
+  if (!existingRda) {
+    await prisma.restaurantDeliveryArea.create({
+      data: {
+        restaurantId: restaurant.id,
+        areaId: area.id,
+        deliveryFee: 10000n, // Rs 100
+        isActive: true,
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 7. Operating Hours (Sunday = 0 to Saturday = 6)
+  // ---------------------------------------------------------------------------
+  const openTime = new Date('1970-01-01T09:00:00.000Z');
+  const closeTime = new Date('1970-01-01T23:00:00.000Z');
+
+  for (let day = 0; day <= 6; day++) {
+    const existingHours = await prisma.restaurantHours.findFirst({
+      where: {
+        restaurantId: restaurant.id,
+        dayOfWeek: day,
+      },
+    });
+    if (!existingHours) {
+      await prisma.restaurantHours.create({
+        data: {
+          restaurantId: restaurant.id,
+          dayOfWeek: day,
+          openTime,
+          closeTime,
+        },
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8. Sample Menu Category & Item
+  // ---------------------------------------------------------------------------
+  const existingCat = await prisma.menuCategory.findFirst({
+    where: { restaurantId: restaurant.id, name: 'Popular Dishes' },
+  });
+  const category =
+    existingCat ??
+    (await prisma.menuCategory.create({
+      data: {
+        restaurantId: restaurant.id,
+        name: 'Popular Dishes',
+        sortOrder: 1,
+      },
+    }));
+
+  const existingItem = await prisma.menuItem.findFirst({
+    where: { restaurantId: restaurant.id, name: 'Special Chicken Karahi' },
+  });
+  if (!existingItem) {
+    await prisma.menuItem.create({
+      data: {
+        restaurantId: restaurant.id,
+        categoryId: category.id,
+        name: 'Special Chicken Karahi',
+        description: 'Fresh desi chicken cooked with green chilies, tomatoes, and organic spices.',
+        basePrice: 120000n, // Rs 1,200
+        isAvailable: true,
+        isActive: true,
+        sortOrder: 1,
+      },
+    });
+  }
+
+  console.log('\n======================================================');
+  console.log('Seeding completed successfully!');
+  console.log('Super Admin Credentials:');
+  console.log(`  - Mobile:   03000000000 (or +923000000000)`);
+  console.log(`  - Password: ${sharedPassword}`);
+  console.log(`  - Role:     PLATFORM_ADMIN`);
+  console.log('Restaurant Owner Credentials:');
+  console.log(`  - Mobile:   03111111111 (or +923111111111)`);
+  console.log(`  - Password: ${sharedPassword}`);
+  console.log(`  - Role:     RESTAURANT_OWNER`);
+  console.log(`  - Linked:   ${restaurant.name}`);
+  console.log('======================================================\n');
 
   await prisma.$disconnect();
 }
 
-bootstrapAdmin().catch((err) => {
-  console.error('Failed to bootstrap admin:', err);
+seed().catch((err) => {
+  console.error('Failed to seed database:', err);
   process.exit(1);
 });
-
