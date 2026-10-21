@@ -579,6 +579,7 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
           areaId: activeAreaId,
           name: 'Timergara Public E2E',
           deliveryFee: 15000,
+          minOrderAmount: null,
         },
       ]);
 

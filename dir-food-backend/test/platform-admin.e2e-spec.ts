@@ -233,10 +233,19 @@ describe('Platform Admin Management & Operations (e2e)', () => {
 
       // 3. Setup delivery area
       const area = await prisma.area.findFirst({ where: { isActive: true } });
-      await prisma.restaurantDeliveryArea.create({
-        data: {
+      await prisma.restaurantDeliveryArea.upsert({
+        where: {
+          restaurantId_areaId: {
+            restaurantId: createdRestId,
+            areaId: area!.id,
+          },
+        },
+        create: {
           restaurantId: createdRestId,
           areaId: area!.id,
+          isActive: true,
+        },
+        update: {
           isActive: true,
         },
       });

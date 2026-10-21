@@ -29,6 +29,15 @@ describe('AuthService (unit)', () => {
         findUnique: vi.fn(),
         create: vi.fn(),
       },
+      restaurantHours: {
+        createMany: vi.fn().mockResolvedValue({ count: 7 }),
+      },
+      area: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'area-1' }]),
+      },
+      restaurantDeliveryArea: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
       $transaction: vi.fn(),
     };
 
@@ -337,7 +346,7 @@ describe('AuthService (unit)', () => {
 
       const result = await authService.getMe('user-1');
       expect(result.name).toBe('Khan');
-      expect(result.restaurant.name).toBe('Dir Tikka');
+      expect(result.restaurant?.name).toBe('Dir Tikka');
     });
 
     it('throws UnauthorizedException when user does not exist', async () => {
@@ -346,6 +355,52 @@ describe('AuthService (unit)', () => {
       await expect(authService.getMe('non-existent')).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('checkRestaurantName', () => {
+    it('returns available: true when slug does not exist', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+
+      const result = await authService.checkRestaurantName('Royal Restaurant');
+      expect(result.available).toBe(true);
+      expect(result.collision).toBe(false);
+      expect(result.baseSlug).toBe('royal-restaurant');
+      expect(result.suggestedSlug).toBe('royal-restaurant');
+      expect(mockPrisma.restaurant.findUnique).toHaveBeenCalledWith({
+        where: { slug: 'royal-restaurant' },
+        select: { name: true, addressText: true },
+      });
+    });
+
+    it('returns collision: true and calculates suggestedSlug when slug exists', async () => {
+      mockPrisma.restaurant.findUnique.mockImplementation(({ where }: { where: { slug: string } }) => {
+        if (where.slug === 'royal-restaurant') {
+          return Promise.resolve({ name: 'Royal Restaurant', addressText: 'Main Bazaar, Timergara' });
+        }
+        if (where.slug === 'royal-restaurant-2') {
+          return Promise.resolve(null);
+        }
+        return Promise.resolve(null);
+      });
+
+      const result = await authService.checkRestaurantName('Royal Restaurant');
+      expect(result.available).toBe(false);
+      expect(result.collision).toBe(true);
+      expect(result.baseSlug).toBe('royal-restaurant');
+      expect(result.suggestedSlug).toBe('royal-restaurant-2');
+      expect(result.existingRestaurant).toEqual({
+        name: 'Royal Restaurant',
+        addressText: 'Main Bazaar, Timergara',
+      });
+    });
+
+    it('handles short or reserved slugs safely', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+
+      const result = await authService.checkRestaurantName('admin');
+      expect(result.baseSlug).toBe('admin-food');
+      expect(result.available).toBe(true);
     });
   });
 });

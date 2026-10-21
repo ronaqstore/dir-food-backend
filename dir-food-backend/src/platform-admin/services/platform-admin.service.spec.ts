@@ -28,6 +28,15 @@ describe('PlatformAdminService (unit)', () => {
         findFirst: vi.fn(),
         create: vi.fn(),
       },
+      restaurantHours: {
+        createMany: vi.fn().mockResolvedValue({ count: 7 }),
+      },
+      area: {
+        findMany: vi.fn().mockResolvedValue([{ id: 'area-1' }]),
+      },
+      restaurantDeliveryArea: {
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
       $transaction: vi.fn((cb) => cb(mockPrisma)),
     };
     mockAudit = {

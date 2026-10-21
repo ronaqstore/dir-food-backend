@@ -4,6 +4,7 @@ export class PasswordSetupLinkResponseDto {
   userPhone!: string;
   expiresAt!: Date;
   setupUrl!: string;
+  setupLink!: string;
   replacedPreviousLink!: boolean;
 }
 

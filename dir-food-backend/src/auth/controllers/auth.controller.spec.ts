@@ -11,6 +11,7 @@ describe('AuthController (unit)', () => {
   beforeEach(() => {
     mockAuthService = {
       registerRestaurant: vi.fn(),
+      checkRestaurantName: vi.fn(),
       restaurantOwnerLogin: vi.fn(),
       platformAdminLogin: vi.fn(),
       setupPassword: vi.fn(),
@@ -57,6 +58,20 @@ describe('AuthController (unit)', () => {
     const result = await controller.register(dto, '127.0.0.1');
     expect(mockAuthService.registerRestaurant).toHaveBeenCalledWith(dto, '127.0.0.1');
     expect(result).toEqual(mockCreated);
+  });
+
+  it('delegates checkRestaurantName to AuthService', async () => {
+    const mockCheckResult = {
+      available: true,
+      collision: false,
+      baseSlug: 'royal-restaurant',
+      suggestedSlug: 'royal-restaurant',
+    };
+    mockAuthService.checkRestaurantName.mockResolvedValue(mockCheckResult);
+
+    const result = await controller.checkRestaurantName({ name: 'Royal Restaurant' });
+    expect(mockAuthService.checkRestaurantName).toHaveBeenCalledWith('Royal Restaurant');
+    expect(result).toEqual(mockCheckResult);
   });
 
   it('delegates owner login to AuthService and sets cookie', async () => {

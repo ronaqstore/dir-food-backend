@@ -22,12 +22,14 @@ import {
   PlatformAdminLoginResponseDto,
 } from '../dto/login-response.dto.js';
 import { PasswordSetupLinkResponseDto } from '../dto/password-setup-link-response.dto.js';
+import { CheckRestaurantNameResponse } from '../dto/check-restaurant-name.dto.js';
 import { normalizePhone, isValidPakistaniMobile, slugify } from '../../common/utils/phone.js';
 import {
   generateOpaqueToken,
   hashOpaqueToken,
   isWellFormedToken,
 } from '../../common/utils/token.helper.js';
+import { seedRestaurantDefaults } from '../../common/utils/restaurant-defaults.js';
 import { RestaurantStatus, UserRole, UserStatus } from '../../generated/prisma/enums.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { AuthTokenType } from '../../common/guards/auth-token.js';
@@ -130,6 +132,8 @@ export class AuthService {
           restaurantId: restaurant.id,
         },
       });
+
+      await seedRestaurantDefaults(tx, restaurant.id);
 
       return { restaurant, user };
     });
@@ -403,6 +407,7 @@ export class AuthService {
       userPhone: user.phone,
       expiresAt: link.expiresAt,
       setupUrl: link.setupUrl,
+      setupLink: link.setupUrl,
       replacedPreviousLink,
     };
   }
@@ -538,5 +543,54 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  /**
+   * Check if a restaurant name / slug is available or collides with an existing restaurant.
+   * Returns suggested slug with area guidance if duplicate.
+   */
+  async checkRestaurantName(name: string): Promise<CheckRestaurantNameResponse> {
+    const trimmed = name?.trim() || '';
+    let baseSlug = slugify(trimmed);
+    if (!baseSlug || baseSlug.length < 3) {
+      baseSlug = `rest-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    const reserved = ['admin', 'api', 'dashboard', 'login', 'r', 'www'];
+    if (reserved.includes(baseSlug)) {
+      baseSlug = `${baseSlug}-food`;
+    }
+
+    const existing = await this.prisma.restaurant.findUnique({
+      where: { slug: baseSlug },
+      select: { name: true, addressText: true },
+    });
+
+    if (!existing) {
+      return {
+        available: true,
+        collision: false,
+        baseSlug,
+        suggestedSlug: baseSlug,
+      };
+    }
+
+    // Name/slug collides with an existing restaurant
+    let counter = 1;
+    let suggestedSlug = baseSlug;
+    while (await this.prisma.restaurant.findUnique({ where: { slug: suggestedSlug } })) {
+      counter++;
+      suggestedSlug = `${baseSlug}-${counter}`;
+    }
+
+    return {
+      available: false,
+      collision: true,
+      baseSlug,
+      suggestedSlug,
+      existingRestaurant: {
+        name: existing.name,
+        addressText: existing.addressText ?? null,
+      },
+    };
   }
 }

@@ -10,6 +10,7 @@ import { RestaurantStatus, UserRole, UserStatus } from '../../generated/prisma/e
 import { AuditService } from '../../audit/services/audit.service.js';
 import { AuthService } from '../../auth/services/auth.service.js';
 import { normalizePhone, isValidPakistaniMobile, slugify } from '../../common/utils/phone.js';
+import { seedRestaurantDefaults } from '../../common/utils/restaurant-defaults.js';
 import { UpdateRestaurantStatusDto } from '../dto/update-status.dto.js';
 import { QueryRestaurantsDto } from '../dto/query-restaurants.dto.js';
 import { CreateRestaurantAdminDto } from '../dto/create-restaurant-admin.dto.js';
@@ -166,6 +167,8 @@ export class PlatformAdminService {
           restaurantId: restaurant.id,
         },
       });
+
+      await seedRestaurantDefaults(tx, restaurant.id);
 
       const setupLink = await this.authService.buildSetupLink(user.id, tx);
 

@@ -4,6 +4,7 @@ import {
   Post,
   Get,
   Body,
+  Query,
   Res,
   HttpCode,
   HttpStatus,
@@ -13,6 +14,7 @@ import {
 import type { Response } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { RegisterRestaurantDto } from '../dto/register.dto.js';
+import { CheckRestaurantNameDto } from '../dto/check-restaurant-name.dto.js';
 import { OwnerLoginDto } from '../dto/owner-login.dto.js';
 import { PlatformAdminLoginDto } from '../dto/platform-admin-login.dto.js';
 import { SetupPasswordDto } from '../dto/setup-password.dto.js';
@@ -36,6 +38,14 @@ export class AuthController {
     @Ip() ipAddress: string,
   ) {
     return this.authService.registerRestaurant(dto, ipAddress);
+  }
+
+  @Public()
+  @Get('check-restaurant-name')
+  @ApiOperation({ summary: 'Check restaurant name availability and slug collision live' })
+  @HttpCode(HttpStatus.OK)
+  async checkRestaurantName(@Query() query: CheckRestaurantNameDto) {
+    return this.authService.checkRestaurantName(query.name);
   }
 
   @Public()
