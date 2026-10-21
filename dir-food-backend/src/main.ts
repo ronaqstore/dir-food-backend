@@ -1,11 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
 import { AppConfigurationService } from './app-configuration/app-configuration.service.js';
 
-async function bootstrap() {
+let cachedApp: INestApplication | null = null;
+
+async function createApp(): Promise<INestApplication> {
+  if (cachedApp) {
+    return cachedApp;
+  }
+
   const app = await NestFactory.create(AppModule);
   const config = app.get(AppConfigurationService);
 
@@ -46,6 +54,25 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
+  await app.init();
+  cachedApp = app;
+  return app;
+}
+
+if (!process.env.VERCEL) {
+  const app = await createApp();
+  const config = app.get(AppConfigurationService);
   await app.listen(config.port);
 }
-await bootstrap();
+
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const app = await createApp();
+  const instance = app.getHttpAdapter().getInstance() as (
+    req: Request,
+    res: Response,
+  ) => void;
+  instance(req, res);
+}
