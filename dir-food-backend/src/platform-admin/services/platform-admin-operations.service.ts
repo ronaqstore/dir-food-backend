@@ -18,7 +18,7 @@ export class PlatformAdminOperationsService {
 
     const where: any = {};
     if (query.ref?.trim()) {
-      where.reference = {
+      where.publicRef = {
         contains: query.ref.trim(),
         mode: 'insensitive',
       };
@@ -29,7 +29,7 @@ export class PlatformAdminOperationsService {
         { customerName: { contains: q, mode: 'insensitive' } },
         { customerPhone: { contains: q, mode: 'insensitive' } },
         { landmark: { contains: q, mode: 'insensitive' } },
-        { reference: { contains: q, mode: 'insensitive' } },
+        { publicRef: { contains: q, mode: 'insensitive' } },
       ];
     }
 

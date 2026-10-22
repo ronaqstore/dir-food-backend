@@ -253,6 +253,12 @@ export class RestaurantsService {
     return {
       isReadyToPublish: missingPrerequisites.length === 0,
       missingPrerequisites,
+      checks: {
+        whatsapp: Boolean(restaurant.whatsappNumber),
+        hours: restaurant.hours.length > 0,
+        items: restaurant._count.items > 0,
+        deliveryAreas: restaurant._count.deliveryAreas > 0,
+      },
     };
   }
 
@@ -317,16 +323,18 @@ export class RestaurantsService {
     }
 
     const now = new Date();
-    const subscriptionEndsAt = new Date(
-      now.getTime() + 30 * 24 * 60 * 60 * 1000,
-    );
+    const subscriptionEndsAt =
+      restaurant.subscriptionEndsAt && restaurant.subscriptionEndsAt > now
+        ? restaurant.subscriptionEndsAt
+        : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const trialStartedAt = restaurant.trialStartedAt ?? now;
 
     const updated = await this.prisma.restaurant.update({
       where: { id: restaurantId },
       data: {
         status: RestaurantStatus.ACTIVE,
         statusChangedAt: now,
-        trialStartedAt: now,
+        trialStartedAt,
         subscriptionEndsAt,
       },
     });
@@ -340,7 +348,7 @@ export class RestaurantsService {
       details: {
         oldStatus: restaurant.status,
         newStatus: RestaurantStatus.ACTIVE,
-        trialStartedAt: now,
+        trialStartedAt,
         subscriptionEndsAt,
       },
       ipAddress,

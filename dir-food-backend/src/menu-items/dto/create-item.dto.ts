@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -29,10 +30,13 @@ export class CreateItemVariantDto {
 }
 
 export class CreateMenuItemDto {
-  @ApiProperty({ example: '0192a000-0000-7000-8000-000000000001', description: 'Category UUID v7' })
+  @ApiPropertyOptional({
+    example: '0192a000-0000-7000-8000-000000000001',
+    description: 'Category UUID v7. Optional for deals (auto-assigned to Deals & Combos).',
+  })
+  @IsOptional()
   @IsUUID('7', { message: 'categoryId must be a valid UUID v7' })
-  @IsNotEmpty()
-  categoryId!: string;
+  categoryId?: string;
 
   @ApiProperty({ example: 'Chicken Karahi', description: 'Menu item name' })
   @IsString()
@@ -55,6 +59,20 @@ export class CreateMenuItemDto {
   @IsInt()
   @Min(0)
   basePrice?: number;
+
+  @ApiPropertyOptional({
+    example: 150000,
+    description: 'Original strikethrough price in paisa (Rs 1,500 = 150000) before deal discount',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  originalPrice?: number | null;
+
+  @ApiPropertyOptional({ example: false, description: 'Mark item as a featured deal' })
+  @IsOptional()
+  @IsBoolean()
+  isDeal?: boolean;
 
   @ApiPropertyOptional({ type: [CreateItemVariantDto], description: 'Optional size variants' })
   @IsOptional()

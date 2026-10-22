@@ -195,8 +195,8 @@ describe('PlatformAdminService (unit)', () => {
       expect(result.subscriptionEndsAt).toBeInstanceOf(Date);
 
       const diffDays = Math.round(
-        (result.subscriptionEndsAt.getTime() -
-          result.trialStartedAt.getTime()) /
+        (result.subscriptionEndsAt!.getTime() -
+          result.trialStartedAt!.getTime()) /
           (1000 * 60 * 60 * 24),
       );
       expect(diffDays).toBe(30);
@@ -260,7 +260,7 @@ describe('PlatformAdminService (unit)', () => {
       }));
 
       const res = await adminService.extendSubscription('r1', { addDays: 30 }, 'admin-1');
-      expect(res.subscriptionEndsAt.getTime()).toBeGreaterThan(futureEnd.getTime());
+      expect(res.subscriptionEndsAt!.getTime()).toBeGreaterThan(futureEnd.getTime());
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'RESTAURANT_SUBSCRIPTION_EXTENDED' }),
       );
@@ -314,7 +314,7 @@ describe('PlatformAdminService (unit)', () => {
         'admin-1',
       );
 
-      expect(res.subscriptionEndsAt.toISOString()).toBe(newEnd.toISOString());
+      expect(res.subscriptionEndsAt!.toISOString()).toBe(newEnd.toISOString());
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'RESTAURANT_SUBSCRIPTION_SHORTENED' }),
       );

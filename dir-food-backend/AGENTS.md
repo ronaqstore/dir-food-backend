@@ -113,7 +113,7 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
 
 1. **Registration:**
    - Public self-registration (`POST /auth/register`) atomically creates the restaurant with status `PENDING` and the initial owner account (`RESTAURANT_OWNER`).
-   - Self-registration **never** directly activates a restaurant and **never** starts the 30-day trial.
+   - Self-registration automatically initializes the 30-day trial from server time (`trialStartedAt = now`, `subscriptionEndsAt = now + 30 days`), while keeping the restaurant in `PENDING` status until the owner completes their menu and goes live.
    - Passwords must be hashed with bcrypt (salt rounds: 12). Plaintext passwords and password hashes must never be returned in responses.
 
 2. **Approval & Self-Serve Publishing Prerequisites (`PENDING` -> `ACTIVE`):**
@@ -125,7 +125,7 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
    - Owners can check readiness beforehand via `GET /me/restaurant/readiness`.
    - If any prerequisite is missing on self-publishing, throws HTTP 422 `PUBLISH_PREREQUISITES_NOT_MET` (or `APPROVAL_PREREQUISITES_NOT_MET` for admin).
    - If already active, `POST /me/restaurant/publish` throws HTTP 409 `ALREADY_ACTIVE`.
-   - Publishing/approval starts the 30-day trial (`trialStartedAt = now`, `subscriptionEndsAt = now + 30 days`).
+   - Publishing transitions status to `ACTIVE` without requiring platform admin approval and preserves the running 30-day trial started at registration.
    - Self-publishing records `RESTAURANT_SELF_PUBLISHED` in the audit log; admin approval records `RESTAURANT_APPROVED`.
 
 3. **Status Transitions:**
@@ -164,9 +164,10 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
    - Evaluated strictly using `Asia/Karachi` timezone (UTC+5).
    - Accurately tracks same-day ranges, overnight ranges extending into the morning, multiple daily shifts, manual overrides (`CLOSED`, `TEMP_UNAVAILABLE`), and future scheduled openings (`nextOpenAt`).
 
-5. **Catalog & BigInt Serialization:**
+5. **Catalog, Deals & BigInt Serialization:**
    - Inactive categories, items, and variants are excluded. Out-of-stock items (`isAvailable = false`) remain visible.
-   - All monetary values (`basePrice`, variant `price`, `minOrderAmount`, `deliveryFee`) are stored as `BigInt` paisa and serialized to safe integer numbers via `ResponseEnvelopeInterceptor`.
+   - **Deals & Combos:** Items can be flagged as promotional deals (`isDeal = true`) with an optional `originalPrice` (BigInt paisa). When supplied, `originalPrice` must strictly exceed `basePrice`. Both fields are exposed in public catalog payloads for customer savings calculation.
+   - All monetary values (`basePrice`, `originalPrice`, variant `price`, `minOrderAmount`, `deliveryFee`) are stored as `BigInt` paisa and serialized to safe integer numbers via `ResponseEnvelopeInterceptor`.
 
 ---
 

@@ -29,9 +29,9 @@ Dir Food is a restaurant-discovery and WhatsApp-request platform for Timergara a
    - Always filter by `restaurantId` from the authenticated user token (`@CurrentUser()`).
    - Never trust client-supplied restaurant IDs in request bodies for owner operations.
 4. **Restaurant Lifecycle:**
-   - Registration creates `PENDING` restaurants and owner accounts atomically; does NOT start 30-day trial; does NOT activate restaurant.
-   - Approval strictly validates 4 prerequisites: WhatsApp number, opening hours, active menu item, active delivery area.
-   - Approval starts the 30-day trial from server time.
+   - Registration creates `PENDING` restaurants and owner accounts atomically; automatically starts the 30-day trial from server time (`trialStartedAt = now`, `subscriptionEndsAt = now + 30 days`).
+   - Restaurant remains `PENDING` (hidden from public catalog) until owner self-publishes.
+   - Self-publishing (`POST /me/restaurant/publish`) validates 4 prerequisites: WhatsApp number, opening hours, active menu item, active delivery area; transitions status to `ACTIVE` without requiring platform admin approval.
    - `DEACTIVATED` is terminal in normal application workflows.
 5. **Authentication, Guards & Token Management:**
    - Separate endpoints for Platform Admin (`POST /auth/platform-admin/login`) and Restaurant Owner (`POST /auth/login`).
@@ -64,6 +64,13 @@ Dir Food is a restaurant-discovery and WhatsApp-request platform for Timergara a
     - Restaurant lifecycle: admin-assisted onboarding (`POST /admin/restaurants`), status changes, subscription extensions/shortenings, slug changes, setup links.
     - Master delivery areas CRUD under `/admin/areas`.
     - Support order-intent lookup, 7-day activity metrics, and audit log exploration.
+
+11. **Deals & Cross-Category Combos:**
+    - Menu items support `isDeal` flag and `originalPrice` (BigInt paisa).
+    - Validation guarantees `originalPrice > basePrice` when specified.
+    - Merchant dashboard provides an interactive Cross-Category Combo Builder with automatic retail sum aggregation and auto-generated combo descriptions.
+    - Storefront catalog renders top scroll-snap featured deals carousel, discount badges, cut prices, and KFC/Foodpanda-style combo breakdown modals.
+
 
 
 

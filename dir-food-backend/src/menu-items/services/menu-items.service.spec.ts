@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { MenuItemsService } from './menu-items.service.js';
 
 describe('MenuItemsService (unit)', () => {
@@ -15,6 +15,9 @@ describe('MenuItemsService (unit)', () => {
       },
       menuCategory: {
         findUnique: vi.fn(),
+        findFirst: vi.fn(),
+        create: vi.fn(),
+        aggregate: vi.fn(),
       },
       menuItem: {
         count: vi.fn(),
@@ -75,6 +78,24 @@ describe('MenuItemsService (unit)', () => {
       expect(res.data).toHaveLength(1);
       expect(res.meta.total).toBe(1);
     });
+
+    it('filters items by isDeal when specified', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
+      mockPrisma.menuItem.count.mockResolvedValue(1);
+      mockPrisma.menuItem.findMany.mockResolvedValue([
+        { id: 'item-deal', name: 'Deal 1', basePrice: 120000n, isDeal: true, variants: [] },
+      ]);
+
+      await service.getItems('res-1', undefined, 1, 20, undefined, true);
+      expect(mockPrisma.menuItem.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            restaurantId: 'res-1',
+            isDeal: true,
+          }),
+        }),
+      );
+    });
   });
 
   describe('createItem', () => {
@@ -87,6 +108,82 @@ describe('MenuItemsService (unit)', () => {
           name: 'Naan',
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws BadRequestException if originalPrice is less than or equal to basePrice', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+
+      await expect(
+        service.createItem('res-1', {
+          categoryId: 'cat-1',
+          name: 'Family Deal',
+          basePrice: 150000,
+          originalPrice: 150000,
+          isDeal: true,
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('creates a deal item with originalPrice and isDeal flag', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+      mockPrisma.menuItem.findFirst.mockResolvedValue(null);
+      mockPrisma.menuItem.create.mockResolvedValue({ id: 'deal-1' });
+      mockPrisma.menuItem.findUnique.mockResolvedValue({
+        id: 'deal-1',
+        name: 'Family Deal 1',
+        basePrice: 150000n,
+        originalPrice: 200000n,
+        isDeal: true,
+        variants: [],
+      });
+
+      const res = await service.createItem('res-1', {
+        categoryId: 'cat-1',
+        name: 'Family Deal 1',
+        basePrice: 150000,
+        originalPrice: 200000,
+        isDeal: true,
+      });
+
+      expect(mockPrisma.menuItem.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          name: 'Family Deal 1',
+          basePrice: 150000n,
+          originalPrice: 200000n,
+          isDeal: true,
+        }),
+      });
+      expect(res?.isDeal).toBe(true);
+    });
+
+    it('automatically assigns deals to Deals & Combos category when categoryId is omitted', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
+      mockPrisma.menuCategory.findFirst.mockResolvedValue({ id: 'deals-cat-id', name: 'Deals & Combos' });
+      mockPrisma.menuItem.findFirst.mockResolvedValue(null);
+      mockPrisma.menuItem.create.mockResolvedValue({ id: 'deal-2' });
+      mockPrisma.menuItem.findUnique.mockResolvedValue({
+        id: 'deal-2',
+        name: 'Auto Deal',
+        basePrice: 100000n,
+        isDeal: true,
+        variants: [],
+      });
+
+      const res = await service.createItem('res-1', {
+        name: 'Auto Deal',
+        basePrice: 100000,
+        isDeal: true,
+      });
+
+      expect(mockPrisma.menuItem.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          categoryId: 'deals-cat-id',
+          name: 'Auto Deal',
+        }),
+      });
+      expect(res?.id).toBe('deal-2');
     });
 
     it('throws NotFoundException if category does not belong to restaurant', async () => {
@@ -105,7 +202,9 @@ describe('MenuItemsService (unit)', () => {
     it('creates item with basePrice in transaction', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
       mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
-      mockPrisma.menuItem.findFirst.mockResolvedValue({ sortOrder: 2 });
+      mockPrisma.menuItem.findFirst.mockImplementation((args: { where?: { name?: unknown } }) =>
+        args?.where?.name ? Promise.resolve(null) : Promise.resolve({ sortOrder: 2 })
+      );
       mockPrisma.menuItem.create.mockResolvedValue({ id: 'item-new' });
       mockPrisma.menuItem.findUnique.mockResolvedValue({
         id: 'item-new',
@@ -130,6 +229,20 @@ describe('MenuItemsService (unit)', () => {
         }),
       });
       expect(res?.id).toBe('item-new');
+    });
+
+    it('throws ConflictException if item with same name already exists in category', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+      mockPrisma.menuItem.findFirst.mockResolvedValue({ id: 'existing-item', name: 'Roti' });
+
+      await expect(
+        service.createItem('res-1', {
+          categoryId: 'cat-1',
+          name: 'Roti',
+          basePrice: 2000,
+        }),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('creates item with variants in transaction', async () => {
@@ -169,6 +282,21 @@ describe('MenuItemsService (unit)', () => {
       await expect(
         service.updateItem('res-1', 'item-other', { name: 'New' }),
       ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws BadRequestException if update sets originalPrice <= existing basePrice', async () => {
+      mockPrisma.menuItem.findUnique.mockResolvedValue({
+        id: 'item-1',
+        restaurantId: 'res-1',
+        categoryId: 'cat-1',
+        basePrice: 150000n,
+      });
+
+      await expect(
+        service.updateItem('res-1', 'item-1', {
+          originalPrice: 140000,
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('updates item properties', async () => {

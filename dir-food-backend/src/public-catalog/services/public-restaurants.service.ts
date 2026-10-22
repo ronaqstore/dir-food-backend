@@ -46,22 +46,27 @@ export interface PublicRestaurantProfile {
   }>;
 }
 
+export interface PublicMenuItem {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  price: bigint | null;
+  basePrice?: bigint | null;
+  originalPrice: bigint | null;
+  isDeal: boolean;
+  isAvailable: boolean;
+  variants: Array<{
+    id: string;
+    name: string;
+    price: bigint;
+  }>;
+}
+
 export interface PublicMenuCategory {
   id: string;
   name: string;
-  items: Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    price: bigint | null;
-    isAvailable: boolean;
-    variants: Array<{
-      id: string;
-      name: string;
-      price: bigint;
-    }>;
-  }>;
+  items: PublicMenuItem[];
 }
 
 @Injectable()
@@ -327,6 +332,8 @@ export class PublicRestaurantsService {
                 description: true,
                 imageUrl: true,
                 basePrice: true,
+                originalPrice: true,
+                isDeal: true,
                 isAvailable: true,
                 variants: {
                   where: {
@@ -376,6 +383,8 @@ export class PublicRestaurantsService {
         imageUrl: i.imageUrl,
         price: i.basePrice,
         basePrice: i.basePrice,
+        originalPrice: i.originalPrice,
+        isDeal: i.isDeal,
         isAvailable: i.isAvailable,
         variants: i.variants.map((v) => ({
           id: v.id,

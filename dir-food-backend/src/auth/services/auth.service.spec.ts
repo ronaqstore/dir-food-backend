@@ -68,11 +68,16 @@ describe('AuthService (unit)', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.restaurant.findUnique.mockResolvedValue(null);
 
+      const now = new Date();
+      const futureEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
       const createdRestaurant = {
         id: '0192aaaa-0000-7000-8000-000000000001',
         name: 'Dir Tikka',
         slug: 'dir-tikka',
         status: RestaurantStatus.PENDING,
+        trialStartedAt: now,
+        subscriptionEndsAt: futureEnd,
       };
 
       const createdUser = {
@@ -99,6 +104,16 @@ describe('AuthService (unit)', () => {
       });
 
       expect(result.restaurant.status).toBe(RestaurantStatus.PENDING);
+      expect(result.restaurant.trialStartedAt).toBeDefined();
+      expect(result.restaurant.subscriptionEndsAt).toBeDefined();
+      expect(mockPrisma.restaurant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            trialStartedAt: expect.any(Date),
+            subscriptionEndsAt: expect.any(Date),
+          }),
+        }),
+      );
       expect(result.user.role).toBe(UserRole.RESTAURANT_OWNER);
       expect((result.user as any).passwordHash).toBeUndefined();
       expect(mockAudit.log).toHaveBeenCalledWith(

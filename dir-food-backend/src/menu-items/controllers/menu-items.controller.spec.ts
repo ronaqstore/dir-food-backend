@@ -32,8 +32,20 @@ describe('MenuItemsController (unit)', () => {
     mockService.getItems.mockResolvedValue({ data: [], meta: { page: 1 } });
 
     const res = await controller.getItems(mockUser, 'cat-1', undefined, '2', '10');
-    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', 'cat-1', 2, 10, undefined);
+    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', 'cat-1', 2, 10, undefined, undefined);
     expect(res.meta.page).toBe(1);
+  });
+
+  it('delegates getItems with isDeal filter', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-1',
+    };
+    mockService.getItems.mockResolvedValue({ data: [], meta: { page: 1 } });
+
+    await controller.getItems(mockUser, undefined, undefined, '1', '20', 'true');
+    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', undefined, 1, 20, undefined, true);
   });
 
   it('delegates createItem with user.restaurantId and dto', async () => {
@@ -47,7 +59,7 @@ describe('MenuItemsController (unit)', () => {
 
     const res = await controller.createItem(mockUser, dto);
     expect(mockService.createItem).toHaveBeenCalledWith('rest-1', dto);
-    expect(res.id).toBe('item-1');
+    expect(res!.id).toBe('item-1');
   });
 
   it('delegates updateItem with user.restaurantId, id and dto', async () => {

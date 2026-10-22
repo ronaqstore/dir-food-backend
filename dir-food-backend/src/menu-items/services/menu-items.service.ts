@@ -3,7 +3,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
 import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
@@ -25,6 +27,7 @@ export class MenuItemsService {
     page = 1,
     limit = 20,
     search?: string,
+    isDeal?: boolean,
   ) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -36,12 +39,15 @@ export class MenuItemsService {
     }
 
     const safePage = Math.max(1, page);
-    const safeLimit = Math.min(50, Math.max(1, limit));
+    const safeLimit = Math.min(500, Math.max(1, limit));
     const skip = (safePage - 1) * safeLimit;
 
     const where: Record<string, unknown> = { restaurantId };
     if (categoryId) {
       where.categoryId = categoryId;
+    }
+    if (typeof isDeal === 'boolean') {
+      where.isDeal = isDeal;
     }
     if (search && search.trim()) {
       where.OR = [
@@ -102,24 +108,83 @@ export class MenuItemsService {
       );
     }
 
-    // Verify category belongs to this restaurant
-    const category = await this.prisma.menuCategory.findUnique({
-      where: {
-        id_restaurantId: {
-          id: dto.categoryId,
-          restaurantId,
+    if (
+      dto.originalPrice !== undefined &&
+      dto.originalPrice !== null &&
+      hasBasePrice &&
+      dto.originalPrice <= dto.basePrice!
+    ) {
+      throw new BadRequestException(
+        'Original price must be greater than selling base price',
+      );
+    }
+
+    let targetCategoryId = dto.categoryId;
+
+    if (!targetCategoryId) {
+      if (dto.isDeal) {
+        let dealsCategory = await this.prisma.menuCategory.findFirst({
+          where: {
+            restaurantId,
+            name: { in: ['Deals & Combos', 'Deals', 'اسپیشل ڈیلز'] },
+          },
+        });
+
+        if (!dealsCategory) {
+          const maxSort = await this.prisma.menuCategory.aggregate({
+            where: { restaurantId },
+            _max: { sortOrder: true },
+          });
+          const nextOrder = (maxSort._max.sortOrder ?? 0) + 1;
+
+          dealsCategory = await this.prisma.menuCategory.create({
+            data: {
+              restaurantId,
+              name: 'Deals & Combos',
+              sortOrder: nextOrder,
+              isActive: true,
+            },
+          });
+        }
+        targetCategoryId = dealsCategory.id;
+      } else {
+        throw new BadRequestException('categoryId is required for regular menu items');
+      }
+    } else {
+      // Verify category belongs to this restaurant
+      const category = await this.prisma.menuCategory.findUnique({
+        where: {
+          id_restaurantId: {
+            id: targetCategoryId,
+            restaurantId,
+          },
         },
+      });
+
+      if (!category) {
+        throw new NotFoundException('Menu category not found for this restaurant');
+      }
+    }
+
+    const duplicate = await this.prisma.menuItem.findFirst({
+      where: {
+        restaurantId,
+        categoryId: targetCategoryId,
+        name: { equals: dto.name.trim(), mode: 'insensitive' },
+        isActive: true,
       },
     });
 
-    if (!category) {
-      throw new NotFoundException('Menu category not found for this restaurant');
+    if (duplicate) {
+      throw new ConflictException(
+        `A menu item or deal with the name "${dto.name.trim()}" already exists in this category`,
+      );
     }
 
     const lastItem = await this.prisma.menuItem.findFirst({
       where: {
         restaurantId,
-        categoryId: dto.categoryId,
+        categoryId: targetCategoryId,
       },
       orderBy: { sortOrder: 'desc' },
       select: { sortOrder: true },
@@ -127,46 +192,63 @@ export class MenuItemsService {
 
     const nextSortOrder = lastItem ? lastItem.sortOrder + 1 : 0;
 
-    return this.prisma.$transaction(async (tx) => {
-      const item = await tx.menuItem.create({
-        data: {
-          restaurantId,
-          categoryId: dto.categoryId,
-          name: dto.name.trim(),
-          description: dto.description?.trim() || null,
-          basePrice: hasBasePrice ? BigInt(dto.basePrice!) : null,
-          sortOrder: nextSortOrder,
-        },
-      });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const item = await tx.menuItem.create({
+          data: {
+            restaurantId,
+            categoryId: targetCategoryId,
+            name: dto.name.trim(),
+            description: dto.description?.trim() || null,
+            basePrice: hasBasePrice ? BigInt(dto.basePrice!) : null,
+            originalPrice:
+              dto.originalPrice !== undefined && dto.originalPrice !== null
+                ? BigInt(dto.originalPrice)
+                : null,
+            isDeal: dto.isDeal ?? false,
+            sortOrder: nextSortOrder,
+          },
+        });
 
-      if (hasVariants) {
-        for (let index = 0; index < dto.variants!.length; index++) {
-          const v = dto.variants![index];
-          await tx.menuItemVariant.create({
-            data: {
-              restaurantId,
-              menuItemId: item.id,
-              name: v.name.trim(),
-              price: BigInt(v.price),
-              sortOrder: index,
-            },
-          });
+        if (hasVariants) {
+          for (let index = 0; index < dto.variants!.length; index++) {
+            const v = dto.variants![index];
+            await tx.menuItemVariant.create({
+              data: {
+                restaurantId,
+                menuItemId: item.id,
+                name: v.name.trim(),
+                price: BigInt(v.price),
+                sortOrder: index,
+              },
+            });
+          }
         }
-      }
 
-      return tx.menuItem.findUnique({
-        where: { id: item.id },
-        include: {
-          variants: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
+        return tx.menuItem.findUnique({
+          where: { id: item.id },
+          include: {
+            variants: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+            category: {
+              select: { id: true, name: true },
+            },
           },
-          category: {
-            select: { id: true, name: true },
-          },
-        },
+        });
       });
-    });
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          `A menu item or deal with this name already exists in this category`,
+        );
+      }
+      throw err;
+    }
   }
 
   async updateItem(
@@ -202,6 +284,42 @@ export class MenuItemsService {
       }
     }
 
+    const finalBasePrice =
+      dto.basePrice !== undefined
+        ? dto.basePrice !== null
+          ? BigInt(dto.basePrice)
+          : null
+        : existing.basePrice;
+
+    if (dto.originalPrice !== undefined && dto.originalPrice !== null) {
+      if (finalBasePrice !== null && BigInt(dto.originalPrice) <= finalBasePrice) {
+        throw new BadRequestException(
+          'Original price must be greater than selling base price',
+        );
+      }
+    }
+
+    const targetCategoryId = dto.categoryId ?? existing.categoryId;
+    const targetName = dto.name !== undefined ? dto.name.trim() : existing.name;
+
+    if (dto.name !== undefined || dto.categoryId !== undefined) {
+      const duplicate = await this.prisma.menuItem.findFirst({
+        where: {
+          restaurantId,
+          categoryId: targetCategoryId,
+          name: { equals: targetName, mode: 'insensitive' },
+          id: { not: id },
+          isActive: true,
+        },
+      });
+
+      if (duplicate) {
+        throw new ConflictException(
+          `A menu item or deal with the name "${targetName}" already exists in this category`,
+        );
+      }
+    }
+
     const data: Record<string, unknown> = {};
     if (dto.name !== undefined) data.name = dto.name.trim();
     if (dto.description !== undefined) data.description = dto.description?.trim() || null;
@@ -209,27 +327,43 @@ export class MenuItemsService {
     if (dto.basePrice !== undefined) {
       data.basePrice = dto.basePrice !== null ? BigInt(dto.basePrice) : null;
     }
+    if (dto.originalPrice !== undefined) {
+      data.originalPrice = dto.originalPrice !== null ? BigInt(dto.originalPrice) : null;
+    }
+    if (dto.isDeal !== undefined) data.isDeal = dto.isDeal;
     if (dto.isAvailable !== undefined) data.isAvailable = dto.isAvailable;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
-    return this.prisma.menuItem.update({
-      where: {
-        id_restaurantId: {
-          id,
-          restaurantId,
+    try {
+      return await this.prisma.menuItem.update({
+        where: {
+          id_restaurantId: {
+            id,
+            restaurantId,
+          },
         },
-      },
-      data,
-      include: {
-        variants: {
-          where: { isActive: true },
-          orderBy: { sortOrder: 'asc' },
+        data,
+        include: {
+          variants: {
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+          },
+          category: {
+            select: { id: true, name: true },
+          },
         },
-        category: {
-          select: { id: true, name: true },
-        },
-      },
-    });
+      });
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          `A menu item or deal with this name already exists in this category`,
+        );
+      }
+      throw err;
+    }
   }
 
   async reorderItems(

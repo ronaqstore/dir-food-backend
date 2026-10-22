@@ -18,6 +18,7 @@
     "db:status": "/usr/lib/postgresql/16/bin/pg_ctl -D ../local_pg_dev status",
     "seed": "jiti prisma/seed-admin.ts",
     "seed:admin": "jiti prisma/seed-admin.ts",
+    "seed:menu": "jiti prisma/seed-menu.ts",
     "lint": "oxlint --type-aware src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",

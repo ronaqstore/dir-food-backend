@@ -49,21 +49,26 @@ export class MenuItemsController {
   @ApiQuery({ name: 'search', required: false, description: 'Search dish name or description' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'isDeal', required: false, description: 'Filter by deal flag (true/false)' })
   async getItems(
     @CurrentUser() user: AuthenticatedUser,
     @Query('categoryId') categoryId?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('isDeal') isDeal?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
+    const isDealBool =
+      isDeal === 'true' ? true : isDeal === 'false' ? false : undefined;
     return this.itemsService.getItems(
       user.restaurantId!,
       categoryId,
       pageNum,
       limitNum,
       search,
+      isDealBool,
     );
   }
 

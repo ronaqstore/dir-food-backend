@@ -35,6 +35,17 @@ export class UpdateMenuItemDto {
   @Min(0)
   basePrice?: number | null;
 
+  @ApiPropertyOptional({ example: 160000, description: 'Original strikethrough price in paisa before deal discount', nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  originalPrice?: number | null;
+
+  @ApiPropertyOptional({ example: true, description: 'Mark item as a featured deal' })
+  @IsOptional()
+  @IsBoolean()
+  isDeal?: boolean;
+
   @ApiPropertyOptional({ example: true, description: 'Daily availability toggle' })
   @IsOptional()
   @IsBoolean()

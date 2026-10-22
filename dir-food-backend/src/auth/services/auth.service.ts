@@ -110,6 +110,11 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
 
+    const now = new Date();
+    const subscriptionEndsAt = new Date(
+      now.getTime() + 30 * 24 * 60 * 60 * 1000,
+    );
+
     const result = await this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.create({
         data: {
@@ -119,6 +124,8 @@ export class AuthService {
           whatsappNumber: normalizedWa ?? null,
           cuisines: dto.cuisines ?? [],
           status: RestaurantStatus.PENDING,
+          trialStartedAt: now,
+          subscriptionEndsAt,
         },
       });
 
@@ -165,6 +172,8 @@ export class AuthService {
         name: result.restaurant.name,
         slug: result.restaurant.slug,
         status: result.restaurant.status,
+        trialStartedAt: result.restaurant.trialStartedAt,
+        subscriptionEndsAt: result.restaurant.subscriptionEndsAt,
       },
     };
   }

@@ -31,7 +31,7 @@ describe('PlatformAdminOperationsService (unit)', () => {
       mockPrisma.orderIntent.findMany.mockResolvedValue([
         {
           id: 'oi1',
-          reference: 'TM-7K4P9Q',
+          publicRef: 'TM-7K4P9Q',
           customerName: 'Ahmad',
           restaurant: { id: 'r1', name: 'Al-Noor' },
           items: [],
@@ -41,7 +41,7 @@ describe('PlatformAdminOperationsService (unit)', () => {
       const res = await service.searchOrderIntents({ ref: 'TM-7K4P9Q', page: 1, limit: 10 });
       expect(res.data).toHaveLength(1);
       expect(res.meta.total).toBe(1);
-      expect(res.data[0].reference).toBe('TM-7K4P9Q');
+      expect(res.data[0].publicRef).toBe('TM-7K4P9Q');
     });
   });
 

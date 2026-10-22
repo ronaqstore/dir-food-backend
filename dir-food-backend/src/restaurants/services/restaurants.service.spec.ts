@@ -301,6 +301,12 @@ describe('RestaurantsService (unit)', () => {
       expect(result.missingPrerequisites).toContain(
         'At least one active delivery area is required',
       );
+      expect(result.checks).toEqual({
+        whatsapp: false,
+        hours: false,
+        items: false,
+        deliveryAreas: false,
+      });
     });
 
     it('returns isReadyToPublish: true when all 4 prerequisites are met', async () => {
@@ -314,6 +320,12 @@ describe('RestaurantsService (unit)', () => {
       const result = await service.getPublishReadiness('res-1');
       expect(result.isReadyToPublish).toBe(true);
       expect(result.missingPrerequisites).toEqual([]);
+      expect(result.checks).toEqual({
+        whatsapp: true,
+        hours: true,
+        items: true,
+        deliveryAreas: true,
+      });
     });
   });
 
@@ -422,6 +434,45 @@ describe('RestaurantsService (unit)', () => {
           entityId: 'res-1',
         }),
       );
+    });
+
+    it('preserves existing trial dates started at registration', async () => {
+      const registrationTrialStart = new Date(Date.now() - 2 * 86400000);
+      const registrationTrialEnd = new Date(Date.now() + 28 * 86400000);
+
+      const mockRestaurant = {
+        id: 'res-1',
+        name: 'Khyber Shinwari',
+        slug: 'khyber-shinwari',
+        status: RestaurantStatus.PENDING,
+        whatsappNumber: '923001234567',
+        trialStartedAt: registrationTrialStart,
+        subscriptionEndsAt: registrationTrialEnd,
+        hours: [{ id: 'hour-1' }],
+        items: [{ id: 'item-1' }],
+        deliveryAreas: [{ id: 'area-1' }],
+      };
+      mockPrisma.restaurant.findUnique.mockResolvedValue(mockRestaurant);
+
+      const mockUpdated = {
+        ...mockRestaurant,
+        status: RestaurantStatus.ACTIVE,
+        statusChangedAt: new Date(),
+      };
+      mockPrisma.restaurant.update.mockResolvedValue(mockUpdated);
+
+      const result = await service.publishRestaurant('res-1', 'user-owner-1');
+
+      expect(mockPrisma.restaurant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: RestaurantStatus.ACTIVE,
+            trialStartedAt: registrationTrialStart,
+            subscriptionEndsAt: registrationTrialEnd,
+          }),
+        }),
+      );
+      expect(result.status).toBe(RestaurantStatus.ACTIVE);
     });
   });
 });

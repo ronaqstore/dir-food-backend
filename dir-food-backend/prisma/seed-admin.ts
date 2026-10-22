@@ -45,7 +45,8 @@ async function seed() {
 
   const ownerPhone = normalizePhone(process.env.SEED_OWNER_PHONE || '03111111111');
   const ownerName = process.env.SEED_OWNER_NAME || 'Shop Owner';
-  const shopName = process.env.SEED_SHOP_NAME || 'Dukan Pro Restaurant';
+  const shopName =
+    process.env.SEED_SHOP_NAME || 'Zaiqa Mahal & River View Restaurant';
 
   if (!isValidPakistaniMobile(adminPhone)) {
     console.error(`Invalid admin mobile phone number: ${adminPhone}`);
@@ -101,7 +102,7 @@ async function seed() {
   // ---------------------------------------------------------------------------
   // 4. Restaurant for Owner
   // ---------------------------------------------------------------------------
-  const restaurantSlug = 'dukan-pro';
+  const restaurantSlug = process.env.SEED_RESTAURANT_SLUG || 'zaiqa-mahal';
   const futureSubscription = new Date();
   futureSubscription.setFullYear(futureSubscription.getFullYear() + 1);
 

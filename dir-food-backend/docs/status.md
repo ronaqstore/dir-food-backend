@@ -20,3 +20,4 @@ Log of completed feature batches and specs. Coding agents check this file before
 |---|---|---|---|---|
 | (Baseline) | Initial Phase 1–7 baseline implementation | 2026-10-17 | Baseline | All core modules operational |
 | 001 | Self-Serve Restaurant Publishing (Model 2) | 2026-10-18 | feat(restaurants) | `GET /me/restaurant/readiness` & `POST /me/restaurant/publish` |
+| 002 | Menu Item Deals & Cross-Category Combos | 2026-10-22 | feat(menu-items) | `originalPrice`, `isDeal`, Combo Builder & Storefront Carousel |
