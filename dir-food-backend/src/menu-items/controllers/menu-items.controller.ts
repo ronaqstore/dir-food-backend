@@ -46,11 +46,13 @@ export class MenuItemsController {
   @Get()
   @ApiOperation({ summary: 'List menu items for current restaurant with variants' })
   @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search dish name or description' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   async getItems(
     @CurrentUser() user: AuthenticatedUser,
     @Query('categoryId') categoryId?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
@@ -61,6 +63,7 @@ export class MenuItemsController {
       categoryId,
       pageNum,
       limitNum,
+      search,
     );
   }
 

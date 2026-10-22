@@ -31,8 +31,8 @@ describe('MenuItemsController (unit)', () => {
     };
     mockService.getItems.mockResolvedValue({ data: [], meta: { page: 1 } });
 
-    const res = await controller.getItems(mockUser, 'cat-1', '2', '10');
-    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', 'cat-1', 2, 10);
+    const res = await controller.getItems(mockUser, 'cat-1', undefined, '2', '10');
+    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', 'cat-1', 2, 10, undefined);
     expect(res.meta.page).toBe(1);
   });
 

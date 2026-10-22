@@ -24,6 +24,7 @@ export class MenuItemsService {
     categoryId?: string,
     page = 1,
     limit = 20,
+    search?: string,
   ) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -41,6 +42,12 @@ export class MenuItemsService {
     const where: Record<string, unknown> = { restaurantId };
     if (categoryId) {
       where.categoryId = categoryId;
+    }
+    if (search && search.trim()) {
+      where.OR = [
+        { name: { contains: search.trim(), mode: 'insensitive' } },
+        { description: { contains: search.trim(), mode: 'insensitive' } },
+      ];
     }
 
     const [total, items] = await Promise.all([
