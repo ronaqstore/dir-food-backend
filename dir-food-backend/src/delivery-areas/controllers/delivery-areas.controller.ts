@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Put,
+  Post,
   Body,
   UseGuards,
   HttpCode,
@@ -16,6 +17,7 @@ import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.j
 import { UserRole } from '../../generated/prisma/enums.js';
 import { DeliveryAreasService } from '../services/delivery-areas.service.js';
 import { UpdateDeliveryAreasDto } from '../dto/update-delivery-areas.dto.js';
+import { CreateCustomDeliveryAreaDto } from '../dto/create-custom-delivery-area.dto.js';
 
 @ApiTags('Restaurant Owner - Delivery Areas')
 @ApiBearerAuth('bearer')
@@ -39,5 +41,15 @@ export class DeliveryAreasController {
     @Body() dto: UpdateDeliveryAreasDto,
   ) {
     return this.areasService.updateDeliveryAreas(user.restaurantId!, dto);
+  }
+
+  @Post('custom')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add a custom delivery area in restaurant city and activate for delivery' })
+  async createCustomArea(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateCustomDeliveryAreaDto,
+  ) {
+    return this.areasService.createCustomArea(user.restaurantId!, dto);
   }
 }

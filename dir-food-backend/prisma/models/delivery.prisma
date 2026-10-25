@@ -1,9 +1,8 @@
 // =============================================================================
-// DELIVERY AREAS AND OPERATING HOURS
+// CITIES / DISTRICTS, DELIVERY AREAS AND OPERATING HOURS
 // =============================================================================
 
-// Shared master list. One row can be used by many restaurants via RestaurantDeliveryArea.
-model Area {
+model City {
   id        String   @id @default(uuid(7)) @db.Uuid
   name      String   @unique
   slug      String   @unique
@@ -12,9 +11,50 @@ model Area {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  restaurantAreas RestaurantDeliveryArea[]
+  areas       Area[]
+  restaurants Restaurant[]
+  aliases     AreaAlias[]
 
+  @@map("cities")
+}
+
+// Shared master list scoped by City. One row can be used by many restaurants via RestaurantDeliveryArea.
+model Area {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  cityId          String   @map("city_id") @db.Uuid
+  name            String
+  slug            String
+  sortOrder       Int      @default(0) @map("sort_order")
+  isActive        Boolean  @default(true) @map("is_active")
+  isVerified      Boolean  @default(true) @map("is_verified")
+  isCustomCreated Boolean  @default(false) @map("is_custom_created")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  city            City     @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  restaurantAreas RestaurantDeliveryArea[]
+  aliases         AreaAlias[]
+
+  @@unique([cityId, name])
+  @@unique([cityId, slug])
+  @@index([cityId, isActive, isVerified])
   @@map("areas")
+}
+
+model AreaAlias {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  areaId     String   @map("area_id") @db.Uuid
+  cityId     String   @map("city_id") @db.Uuid
+  alias      String
+  normalized String
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  area Area @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([cityId, normalized])
+  @@index([cityId, normalized])
+  @@map("area_aliases")
 }
 
 model RestaurantDeliveryArea {

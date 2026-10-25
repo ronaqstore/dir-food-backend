@@ -45,10 +45,12 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // 1. Setup Areas
+    const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
     const activeArea = await prisma.area.upsert({
-      where: { slug: 'timergara-pub-e2e' },
+      where: { cityId_slug: { cityId: defaultCity.id, slug: 'timergara-pub-e2e' } },
       update: { isActive: true },
       create: {
+        cityId: defaultCity.id,
         name: 'Timergara Public E2E',
         slug: 'timergara-pub-e2e',
         sortOrder: 1,
@@ -58,9 +60,10 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
     activeAreaId = activeArea.id;
 
     const inactiveArea = await prisma.area.upsert({
-      where: { slug: 'inactive-pub-e2e' },
+      where: { cityId_slug: { cityId: defaultCity.id, slug: 'inactive-pub-e2e' } },
       update: { isActive: false },
       create: {
+        cityId: defaultCity.id,
         name: 'Inactive Public E2E',
         slug: 'inactive-pub-e2e',
         sortOrder: 99,

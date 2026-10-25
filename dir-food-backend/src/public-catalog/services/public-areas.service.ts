@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service.js';
 
 export interface PublicAreaItem {
   id: string;
+  cityId: string;
   name: string;
   slug: string;
 }
@@ -11,10 +12,12 @@ export interface PublicAreaItem {
 export class PublicAreasService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAreas(): Promise<PublicAreaItem[]> {
+  async getAreas(cityId?: string): Promise<PublicAreaItem[]> {
     return this.prisma.area.findMany({
       where: {
         isActive: true,
+        isVerified: true,
+        ...(cityId ? { cityId } : {}),
       },
       orderBy: [
         { sortOrder: 'asc' },
@@ -22,6 +25,7 @@ export class PublicAreasService {
       ],
       select: {
         id: true,
+        cityId: true,
         name: true,
         slug: true,
       },

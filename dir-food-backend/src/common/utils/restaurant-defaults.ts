@@ -13,6 +13,7 @@ export const DEFAULT_DELIVERY_FEE_PAISA = 5000n; // Rs 50 = 5000 paisa
 export async function seedRestaurantDefaults(
   tx: Prisma.TransactionClient,
   restaurantId: string,
+  cityId?: string | null,
 ): Promise<void> {
   // 1. 7 days of operating hours (Sunday = 0 to Saturday = 6)
   const defaultHours = [];
@@ -30,9 +31,12 @@ export async function seedRestaurantDefaults(
     skipDuplicates: true,
   });
 
-  // 2. Link all active master delivery areas
+  // 2. Link all active master delivery areas (scoped to city if specified)
   const activeAreas = await tx.area.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(cityId ? { cityId } : {}),
+    },
     select: { id: true },
   });
 

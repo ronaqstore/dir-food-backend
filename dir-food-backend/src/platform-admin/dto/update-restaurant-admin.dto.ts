@@ -45,6 +45,11 @@ export class UpdateRestaurantAdminDto {
   @Min(0)
   minOrderAmount?: number;
 
+  @ApiPropertyOptional({ example: '01920000-0000-7000-8000-000000000001', description: 'City/District UUID' })
+  @IsOptional()
+  @IsString()
+  cityId?: string;
+
   @ApiPropertyOptional({ description: 'Internal administrative / support notes' })
   @IsOptional()
   @IsString()

@@ -139,6 +139,20 @@ export class PlatformAdminService {
       slug = `${baseSlug}-${counter}`;
     }
 
+    let cityId = dto.cityId;
+    if (cityId) {
+      const city = await this.prisma.city?.findUnique({ where: { id: cityId } });
+      if (!city) {
+        throw new BadRequestException('Invalid city/district ID');
+      }
+    } else if (this.prisma.city?.findFirst) {
+      const defaultCity = await this.prisma.city.findFirst({
+        where: { isActive: true },
+        orderBy: { sortOrder: 'asc' },
+      });
+      cityId = defaultCity?.id;
+    }
+
     const minOrder =
       dto.minOrderAmount !== undefined && dto.minOrderAmount !== null
         ? BigInt(dto.minOrderAmount)
@@ -149,6 +163,7 @@ export class PlatformAdminService {
         data: {
           name: dto.name.trim(),
           slug,
+          cityId: cityId ?? null,
           contactPhone: normalizedContact,
           whatsappNumber: normalizedWa ?? null,
           addressText: dto.addressText?.trim() ?? null,
@@ -168,7 +183,7 @@ export class PlatformAdminService {
         },
       });
 
-      await seedRestaurantDefaults(tx, restaurant.id);
+      await seedRestaurantDefaults(tx, restaurant.id, cityId);
 
       const setupLink = await this.authService.buildSetupLink(user.id, tx);
 
@@ -358,6 +373,17 @@ export class PlatformAdminService {
     if (dto.whatsappNumber !== undefined) data.whatsappNumber = normalizedWa;
     if (minOrder !== undefined) data.minOrderAmount = minOrder;
     if (dto.adminNotes !== undefined) data.adminNotes = dto.adminNotes?.trim() ?? null;
+    if (dto.cityId !== undefined) {
+      if (dto.cityId) {
+        const city = await this.prisma.city.findUnique({ where: { id: dto.cityId } });
+        if (!city) {
+          throw new BadRequestException('Invalid city/district ID');
+        }
+        data.cityId = dto.cityId;
+      } else {
+        data.cityId = null;
+      }
+    }
 
     const updated = await this.prisma.restaurant.update({
       where: { id },

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   ConflictException,
   UnprocessableEntityException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
@@ -32,6 +33,13 @@ export class RestaurantsService {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
       include: {
+        city: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         hours: true,
         deliveryAreas: {
           include: {
@@ -79,6 +87,17 @@ export class RestaurantsService {
     }
     if (dto.minOrderAmount !== undefined) {
       data.minOrderAmount = dto.minOrderAmount !== null ? BigInt(dto.minOrderAmount) : null;
+    }
+    if (dto.cityId !== undefined) {
+      if (dto.cityId) {
+        const city = await this.prisma.city.findUnique({ where: { id: dto.cityId } });
+        if (!city) {
+          throw new BadRequestException('Invalid city/district ID');
+        }
+        data.cityId = dto.cityId;
+      } else {
+        data.cityId = null;
+      }
     }
 
     let whatsappChanged = false;

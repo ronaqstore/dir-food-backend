@@ -65,5 +65,10 @@ export class RegisterRestaurantDto {
   @ArrayMaxSize(5)
   @IsString({ each: true })
   cuisines?: string[];
+
+  @ApiPropertyOptional({ example: '01920000-0000-7000-8000-000000000001', description: 'City/District UUID' })
+  @IsOptional()
+  @IsString()
+  cityId?: string;
 }
 

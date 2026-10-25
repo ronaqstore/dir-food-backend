@@ -71,6 +71,19 @@ Dir Food is a restaurant-discovery and WhatsApp-request platform for Timergara a
     - Merchant dashboard provides an interactive Cross-Category Combo Builder with automatic retail sum aggregation and auto-generated combo descriptions.
     - Storefront catalog renders top scroll-snap featured deals carousel, discount badges, cut prices, and KFC/Foodpanda-style combo breakdown modals.
 
+12. **Multi-District Hierarchy, Area Verification & Typo Aliasing:**
+    - `City` model scopes all restaurants and master delivery areas (`cityId`).
+    - Standard admin areas are verified (`isVerified = true`). Owner-created custom areas default to unverified (`isVerified = false`).
+    - Customer storefront strictly serves `{ isActive: true, isVerified: true }`; unverified entries are completely hidden from public discovery.
+    - `AreaAlias` table (`@@unique([cityId, normalized])`) stores canonical mappings for misspelled/alternative area names.
+    - When an owner adds a custom area, the normalized string is checked against `AreaAlias` to automatically reuse canonical areas.
+    - Platform admin governance:
+      - `POST /admin/areas/:id/approve`: Cleans spelling/slug and publishes to storefront.
+      - `POST /admin/areas/:id/merge`: Re-links restaurant coverage, creates permanent alias in `AreaAlias`, and deletes the duplicate area.
+      - `DELETE /admin/areas/:id`: Removes unneeded areas.
+    - Real-time frontend cache synchronization: changing restaurant district in profile immediately invalidates and refetches delivery areas via city-scoped TanStack Query keys (`['restaurant-delivery-areas', cityId]`).
+
+
 
 
 

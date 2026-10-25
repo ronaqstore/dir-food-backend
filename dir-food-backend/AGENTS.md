@@ -220,7 +220,38 @@ Prisma 7 is configured for multi-file schema loading (`schema: 'prisma'` in `pri
      - `GET /admin/areas`: Lists all delivery areas with active restaurant counts.
      - `POST /admin/areas`: Creates master delivery area.
      - `PATCH /admin/areas/:id`: Renames, reorders (`sortOrder`), or toggles active status.
+     - `POST /admin/areas/:id/approve`: Approves and publishes area to storefront.
+     - `POST /admin/areas/:id/merge`: Merges duplicate/misspelled area into canonical area and saves permanent alias.
+     - `DELETE /admin/areas/:id`: Deletes area if no orders exist.
    - **Support, Activity & Audit (`PlatformAdminOperationsController`):**
      - `GET /admin/order-intents`: Support lookup of customer WhatsApp requests by short code reference or customer keywords.
      - `GET /admin/activity`: Aggregated platform 7-day or 30-day activity summary metrics.
      - `GET /admin/audit-logs`: Paginated audit log search with actor, action, and restaurant filtering.
+
+---
+
+## 11. Multi-District Scoping, Area Verification & Alias Deduplication
+
+1. **City / District Domain Model:**
+   - `City` (`cities` table): `id`, `name`, `slug`, `sortOrder`, `isActive`, `createdAt`, `updatedAt`.
+   - `Area` and `Restaurant` are scoped via `cityId`.
+   - Admin City CRUD: `GET /admin/cities`, `POST /admin/cities`, `PATCH /admin/cities/:id`.
+   - Public City Discovery: `GET /public/cities`.
+
+2. **Area Verification & Customer Storefront Isolation:**
+   - `Area.isVerified Boolean @default(true)`: Admin-created areas are verified; owner-added custom areas default to `isVerified: false`.
+   - `PublicAreasService.getAreas`: Strictly queries `where: { isActive: true, isVerified: true, ...(cityId ? { cityId } : {}) }`.
+   - Unverified areas are completely isolated from the public storefront and search catalog.
+
+3. **Area Aliases & Automatic Typo Resolution:**
+   - `AreaAlias` (`area_aliases` table): `id`, `cityId`, `normalized`, `targetAreaId` with `@@unique([cityId, normalized])`.
+   - When owner calls `POST /me/restaurant/delivery-areas/custom`:
+     - Normalizes input name (lowercase, spaceless).
+     - Checks `AreaAlias`. If match found, re-attaches to target canonical area without duplicate area creation.
+     - If novel, creates `Area` with `isVerified: false` scoped to restaurant's `cityId`.
+
+4. **Super Admin Governance:**
+   - `POST /admin/areas/:id/approve`: Approves area and optionally cleans spelling/slug before storefront publication.
+   - `POST /admin/areas/:id/merge`: Migrates restaurant delivery links to canonical target area, creates permanent alias in `area_aliases`, migrates order intents, and deletes source duplicate area.
+   - `DELETE /admin/areas/:id`: Safely deletes area if no existing orders exist.
+

@@ -110,6 +110,24 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
 
+    let cityId = dto.cityId;
+    if (cityId) {
+      const city = await this.prisma.city.findUnique({ where: { id: cityId } });
+      if (!city) {
+        throw new BadRequestException('Invalid city/district ID');
+      }
+    } else if (this.prisma.city?.findFirst) {
+      const defaultCity =
+        (await this.prisma.city.findFirst({
+          where: { slug: 'lower-dir', isActive: true },
+        })) ??
+        (await this.prisma.city.findFirst({
+          where: { isActive: true },
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+        }));
+      cityId = defaultCity?.id;
+    }
+
     const now = new Date();
     const subscriptionEndsAt = new Date(
       now.getTime() + 30 * 24 * 60 * 60 * 1000,
@@ -120,6 +138,7 @@ export class AuthService {
         data: {
           name: dto.restaurantName.trim(),
           slug,
+          cityId: cityId ?? null,
           description: dto.description?.trim() ?? null,
           whatsappNumber: normalizedWa ?? null,
           cuisines: dto.cuisines ?? [],
@@ -140,7 +159,7 @@ export class AuthService {
         },
       });
 
-      await seedRestaurantDefaults(tx, restaurant.id);
+      await seedRestaurantDefaults(tx, restaurant.id, cityId);
 
       return { restaurant, user };
     });

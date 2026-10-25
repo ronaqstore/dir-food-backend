@@ -48,14 +48,17 @@ describe('Restaurant Dashboard & Menu Management (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // 1. Ensure test delivery area exists
+    const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
     const area = await prisma.area.upsert({
-      where: { slug: 'timergara-city-e2e' },
-      update: { isActive: true },
+      where: { cityId_slug: { cityId: defaultCity.id, slug: 'timergara-city-e2e' } },
+      update: { isActive: true, isVerified: true },
       create: {
+        cityId: defaultCity.id,
         name: 'Timergara City E2E',
         slug: 'timergara-city-e2e',
         sortOrder: 1,
         isActive: true,
+        isVerified: true,
       },
     });
     testAreaId = area.id;

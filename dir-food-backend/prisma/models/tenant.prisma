@@ -26,6 +26,8 @@ model Restaurant {
   createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  cityId           String?          @map("city_id") @db.Uuid
+  city             City?            @relation(fields: [cityId], references: [id], onDelete: Restrict)
   users            User[]
   hours            RestaurantHours[]
   deliveryAreas    RestaurantDeliveryArea[]
@@ -37,6 +39,7 @@ model Restaurant {
   auditLogs        AuditLog[]
 
   @@index([status, subscriptionEndsAt])
+  @@index([cityId, status])
   @@map("restaurants")
 }
 

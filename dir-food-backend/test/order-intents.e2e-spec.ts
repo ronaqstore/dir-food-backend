@@ -58,10 +58,12 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // 1. Setup Delivery Areas
+    const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
     const area1 = await prisma.area.upsert({
-      where: { slug: 'timergara-order-e2e' },
+      where: { cityId_slug: { cityId: defaultCity.id, slug: 'timergara-order-e2e' } },
       update: { isActive: true },
       create: {
+        cityId: defaultCity.id,
         name: 'Timergara Order E2E',
         slug: 'timergara-order-e2e',
         sortOrder: 1,
@@ -71,9 +73,10 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
     activeAreaId = area1.id;
 
     const area2 = await prisma.area.upsert({
-      where: { slug: 'unserved-order-e2e' },
+      where: { cityId_slug: { cityId: defaultCity.id, slug: 'unserved-order-e2e' } },
       update: { isActive: true },
       create: {
+        cityId: defaultCity.id,
         name: 'Unserved Order E2E',
         slug: 'unserved-order-e2e',
         sortOrder: 2,

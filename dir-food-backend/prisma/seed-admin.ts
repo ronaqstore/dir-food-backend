@@ -60,12 +60,25 @@ async function seed() {
   console.log('\n--- Seeding Database ---');
 
   // ---------------------------------------------------------------------------
-  // 2. Default Area
+  // 2. Default City & Area
   // ---------------------------------------------------------------------------
+  const city = await prisma.city.upsert({
+    where: { slug: 'lower-dir' },
+    update: { isActive: true, sortOrder: 0 },
+    create: {
+      name: 'Lower Dir',
+      slug: 'lower-dir',
+      sortOrder: 0,
+      isActive: true,
+    },
+  });
+  console.log(`✔ Base City: ${city.name} (${city.slug})`);
+
   const area = await prisma.area.upsert({
-    where: { slug: 'timergara' },
+    where: { cityId_slug: { cityId: city.id, slug: 'timergara' } },
     update: { isActive: true },
     create: {
+      cityId: city.id,
       name: 'Timergara',
       slug: 'timergara',
       sortOrder: 1,
@@ -116,10 +129,12 @@ async function seed() {
       whatsappNumber: ownerPhone,
       trialStartedAt: new Date(),
       subscriptionEndsAt: futureSubscription,
+      cityId: city.id,
     },
     create: {
       name: shopName,
       slug: restaurantSlug,
+      cityId: city.id,
       description: 'Your favorite local dishes delivered hot and fresh.',
       cuisines: ['Traditional', 'Fast Food', 'BBQ'],
       addressText: 'Main Bazaar, Timergara',

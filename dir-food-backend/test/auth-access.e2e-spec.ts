@@ -293,10 +293,12 @@ describe('Auth & Access Control (e2e)', () => {
       });
 
       // 4. Delivery Area
+      const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
       const area = await prisma.area.upsert({
-        where: { slug: `timergara-city-${testRunId}` },
+        where: { cityId_slug: { cityId: defaultCity.id, slug: `timergara-city-${testRunId}` } },
         update: {},
         create: {
+          cityId: defaultCity.id,
           name: `Timergara City ${testRunId}`,
           slug: `timergara-city-${testRunId}`,
         },

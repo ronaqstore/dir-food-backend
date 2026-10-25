@@ -11,6 +11,7 @@ describe('DeliveryAreasController (unit)', () => {
     mockService = {
       getDeliveryAreas: vi.fn(),
       updateDeliveryAreas: vi.fn(),
+      createCustomArea: vi.fn(),
     };
 
     controller = new DeliveryAreasController(
@@ -48,5 +49,20 @@ describe('DeliveryAreasController (unit)', () => {
     const res = await controller.updateDeliveryAreas(mockUser, dto);
     expect(mockService.updateDeliveryAreas).toHaveBeenCalledWith('rest-1', dto);
     expect(res).toEqual([]);
+  });
+
+  it('delegates createCustomArea with user.restaurantId and dto', async () => {
+    const mockUser = {
+      userId: 'user-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'rest-1',
+    };
+    const dto = { name: 'Qambar', deliveryFee: 10000 };
+    const mockResult = { areaId: 'area-new', name: 'Qambar', isServed: true, deliveryFee: 10000, minOrderAmount: null };
+    mockService.createCustomArea.mockResolvedValue(mockResult);
+
+    const res = await controller.createCustomArea(mockUser, dto);
+    expect(mockService.createCustomArea).toHaveBeenCalledWith('rest-1', dto);
+    expect(res).toEqual(mockResult);
   });
 });

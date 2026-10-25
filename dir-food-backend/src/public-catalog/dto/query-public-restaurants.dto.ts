@@ -14,6 +14,14 @@ import {
 
 export class QueryPublicRestaurantsDto {
   @ApiPropertyOptional({
+    description: 'Filter restaurants located in this City UUID',
+    example: '01920000-0000-7000-8000-000000000001',
+  })
+  @IsOptional()
+  @IsUUID('all', { message: 'cityId must be a valid UUID' })
+  cityId?: string;
+
+  @ApiPropertyOptional({
     description: 'Filter restaurants serving this delivery area ID',
     example: '018f3a2b-0000-7000-8000-000000000001',
   })

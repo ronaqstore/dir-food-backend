@@ -82,6 +82,10 @@ export class PublicRestaurantsService {
       },
     };
 
+    if (query.cityId) {
+      where.cityId = query.cityId;
+    }
+
     if (query.areaId) {
       where.deliveryAreas = {
         some: {

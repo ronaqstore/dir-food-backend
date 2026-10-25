@@ -143,6 +143,10 @@ describe('Image Uploads & Storage Adapter (e2e)', () => {
   });
 
   describe('Disabled Storage Policy (Local / Dev when R2 is off)', () => {
+    beforeAll(() => {
+      (r2Storage as any).enabled = false;
+    });
+
     it('returns 503 Service Unavailable when attempting upload while R2 is disabled', async () => {
       // In default test environment, R2_STORAGE_ENABLED=false
       const sampleJpeg = await makeTestImage('jpeg');
