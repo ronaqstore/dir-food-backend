@@ -1,14 +1,9 @@
 node_modules/
 dist/
+*.tsbuildinfo
 .env
 .env.*
 !.env.example
+coverage/
+src/generated/
 *.bak
-*.tsbuildinfo
-*.zip
-
-local_pg_dev/
-
-# Frontend applications (separate git repos)
-dir-food-admin/
-dir-food-web/
