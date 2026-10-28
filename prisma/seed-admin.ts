@@ -40,8 +40,9 @@ async function seed() {
     process.env.SEED_ADMIN_PASSWORD || process.env.SEED_OWNER_PASSWORD || 'admin@123';
   const passwordHash = await bcrypt.hash(sharedPassword, 12);
 
-  const adminPhone = normalizePhone(process.env.SEED_ADMIN_PHONE || '03000000000');
+  const adminPhone = normalizePhone(process.env.SEED_ADMIN_PHONE || '03029825213');
   const adminName = process.env.SEED_ADMIN_NAME || 'Super Admin';
+  const legacyAdminPhone = normalizePhone('03000000000');
 
   const ownerPhone = normalizePhone(process.env.SEED_OWNER_PHONE || '03111111111');
   const ownerName = process.env.SEED_OWNER_NAME || 'Shop Owner';
@@ -90,6 +91,20 @@ async function seed() {
   // ---------------------------------------------------------------------------
   // 3. Platform Admin User
   // ---------------------------------------------------------------------------
+  if (legacyAdminPhone !== adminPhone) {
+    const disabled = await prisma.user.updateMany({
+      where: { phone: legacyAdminPhone, role: UserRole.PLATFORM_ADMIN },
+      data: {
+        status: UserStatus.DISABLED,
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+    });
+    if (disabled.count > 0) {
+      console.log(`✔ Disabled legacy platform admin phone ${legacyAdminPhone}`);
+    }
+  }
+
   const admin = await prisma.user.upsert({
     where: { phone: adminPhone },
     update: {
@@ -110,7 +125,7 @@ async function seed() {
       restaurantId: null,
     },
   });
-  console.log(`✔ Platform Admin: ${admin.name} | Phone: ${admin.phone} (03000000000)`);
+  console.log(`✔ Platform Admin: ${admin.name} | Phone: ${admin.phone}`);
 
   // ---------------------------------------------------------------------------
   // 4. Restaurant for Owner
@@ -256,7 +271,7 @@ async function seed() {
   console.log('\n======================================================');
   console.log('Seeding completed successfully!');
   console.log('Super Admin Credentials:');
-  console.log(`  - Mobile:   03000000000 (or +923000000000)`);
+  console.log(`  - Mobile:   03029825213 (or +${adminPhone})`);
   console.log(`  - Password: ${sharedPassword}`);
   console.log(`  - Role:     PLATFORM_ADMIN`);
   console.log('Restaurant Owner Credentials:');
