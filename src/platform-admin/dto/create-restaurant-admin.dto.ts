@@ -55,7 +55,10 @@ export class CreateRestaurantAdminDto {
   @Min(0)
   minOrderAmount?: number;
 
-  @ApiPropertyOptional({ example: '01920000-0000-7000-8000-000000000001', description: 'City/District UUID' })
+  @ApiPropertyOptional({
+    example: '01920000-0000-7000-8000-000000000001',
+    description: 'City/District UUID',
+  })
   @IsOptional()
   @IsString()
   cityId?: string;
@@ -65,4 +68,3 @@ export class CreateRestaurantAdminDto {
   @Type(() => RestaurantOwnerAdminInputDto)
   owner!: RestaurantOwnerAdminInputDto;
 }
-

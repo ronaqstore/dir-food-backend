@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { slugify } from '../../common/utils/phone.js';
@@ -18,9 +19,6 @@ export class PlatformAdminAreasService {
     private readonly auditService: AuditService,
   ) {}
 
-  /**
-   * List all areas (active and inactive) with restaurant count.
-   */
   async listAreas(cityId?: string) {
     const areas = await this.prisma.area.findMany({
       where: cityId ? { cityId } : undefined,
@@ -36,7 +34,9 @@ export class PlatformAdminAreasService {
         _count: {
           select: {
             restaurantAreas: {
-              where: { isActive: true },
+              where: {
+                isActive: true,
+              },
             },
           },
         },
@@ -60,9 +60,6 @@ export class PlatformAdminAreasService {
     }));
   }
 
-  /**
-   * Create a new delivery area.
-   */
   async createArea(
     dto: CreateAreaDto,
     adminUserId: string,
@@ -101,14 +98,18 @@ export class PlatformAdminAreasService {
       where: { cityId_name: { cityId, name } },
     });
     if (existingName) {
-      throw new ConflictException(`Area with name "${name}" already exists in this city`);
+      throw new ConflictException(
+        `Area with name "${name}" already exists in this city`,
+      );
     }
 
     const existingSlug = await this.prisma.area.findUnique({
       where: { cityId_slug: { cityId, slug } },
     });
     if (existingSlug) {
-      throw new ConflictException(`Area with slug "${slug}" already exists in this city`);
+      throw new ConflictException(
+        `Area with slug "${slug}" already exists in this city`,
+      );
     }
 
     const area = await this.prisma.area.create({
@@ -139,9 +140,6 @@ export class PlatformAdminAreasService {
     return area;
   }
 
-  /**
-   * Update an existing delivery area.
-   */
   async updateArea(
     id: string,
     dto: UpdateAreaDto,
@@ -153,7 +151,7 @@ export class PlatformAdminAreasService {
       throw new NotFoundException('Area not found');
     }
 
-    const data: any = {};
+    const data: Prisma.AreaUpdateInput = {};
     const targetCityId = dto.cityId || area.cityId;
 
     if (dto.cityId && dto.cityId !== area.cityId) {
@@ -163,18 +161,22 @@ export class PlatformAdminAreasService {
       if (!cityExists) {
         throw new NotFoundException(`City with ID "${dto.cityId}" not found`);
       }
-      data.cityId = dto.cityId;
+      data.city = { connect: { id: dto.cityId } };
     }
 
     if (dto.name !== undefined) {
       const name = dto.name.trim();
-      if (!name) throw new BadRequestException('Area name cannot be empty');
-      if (name !== area.name || targetCityId !== area.cityId) {
+      if (!name) {
+        throw new BadRequestException('Area name cannot be empty');
+      }
+      if (name !== area.name || (dto.cityId && dto.cityId !== area.cityId)) {
         const existing = await this.prisma.area.findUnique({
           where: { cityId_name: { cityId: targetCityId, name } },
         });
         if (existing && existing.id !== id) {
-          throw new ConflictException(`Area with name "${name}" already exists in this city`);
+          throw new ConflictException(
+            `Area with name "${name}" already exists in this city`,
+          );
         }
         data.name = name;
       }
@@ -182,13 +184,17 @@ export class PlatformAdminAreasService {
 
     if (dto.slug !== undefined) {
       const slug = slugify(dto.slug.trim());
-      if (!slug) throw new BadRequestException('Invalid area slug');
-      if (slug !== area.slug || targetCityId !== area.cityId) {
+      if (!slug) {
+        throw new BadRequestException('Invalid area slug');
+      }
+      if (slug !== area.slug || (dto.cityId && dto.cityId !== area.cityId)) {
         const existing = await this.prisma.area.findUnique({
           where: { cityId_slug: { cityId: targetCityId, slug } },
         });
         if (existing && existing.id !== id) {
-          throw new ConflictException(`Area with slug "${slug}" already exists in this city`);
+          throw new ConflictException(
+            `Area with slug "${slug}" already exists in this city`,
+          );
         }
         data.slug = slug;
       }
@@ -214,7 +220,7 @@ export class PlatformAdminAreasService {
       entityId: id,
       details: {
         old: { name: area.name, slug: area.slug, isActive: area.isActive },
-        updated: data,
+        updated: data as Record<string, unknown>,
       },
       ipAddress,
     });
@@ -222,9 +228,6 @@ export class PlatformAdminAreasService {
     return updated;
   }
 
-  /**
-   * Delete a delivery area if it has no customer orders.
-   */
   async deleteArea(id: string, adminUserId: string, ipAddress?: string) {
     const area = await this.prisma.area.findUnique({
       where: { id },
@@ -249,7 +252,7 @@ export class PlatformAdminAreasService {
 
     if (orderCount > 0) {
       throw new BadRequestException(
-        `Cannot delete area "${area.name}" because it is associated with ${orderCount} customer order(s). You can deactivate it instead.`
+        `Cannot delete area "${area.name}" because it is associated with ${orderCount} customer order(s). You can deactivate it instead.`,
       );
     }
 
@@ -275,12 +278,12 @@ export class PlatformAdminAreasService {
       ipAddress,
     });
 
-    return { success: true, message: `Area "${area.name}" deleted successfully` };
+    return {
+      success: true,
+      message: `Area "${area.name}" deleted successfully`,
+    };
   }
 
-  /**
-   * Approve an unverified area and publish it. Optionally clean up its display name.
-   */
   async approveArea(
     id: string,
     dto: ApproveAreaDto | undefined,
@@ -292,7 +295,7 @@ export class PlatformAdminAreasService {
       throw new NotFoundException('Area not found');
     }
 
-    const data: any = { isVerified: true, isActive: true };
+    const data: Prisma.AreaUpdateInput = { isVerified: true, isActive: true };
 
     if (dto?.name && dto.name.trim() !== area.name) {
       const cleanName = dto.name.trim();
@@ -303,7 +306,9 @@ export class PlatformAdminAreasService {
         where: { cityId_slug: { cityId: area.cityId, slug } },
       });
       if (existingSlug && existingSlug.id !== id) {
-        throw new ConflictException(`An area with name "${cleanName}" already exists in this city`);
+        throw new ConflictException(
+          `An area with name "${cleanName}" already exists in this city`,
+        );
       }
 
       data.name = cleanName;
@@ -331,10 +336,6 @@ export class PlatformAdminAreasService {
     return updated;
   }
 
-  /**
-   * Merge a duplicate/misspelled area into a canonical target area.
-   * Re-links all restaurants, stores source spelling into AreaAlias, and deletes source area.
-   */
   async mergeArea(
     sourceAreaId: string,
     targetAreaId: string,
@@ -342,7 +343,9 @@ export class PlatformAdminAreasService {
     ipAddress?: string,
   ) {
     if (sourceAreaId === targetAreaId) {
-      throw new BadRequestException('Source area and target area cannot be the same');
+      throw new BadRequestException(
+        'Source area and target area cannot be the same',
+      );
     }
 
     const [sourceArea, targetArea] = await Promise.all([
@@ -355,17 +358,26 @@ export class PlatformAdminAreasService {
       }),
     ]);
 
-    if (!sourceArea) throw new NotFoundException('Source area not found');
-    if (!targetArea) throw new NotFoundException('Target area not found');
+    if (!sourceArea) {
+      throw new NotFoundException(
+        `Source area with ID "${sourceAreaId}" not found`,
+      );
+    }
+    if (!targetArea) {
+      throw new NotFoundException(
+        `Target area with ID "${targetAreaId}" not found`,
+      );
+    }
 
     if (sourceArea.cityId !== targetArea.cityId) {
-      throw new BadRequestException('Cannot merge areas belonging to different districts/cities');
+      throw new BadRequestException(
+        'Cannot merge areas belonging to different districts/cities',
+      );
     }
 
     const cleanAlias = sourceArea.name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
     await this.prisma.$transaction(async (tx) => {
-      // 1. Move restaurant delivery area configurations to target area
       for (const rda of sourceArea.restaurantAreas) {
         await tx.restaurantDeliveryArea.upsert({
           where: {
@@ -387,18 +399,15 @@ export class PlatformAdminAreasService {
         });
       }
 
-      // 2. Delete restaurant delivery areas for source
       await tx.restaurantDeliveryArea.deleteMany({
         where: { areaId: sourceArea.id },
       });
 
-      // 3. Update any order intents to target area if they exist
       await tx.orderIntent.updateMany({
         where: { deliveryAreaId: sourceArea.id },
         data: { deliveryAreaId: targetArea.id },
       });
 
-      // 4. Save source name as alias permanently
       if (cleanAlias) {
         await tx.areaAlias.upsert({
           where: {
@@ -420,7 +429,6 @@ export class PlatformAdminAreasService {
         });
       }
 
-      // 5. Delete source area
       await tx.area.delete({
         where: { id: sourceArea.id },
       });
@@ -430,21 +438,19 @@ export class PlatformAdminAreasService {
       actorUserId: adminUserId,
       action: 'AREA_MERGED',
       entityType: 'area',
-      entityId: targetArea.id,
+      entityId: targetAreaId,
       details: {
-        mergedAreaId: sourceArea.id,
-        mergedAreaName: sourceArea.name,
-        targetAreaId: targetArea.id,
-        targetAreaName: targetArea.name,
-        cityId: targetArea.cityId,
+        sourceAreaId,
+        sourceName: sourceArea.name,
+        targetAreaId,
+        targetName: targetArea.name,
       },
       ipAddress,
     });
 
     return {
       success: true,
-      message: `Successfully merged "${sourceArea.name}" into "${targetArea.name}".`,
+      message: `Area "${sourceArea.name}" merged into "${targetArea.name}" successfully`,
     };
   }
 }
-

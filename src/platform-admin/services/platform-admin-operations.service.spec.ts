@@ -38,7 +38,11 @@ describe('PlatformAdminOperationsService (unit)', () => {
         },
       ]);
 
-      const res = await service.searchOrderIntents({ ref: 'TM-7K4P9Q', page: 1, limit: 10 });
+      const res = await service.searchOrderIntents({
+        ref: 'TM-7K4P9Q',
+        page: 1,
+        limit: 10,
+      });
       expect(res.data).toHaveLength(1);
       expect(res.meta.total).toBe(1);
       expect(res.data[0].publicRef).toBe('TM-7K4P9Q');
@@ -80,11 +84,14 @@ describe('PlatformAdminOperationsService (unit)', () => {
         },
       ]);
 
-      const res = await service.getAuditLogs({ restaurantId: 'r1', page: 1, limit: 10 });
+      const res = await service.getAuditLogs({
+        restaurantId: 'r1',
+        page: 1,
+        limit: 10,
+      });
       expect(res.data).toHaveLength(1);
       expect(res.meta.total).toBe(1);
       expect(res.data[0].action).toBe('RESTAURANT_APPROVED');
     });
   });
 });
-

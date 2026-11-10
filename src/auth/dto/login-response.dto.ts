@@ -31,4 +31,3 @@ export class PlatformAdminLoginResponseDto {
     role: UserRole;
   };
 }
-

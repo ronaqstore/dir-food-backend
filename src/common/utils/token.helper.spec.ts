@@ -47,4 +47,3 @@ describe('token.helper', () => {
     expect(hashesMatch('', '')).toBe(false);
   });
 });
-

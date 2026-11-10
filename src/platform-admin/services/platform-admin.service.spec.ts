@@ -69,7 +69,12 @@ describe('PlatformAdminService (unit)', () => {
         },
       ]);
 
-      const res = await adminService.listRestaurants({ page: 1, limit: 10, status: RestaurantStatus.ACTIVE, q: 'Al-Noor' });
+      const res = await adminService.listRestaurants({
+        page: 1,
+        limit: 10,
+        status: RestaurantStatus.ACTIVE,
+        q: 'Al-Noor',
+      });
       expect(res.data).toHaveLength(1);
       expect(res.meta.total).toBe(1);
       expect(res.meta.totalPages).toBe(1);
@@ -81,8 +86,16 @@ describe('PlatformAdminService (unit)', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
       // Slug check
       mockPrisma.restaurant.findUnique.mockResolvedValue(null);
-      mockPrisma.restaurant.create.mockResolvedValue({ id: 'r1', name: 'Al-Noor', slug: 'al-noor' });
-      mockPrisma.user.create.mockResolvedValue({ id: 'u1', name: 'Ahmad', phone: '923001234567' });
+      mockPrisma.restaurant.create.mockResolvedValue({
+        id: 'r1',
+        name: 'Al-Noor',
+        slug: 'al-noor',
+      });
+      mockPrisma.user.create.mockResolvedValue({
+        id: 'u1',
+        name: 'Ahmad',
+        phone: '923001234567',
+      });
 
       const dto = {
         name: 'Al-Noor',
@@ -91,7 +104,11 @@ describe('PlatformAdminService (unit)', () => {
         owner: { name: 'Ahmad', phone: '03001234567' },
       };
 
-      const res = await adminService.createRestaurant(dto, 'admin-1', '127.0.0.1');
+      const res = await adminService.createRestaurant(
+        dto,
+        'admin-1',
+        '127.0.0.1',
+      );
       expect(res.restaurant.id).toBe('r1');
       expect(res.owner.name).toBe('Ahmad');
       expect(res.setupLink).toBeDefined();
@@ -106,7 +123,9 @@ describe('PlatformAdminService (unit)', () => {
         contactPhone: '03001234567',
         owner: { name: 'Ahmad', phone: '12345' },
       };
-      await expect(adminService.createRestaurant(dto, 'admin-1')).rejects.toThrow(BadRequestException);
+      await expect(
+        adminService.createRestaurant(dto, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('rejects if owner phone already exists', async () => {
@@ -116,7 +135,9 @@ describe('PlatformAdminService (unit)', () => {
         contactPhone: '03001234567',
         owner: { name: 'Ahmad', phone: '03001234567' },
       };
-      await expect(adminService.createRestaurant(dto, 'admin-1')).rejects.toThrow(ConflictException);
+      await expect(
+        adminService.createRestaurant(dto, 'admin-1'),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -133,12 +154,16 @@ describe('PlatformAdminService (unit)', () => {
 
       const res = await adminService.getRestaurantDetail('r1');
       expect(res.completeness.isReadyForApproval).toBe(false);
-      expect(res.completeness.missingPrerequisites).toContain('At least one active delivery area is required');
+      expect(res.completeness.missingPrerequisites).toContain(
+        'At least one active delivery area is required',
+      );
     });
 
     it('throws 404 if restaurant not found', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue(null);
-      await expect(adminService.getRestaurantDetail('unknown')).rejects.toThrow(NotFoundException);
+      await expect(adminService.getRestaurantDetail('unknown')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -150,9 +175,16 @@ describe('PlatformAdminService (unit)', () => {
         contactPhone: '923001234567',
         whatsappNumber: '923007654321',
       });
-      mockPrisma.restaurant.update.mockResolvedValue({ id: 'r1', name: 'Al-Noor Updated' });
+      mockPrisma.restaurant.update.mockResolvedValue({
+        id: 'r1',
+        name: 'Al-Noor Updated',
+      });
 
-      const res = await adminService.updateRestaurant('r1', { name: 'Al-Noor Updated', adminNotes: 'Good' }, 'admin-1');
+      const res = await adminService.updateRestaurant(
+        'r1',
+        { name: 'Al-Noor Updated', adminNotes: 'Good' },
+        'admin-1',
+      );
       expect(res.id).toBe('r1');
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'RESTAURANT_UPDATED_BY_ADMIN' }),
@@ -254,13 +286,21 @@ describe('PlatformAdminService (unit)', () => {
         trialStartedAt: new Date(),
         subscriptionEndsAt: futureEnd,
       });
-      mockPrisma.restaurant.update.mockImplementation(async ({ data }: any) => ({
-        id: 'r1',
-        ...data,
-      }));
+      mockPrisma.restaurant.update.mockImplementation(
+        async ({ data }: any) => ({
+          id: 'r1',
+          ...data,
+        }),
+      );
 
-      const res = await adminService.extendSubscription('r1', { addDays: 30 }, 'admin-1');
-      expect(res.subscriptionEndsAt!.getTime()).toBeGreaterThan(futureEnd.getTime());
+      const res = await adminService.extendSubscription(
+        'r1',
+        { addDays: 30 },
+        'admin-1',
+      );
+      expect(res.subscriptionEndsAt!.getTime()).toBeGreaterThan(
+        futureEnd.getTime(),
+      );
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'RESTAURANT_SUBSCRIPTION_EXTENDED' }),
       );
@@ -303,20 +343,28 @@ describe('PlatformAdminService (unit)', () => {
         trialStartedAt: trialStart,
         subscriptionEndsAt: currentEnd,
       });
-      mockPrisma.restaurant.update.mockImplementation(async ({ data }: any) => ({
-        id: 'r1',
-        ...data,
-      }));
+      mockPrisma.restaurant.update.mockImplementation(
+        async ({ data }: any) => ({
+          id: 'r1',
+          ...data,
+        }),
+      );
 
       const res = await adminService.shortenSubscription(
         'r1',
-        { subscriptionEndsAt: newEnd.toISOString(), reason: 'Mistake on duration', confirm: true },
+        {
+          subscriptionEndsAt: newEnd.toISOString(),
+          reason: 'Mistake on duration',
+          confirm: true,
+        },
         'admin-1',
       );
 
       expect(res.subscriptionEndsAt!.toISOString()).toBe(newEnd.toISOString());
       expect(mockAudit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'RESTAURANT_SUBSCRIPTION_SHORTENED' }),
+        expect.objectContaining({
+          action: 'RESTAURANT_SUBSCRIPTION_SHORTENED',
+        }),
       );
     });
 
@@ -331,7 +379,11 @@ describe('PlatformAdminService (unit)', () => {
       await expect(
         adminService.shortenSubscription(
           'r1',
-          { subscriptionEndsAt: new Date().toISOString(), reason: '', confirm: false },
+          {
+            subscriptionEndsAt: new Date().toISOString(),
+            reason: '',
+            confirm: false,
+          },
           'admin-1',
         ),
       ).rejects.toThrow(BadRequestException);
@@ -340,14 +392,23 @@ describe('PlatformAdminService (unit)', () => {
 
   describe('changeSlug', () => {
     it('changes slug if unique and valid', async () => {
-      mockPrisma.restaurant.findUnique.mockImplementation(async ({ where }: any) => {
-        if (where.id) return { id: 'r1', slug: 'old-slug' };
-        if (where.slug === 'new-slug') return null;
-        return null;
+      mockPrisma.restaurant.findUnique.mockImplementation(
+        async ({ where }: any) => {
+          if (where.id) return { id: 'r1', slug: 'old-slug' };
+          if (where.slug === 'new-slug') return null;
+          return null;
+        },
+      );
+      mockPrisma.restaurant.update.mockResolvedValue({
+        id: 'r1',
+        slug: 'new-slug',
       });
-      mockPrisma.restaurant.update.mockResolvedValue({ id: 'r1', slug: 'new-slug' });
 
-      const res = await adminService.changeSlug('r1', { slug: 'new-slug' }, 'admin-1');
+      const res = await adminService.changeSlug(
+        'r1',
+        { slug: 'new-slug' },
+        'admin-1',
+      );
       expect(res.slug).toBe('new-slug');
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'RESTAURANT_SLUG_CHANGED' }),
@@ -355,18 +416,28 @@ describe('PlatformAdminService (unit)', () => {
     });
 
     it('rejects reserved slugs', async () => {
-      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'r1', slug: 'old-slug' });
-      await expect(adminService.changeSlug('r1', { slug: 'admin' }, 'admin-1')).rejects.toThrow(BadRequestException);
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'r1',
+        slug: 'old-slug',
+      });
+      await expect(
+        adminService.changeSlug('r1', { slug: 'admin' }, 'admin-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('rejects slug already taken by another restaurant', async () => {
-      mockPrisma.restaurant.findUnique.mockImplementation(async ({ where }: any) => {
-        if (where.id) return { id: 'r1', slug: 'old-slug' };
-        if (where.slug === 'taken-slug') return { id: 'r2', slug: 'taken-slug' };
-        return null;
-      });
+      mockPrisma.restaurant.findUnique.mockImplementation(
+        async ({ where }: any) => {
+          if (where.id) return { id: 'r1', slug: 'old-slug' };
+          if (where.slug === 'taken-slug')
+            return { id: 'r2', slug: 'taken-slug' };
+          return null;
+        },
+      );
 
-      await expect(adminService.changeSlug('r1', { slug: 'taken-slug' }, 'admin-1')).rejects.toThrow(ConflictException);
+      await expect(
+        adminService.changeSlug('r1', { slug: 'taken-slug' }, 'admin-1'),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

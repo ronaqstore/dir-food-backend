@@ -5,7 +5,11 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
-import { UserRole, RestaurantStatus, UserStatus } from '../src/generated/prisma/enums.js';
+import {
+  UserRole,
+  RestaurantStatus,
+  UserStatus,
+} from '../src/generated/prisma/enums.js';
 import { normalizePhone } from '../src/common/utils/phone.js';
 import bcrypt from 'bcrypt';
 
@@ -68,7 +72,8 @@ describe('Auth & Access Control (e2e)', () => {
     const adminLoginRes = await request(app.getHttpServer())
       .post('/auth/platform-admin/login')
       .send({ phone: adminPhone, password: 'AdminSecret123!' });
-    adminToken = adminLoginRes.body.data.token || adminLoginRes.body.data.accessToken;
+    adminToken =
+      adminLoginRes.body.data.token || adminLoginRes.body.data.accessToken;
 
     // Register Restaurant 1
     owner1Phone = getUniquePakistaniPhone();
@@ -293,9 +298,16 @@ describe('Auth & Access Control (e2e)', () => {
       });
 
       // 4. Delivery Area
-      const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
+      const defaultCity = await prisma.city.findFirstOrThrow({
+        where: { slug: 'lower-dir' },
+      });
       const area = await prisma.area.upsert({
-        where: { cityId_slug: { cityId: defaultCity.id, slug: `timergara-city-${testRunId}` } },
+        where: {
+          cityId_slug: {
+            cityId: defaultCity.id,
+            slug: `timergara-city-${testRunId}`,
+          },
+        },
         update: {},
         create: {
           cityId: defaultCity.id,
@@ -416,7 +428,8 @@ describe('Auth & Access Control (e2e)', () => {
         })
         .expect(200);
 
-      const newOwnerToken = newLoginRes.body.data.accessToken || newLoginRes.body.data.token;
+      const newOwnerToken =
+        newLoginRes.body.data.accessToken || newLoginRes.body.data.token;
       expect(newOwnerToken).toBeDefined();
 
       // 6. Owner changes password
@@ -493,5 +506,3 @@ describe('Auth & Access Control (e2e)', () => {
     });
   });
 });
-
-

@@ -35,13 +35,18 @@ export class PlatformAdminController {
   constructor(private readonly adminService: PlatformAdminService) {}
 
   @Get('restaurants')
-  @ApiOperation({ summary: 'List all restaurants with filtering, search, and pagination' })
+  @ApiOperation({
+    summary: 'List all restaurants with filtering, search, and pagination',
+  })
   async listRestaurants(@Query() query: QueryRestaurantsDto) {
     return this.adminService.listRestaurants(query);
   }
 
   @Post('restaurants')
-  @ApiOperation({ summary: 'Admin-assisted onboarding: create restaurant, owner, and setup link' })
+  @ApiOperation({
+    summary:
+      'Admin-assisted onboarding: create restaurant, owner, and setup link',
+  })
   async createRestaurant(
     @Body() dto: CreateRestaurantAdminDto,
     @CurrentUser() adminUser: AuthenticatedUser,
@@ -51,7 +56,9 @@ export class PlatformAdminController {
   }
 
   @Get('restaurants/pending')
-  @ApiOperation({ summary: 'List all pending restaurant onboarding applications' })
+  @ApiOperation({
+    summary: 'List all pending restaurant onboarding applications',
+  })
   async getPendingRestaurants(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -62,24 +69,36 @@ export class PlatformAdminController {
   }
 
   @Get('restaurants/:id')
-  @ApiOperation({ summary: 'Get full restaurant onboarding detail and verification status' })
+  @ApiOperation({
+    summary: 'Get full restaurant onboarding detail and verification status',
+  })
   async getRestaurantDetail(@Param('id') id: string) {
     return this.adminService.getRestaurantDetail(id);
   }
 
   @Patch('restaurants/:id')
-  @ApiOperation({ summary: 'Edit restaurant record (support edit and admin notes)' })
+  @ApiOperation({
+    summary: 'Edit restaurant record (support edit and admin notes)',
+  })
   async updateRestaurant(
     @Param('id') id: string,
     @Body() dto: UpdateRestaurantAdminDto,
     @CurrentUser() adminUser: AuthenticatedUser,
     @Ip() ipAddress: string,
   ) {
-    return this.adminService.updateRestaurant(id, dto, adminUser.userId, ipAddress);
+    return this.adminService.updateRestaurant(
+      id,
+      dto,
+      adminUser.userId,
+      ipAddress,
+    );
   }
 
   @Patch('restaurants/:id/status')
-  @ApiOperation({ summary: 'Approve, suspend, or deactivate a restaurant (starts 30-day trial on approval)' })
+  @ApiOperation({
+    summary:
+      'Approve, suspend, or deactivate a restaurant (starts 30-day trial on approval)',
+  })
   async updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateRestaurantStatusDto,
@@ -95,7 +114,9 @@ export class PlatformAdminController {
   }
 
   @Post('restaurants/:id/subscription/extend')
-  @ApiOperation({ summary: 'Extend subscription following manual offline payment' })
+  @ApiOperation({
+    summary: 'Extend subscription following manual offline payment',
+  })
   @HttpCode(HttpStatus.OK)
   async extendSubscription(
     @Param('id') id: string,
@@ -112,7 +133,9 @@ export class PlatformAdminController {
   }
 
   @Post('restaurants/:id/subscription/shorten')
-  @ApiOperation({ summary: 'Corrective: shorten subscription end date with mandatory reason' })
+  @ApiOperation({
+    summary: 'Corrective: shorten subscription end date with mandatory reason',
+  })
   @HttpCode(HttpStatus.OK)
   async shortenSubscription(
     @Param('id') id: string,
@@ -136,16 +159,14 @@ export class PlatformAdminController {
     @CurrentUser() adminUser: AuthenticatedUser,
     @Ip() ipAddress: string,
   ) {
-    return this.adminService.changeSlug(
-      id,
-      dto,
-      adminUser.userId,
-      ipAddress,
-    );
+    return this.adminService.changeSlug(id, dto, adminUser.userId, ipAddress);
   }
 
   @Post('restaurants/:id/setup-link')
-  @ApiOperation({ summary: 'Generate a new single-use password setup link for the restaurant owner' })
+  @ApiOperation({
+    summary:
+      'Generate a new single-use password setup link for the restaurant owner',
+  })
   @HttpCode(HttpStatus.OK)
   async issueSetupLink(
     @Param('id') id: string,

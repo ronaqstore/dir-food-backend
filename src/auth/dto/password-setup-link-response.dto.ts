@@ -7,4 +7,3 @@ export class PasswordSetupLinkResponseDto {
   setupLink!: string;
   replacedPreviousLink!: boolean;
 }
-

@@ -1,4 +1,9 @@
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -31,8 +36,14 @@ export class PlatformAdminAreasController {
   constructor(private readonly areasService: PlatformAdminAreasService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all delivery areas with active restaurant counts' })
-  @ApiQuery({ name: 'cityId', required: false, description: 'Filter areas by City UUID' })
+  @ApiOperation({
+    summary: 'List all delivery areas with active restaurant counts',
+  })
+  @ApiQuery({
+    name: 'cityId',
+    required: false,
+    description: 'Filter areas by City UUID',
+  })
   async listAreas(@Query('cityId') cityId?: string) {
     return this.areasService.listAreas(cityId);
   }
@@ -48,7 +59,10 @@ export class PlatformAdminAreasController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update an existing delivery area (name, slug, sort order, active status)' })
+  @ApiOperation({
+    summary:
+      'Update an existing delivery area (name, slug, sort order, active status)',
+  })
   async updateArea(
     @Param('id') id: string,
     @Body() dto: UpdateAreaDto,
@@ -69,7 +83,9 @@ export class PlatformAdminAreasController {
   }
 
   @Post(':id/approve')
-  @ApiOperation({ summary: 'Approve an unverified area to publish it to customers' })
+  @ApiOperation({
+    summary: 'Approve an unverified area to publish it to customers',
+  })
   async approveArea(
     @Param('id') id: string,
     @Body() dto: ApproveAreaDto,
@@ -80,13 +96,20 @@ export class PlatformAdminAreasController {
   }
 
   @Post(':id/merge')
-  @ApiOperation({ summary: 'Merge a duplicate/misspelled area into a canonical target area' })
+  @ApiOperation({
+    summary: 'Merge a duplicate/misspelled area into a canonical target area',
+  })
   async mergeArea(
     @Param('id') id: string,
     @Body() dto: MergeAreaDto,
     @CurrentUser() adminUser: AuthenticatedUser,
     @Ip() ipAddress: string,
   ) {
-    return this.areasService.mergeArea(id, dto.targetAreaId, adminUser.userId, ipAddress);
+    return this.areasService.mergeArea(
+      id,
+      dto.targetAreaId,
+      adminUser.userId,
+      ipAddress,
+    );
   }
 }

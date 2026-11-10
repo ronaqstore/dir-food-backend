@@ -39,10 +39,6 @@ export class R2StorageService {
     return this.enabled;
   }
 
-  /**
-   * Uploads an image buffer to Cloudflare R2 and returns its public HTTPS URL.
-   * If R2 storage is disabled, throws ServiceUnavailableException.
-   */
   async put(key: string, body: Buffer, contentType: string): Promise<string> {
     if (!this.enabled || !this.client) {
       throw new ServiceUnavailableException(
@@ -66,11 +62,6 @@ export class R2StorageService {
     return `${this.publicUrlBase}/${key}`;
   }
 
-  /**
-   * Best-effort deletion of an image from Cloudflare R2.
-   * If restaurantId is supplied, verifies that the key belongs to that restaurant before deleting.
-   * Never throws: failure to delete an old or orphaned object is logged and ignored.
-   */
   async deleteByUrl(url?: string | null, restaurantId?: string): Promise<void> {
     if (!this.enabled || !this.client || !this.publicUrlBase || !url) {
       return;
@@ -86,7 +77,6 @@ export class R2StorageService {
       return;
     }
 
-    // Tenant isolation: if restaurantId is provided, ensure the key belongs to this restaurant
     if (restaurantId && !key.startsWith(`restaurants/${restaurantId}/`)) {
       this.logger.warn(
         `Cross-tenant image deletion rejected for key: ${key} by restaurant: ${restaurantId}`,

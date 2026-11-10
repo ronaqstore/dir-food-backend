@@ -11,10 +11,9 @@ describe('restaurant-defaults utility (unit)', () => {
         createMany: vi.fn().mockResolvedValue({ count: 7 }),
       },
       area: {
-        findMany: vi.fn().mockResolvedValue([
-          { id: 'area-1' },
-          { id: 'area-2' },
-        ]),
+        findMany: vi
+          .fn()
+          .mockResolvedValue([{ id: 'area-1' }, { id: 'area-2' }]),
       },
       restaurantDeliveryArea: {
         createMany: vi.fn().mockResolvedValue({ count: 2 }),

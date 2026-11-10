@@ -59,13 +59,10 @@ export class RestaurantAuthGuard implements CanActivate {
       );
     }
 
-    // Preserve Dir Food Business Rules:
-    // 1. DEACTIVATED: Terminal status. Block all owner actions.
     if (user.restaurant.status === RestaurantStatus.DEACTIVATED) {
       throw new ForbiddenException('This restaurant has been deactivated.');
     }
 
-    // 2. SUSPENDED: Owner may view (GET), but cannot mutate menu/settings.
     if (user.restaurant.status === RestaurantStatus.SUSPENDED) {
       const isMutation =
         request.method !== 'GET' &&
@@ -77,8 +74,6 @@ export class RestaurantAuthGuard implements CanActivate {
         );
       }
     }
-
-    // 3. PENDING & ACTIVE (including expired): Allowed to configure menu/hours/areas.
 
     request.user = {
       userId: user.id,

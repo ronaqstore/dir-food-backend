@@ -7,8 +7,15 @@ import {
 } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { AuthService } from './auth.service.js';
-import { RestaurantStatus, UserRole, UserStatus } from '../../generated/prisma/enums.js';
-import { generateOpaqueToken, hashOpaqueToken } from '../../common/utils/token.helper.js';
+import {
+  RestaurantStatus,
+  UserRole,
+  UserStatus,
+} from '../../generated/prisma/enums.js';
+import {
+  generateOpaqueToken,
+  hashOpaqueToken,
+} from '../../common/utils/token.helper.js';
 
 describe('AuthService (unit)', () => {
   let authService: AuthService;
@@ -263,7 +270,9 @@ describe('AuthService (unit)', () => {
 
       const result = await authService.issuePasswordSetupLink('user-1');
 
-      expect(result.setupUrl).toContain('http://localhost:3000/setup-password?token=');
+      expect(result.setupUrl).toContain(
+        'http://localhost:3000/setup-password?token=',
+      );
       expect(result.replacedPreviousLink).toBe(false);
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -389,15 +398,20 @@ describe('AuthService (unit)', () => {
     });
 
     it('returns collision: true and calculates suggestedSlug when slug exists', async () => {
-      mockPrisma.restaurant.findUnique.mockImplementation(({ where }: { where: { slug: string } }) => {
-        if (where.slug === 'royal-restaurant') {
-          return Promise.resolve({ name: 'Royal Restaurant', addressText: 'Main Bazaar, Timergara' });
-        }
-        if (where.slug === 'royal-restaurant-2') {
+      mockPrisma.restaurant.findUnique.mockImplementation(
+        ({ where }: { where: { slug: string } }) => {
+          if (where.slug === 'royal-restaurant') {
+            return Promise.resolve({
+              name: 'Royal Restaurant',
+              addressText: 'Main Bazaar, Timergara',
+            });
+          }
+          if (where.slug === 'royal-restaurant-2') {
+            return Promise.resolve(null);
+          }
           return Promise.resolve(null);
-        }
-        return Promise.resolve(null);
-      });
+        },
+      );
 
       const result = await authService.checkRestaurantName('Royal Restaurant');
       expect(result.available).toBe(false);

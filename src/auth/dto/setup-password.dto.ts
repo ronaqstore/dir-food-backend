@@ -7,9 +7,11 @@ export class SetupPasswordDto {
   @IsNotEmpty()
   token!: string;
 
-  @ApiProperty({ example: 'newPassword123!', description: 'New password (min 8 chars)' })
+  @ApiProperty({
+    example: 'newPassword123!',
+    description: 'New password (min 8 chars)',
+  })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   password!: string;
 }
-

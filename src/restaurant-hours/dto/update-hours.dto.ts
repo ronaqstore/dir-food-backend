@@ -12,7 +12,10 @@ import {
 } from 'class-validator';
 
 export class TimeRangeDto {
-  @ApiProperty({ example: '10:00', description: 'Opening time in HH:mm (24-hour)' })
+  @ApiProperty({
+    example: '10:00',
+    description: 'Opening time in HH:mm (24-hour)',
+  })
   @IsString()
   @IsNotEmpty()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
@@ -20,7 +23,10 @@ export class TimeRangeDto {
   })
   openTime!: string;
 
-  @ApiProperty({ example: '23:00', description: 'Closing time in HH:mm (earlier than openTime = overnight)' })
+  @ApiProperty({
+    example: '23:00',
+    description: 'Closing time in HH:mm (earlier than openTime = overnight)',
+  })
   @IsString()
   @IsNotEmpty()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, {
@@ -30,13 +36,19 @@ export class TimeRangeDto {
 }
 
 export class DayHoursDto {
-  @ApiProperty({ example: 1, description: 'Day of week: 0 (Sunday) to 6 (Saturday)' })
+  @ApiProperty({
+    example: 1,
+    description: 'Day of week: 0 (Sunday) to 6 (Saturday)',
+  })
   @IsInt()
   @Min(0)
   @Max(6)
   dayOfWeek!: number;
 
-  @ApiProperty({ type: [TimeRangeDto], description: 'List of operating time ranges for this day' })
+  @ApiProperty({
+    type: [TimeRangeDto],
+    description: 'List of operating time ranges for this day',
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => TimeRangeDto)

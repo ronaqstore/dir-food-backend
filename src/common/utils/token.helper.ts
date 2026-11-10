@@ -26,4 +26,3 @@ export const hashesMatch = (
 
   return timingSafeEqual(stored, candidate);
 };
-

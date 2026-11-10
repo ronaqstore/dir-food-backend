@@ -19,11 +19,6 @@ import { PublicRestaurantsService } from './services/public-restaurants.service.
     PublicAreasService,
     PublicRestaurantsService,
   ],
-  exports: [
-    PublicCitiesService,
-    PublicAreasService,
-    PublicRestaurantsService,
-  ],
+  exports: [PublicCitiesService, PublicAreasService, PublicRestaurantsService],
 })
 export class PublicCatalogModule {}
-

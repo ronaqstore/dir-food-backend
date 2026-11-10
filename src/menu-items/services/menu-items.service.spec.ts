@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { MenuItemsService } from './menu-items.service.js';
 
 describe('MenuItemsService (unit)', () => {
@@ -83,7 +87,13 @@ describe('MenuItemsService (unit)', () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
       mockPrisma.menuItem.count.mockResolvedValue(1);
       mockPrisma.menuItem.findMany.mockResolvedValue([
-        { id: 'item-deal', name: 'Deal 1', basePrice: 120000n, isDeal: true, variants: [] },
+        {
+          id: 'item-deal',
+          name: 'Deal 1',
+          basePrice: 120000n,
+          isDeal: true,
+          variants: [],
+        },
       ]);
 
       await service.getItems('res-1', undefined, 1, 20, undefined, true);
@@ -112,7 +122,10 @@ describe('MenuItemsService (unit)', () => {
 
     it('throws BadRequestException if originalPrice is less than or equal to basePrice', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
-      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'res-1',
+      });
 
       await expect(
         service.createItem('res-1', {
@@ -127,7 +140,10 @@ describe('MenuItemsService (unit)', () => {
 
     it('creates a deal item with originalPrice and isDeal flag', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
-      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'res-1',
+      });
       mockPrisma.menuItem.findFirst.mockResolvedValue(null);
       mockPrisma.menuItem.create.mockResolvedValue({ id: 'deal-1' });
       mockPrisma.menuItem.findUnique.mockResolvedValue({
@@ -160,7 +176,10 @@ describe('MenuItemsService (unit)', () => {
 
     it('automatically assigns deals to Deals & Combos category when categoryId is omitted', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
-      mockPrisma.menuCategory.findFirst.mockResolvedValue({ id: 'deals-cat-id', name: 'Deals & Combos' });
+      mockPrisma.menuCategory.findFirst.mockResolvedValue({
+        id: 'deals-cat-id',
+        name: 'Deals & Combos',
+      });
       mockPrisma.menuItem.findFirst.mockResolvedValue(null);
       mockPrisma.menuItem.create.mockResolvedValue({ id: 'deal-2' });
       mockPrisma.menuItem.findUnique.mockResolvedValue({
@@ -201,9 +220,15 @@ describe('MenuItemsService (unit)', () => {
 
     it('creates item with basePrice in transaction', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
-      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
-      mockPrisma.menuItem.findFirst.mockImplementation((args: { where?: { name?: unknown } }) =>
-        args?.where?.name ? Promise.resolve(null) : Promise.resolve({ sortOrder: 2 })
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'res-1',
+      });
+      mockPrisma.menuItem.findFirst.mockImplementation(
+        (args: { where?: { name?: unknown } }) =>
+          args?.where?.name
+            ? Promise.resolve(null)
+            : Promise.resolve({ sortOrder: 2 }),
       );
       mockPrisma.menuItem.create.mockResolvedValue({ id: 'item-new' });
       mockPrisma.menuItem.findUnique.mockResolvedValue({
@@ -233,8 +258,14 @@ describe('MenuItemsService (unit)', () => {
 
     it('throws ConflictException if item with same name already exists in category', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
-      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
-      mockPrisma.menuItem.findFirst.mockResolvedValue({ id: 'existing-item', name: 'Roti' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'res-1',
+      });
+      mockPrisma.menuItem.findFirst.mockResolvedValue({
+        id: 'existing-item',
+        name: 'Roti',
+      });
 
       await expect(
         service.createItem('res-1', {
@@ -247,7 +278,10 @@ describe('MenuItemsService (unit)', () => {
 
     it('creates item with variants in transaction', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
-      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'res-1',
+      });
       mockPrisma.menuItem.findFirst.mockResolvedValue(null);
       mockPrisma.menuItem.create.mockResolvedValue({ id: 'item-karahi' });
       mockPrisma.menuItem.findUnique.mockResolvedValue({
@@ -266,10 +300,18 @@ describe('MenuItemsService (unit)', () => {
       });
 
       expect(mockPrisma.menuItemVariant.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ name: 'Half', price: 60000n, sortOrder: 0 }),
+        data: expect.objectContaining({
+          name: 'Half',
+          price: 60000n,
+          sortOrder: 0,
+        }),
       });
       expect(mockPrisma.menuItemVariant.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ name: 'Full', price: 120000n, sortOrder: 1 }),
+        data: expect.objectContaining({
+          name: 'Full',
+          price: 120000n,
+          sortOrder: 1,
+        }),
       });
       expect(res?.name).toBe('Karahi');
     });
@@ -327,7 +369,10 @@ describe('MenuItemsService (unit)', () => {
     });
 
     it('throws BadRequestException if any item does not belong to category', async () => {
-      mockPrisma.menuCategory.findUnique.mockResolvedValue({ id: 'cat-1', restaurantId: 'res-1' });
+      mockPrisma.menuCategory.findUnique.mockResolvedValue({
+        id: 'cat-1',
+        restaurantId: 'res-1',
+      });
       mockPrisma.menuItem.count.mockResolvedValue(1); // expected 2
 
       await expect(

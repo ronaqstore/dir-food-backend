@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { slugify } from '../../common/utils/phone.js';
@@ -105,14 +106,16 @@ export class PlatformAdminCitiesService {
       throw new NotFoundException('City not found');
     }
 
-    const data: any = {};
+    const data: Prisma.CityUpdateInput = {};
     if (dto.name !== undefined) {
       const name = dto.name.trim();
       if (!name) throw new BadRequestException('City name cannot be empty');
       if (name !== city.name) {
         const existing = await this.prisma.city.findUnique({ where: { name } });
         if (existing && existing.id !== id) {
-          throw new ConflictException(`City with name "${name}" already exists`);
+          throw new ConflictException(
+            `City with name "${name}" already exists`,
+          );
         }
         data.name = name;
       }
@@ -124,7 +127,9 @@ export class PlatformAdminCitiesService {
       if (slug !== city.slug) {
         const existing = await this.prisma.city.findUnique({ where: { slug } });
         if (existing && existing.id !== id) {
-          throw new ConflictException(`City with slug "${slug}" already exists`);
+          throw new ConflictException(
+            `City with slug "${slug}" already exists`,
+          );
         }
         data.slug = slug;
       }
@@ -150,7 +155,7 @@ export class PlatformAdminCitiesService {
       entityId: id,
       details: {
         old: { name: city.name, slug: city.slug, isActive: city.isActive },
-        updated: data,
+        updated: data as Record<string, unknown>,
       },
       ipAddress,
     });

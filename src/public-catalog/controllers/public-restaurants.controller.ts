@@ -11,7 +11,9 @@ export class PublicRestaurantsController {
   constructor(private readonly restaurantsService: PublicRestaurantsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List publicly discoverable eligible restaurants with filters' })
+  @ApiOperation({
+    summary: 'List publicly discoverable eligible restaurants with filters',
+  })
   @ApiResponse({ status: 200, description: 'List of eligible restaurants' })
   @ApiResponse({ status: 400, description: 'Invalid query parameters' })
   async getRestaurants(@Query() query: QueryPublicRestaurantsDto) {
@@ -20,7 +22,11 @@ export class PublicRestaurantsController {
 
   @Get(':slug')
   @ApiOperation({ summary: 'Get public restaurant profile by slug' })
-  @ApiParam({ name: 'slug', description: 'Restaurant URL slug', example: 'hotel-al-noor' })
+  @ApiParam({
+    name: 'slug',
+    description: 'Restaurant URL slug',
+    example: 'hotel-al-noor',
+  })
   @ApiResponse({ status: 200, description: 'Public restaurant profile' })
   @ApiResponse({ status: 404, description: 'Restaurant not available' })
   async getRestaurantBySlug(@Param('slug') slug: string) {
@@ -29,11 +35,17 @@ export class PublicRestaurantsController {
 
   @Get(':slug/menu')
   @ApiOperation({ summary: 'Get active menu catalog for restaurant' })
-  @ApiParam({ name: 'slug', description: 'Restaurant URL slug', example: 'hotel-al-noor' })
-  @ApiResponse({ status: 200, description: 'Public menu categories and active items' })
+  @ApiParam({
+    name: 'slug',
+    description: 'Restaurant URL slug',
+    example: 'hotel-al-noor',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Public menu categories and active items',
+  })
   @ApiResponse({ status: 404, description: 'Restaurant not available' })
   async getRestaurantMenu(@Param('slug') slug: string) {
     return this.restaurantsService.getRestaurantMenu(slug);
   }
 }
-

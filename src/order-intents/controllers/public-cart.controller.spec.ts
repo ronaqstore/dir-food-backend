@@ -35,4 +35,3 @@ describe('PublicCartController', () => {
     expect(res).toEqual({ lines: [], subtotal: 1000n });
   });
 });
-

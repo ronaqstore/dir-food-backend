@@ -48,7 +48,9 @@ describe('RestaurantHoursService (unit)', () => {
       const res = await service.getHours('res-1');
       expect(res).toHaveLength(7);
       const monday = res.find((d) => d.dayOfWeek === 1);
-      expect(monday?.ranges).toEqual([{ openTime: '10:00', closeTime: '22:00' }]);
+      expect(monday?.ranges).toEqual([
+        { openTime: '10:00', closeTime: '22:00' },
+      ]);
     });
   });
 

@@ -58,9 +58,13 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // 1. Setup Delivery Areas
-    const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
+    const defaultCity = await prisma.city.findFirstOrThrow({
+      where: { slug: 'lower-dir' },
+    });
     const area1 = await prisma.area.upsert({
-      where: { cityId_slug: { cityId: defaultCity.id, slug: 'timergara-order-e2e' } },
+      where: {
+        cityId_slug: { cityId: defaultCity.id, slug: 'timergara-order-e2e' },
+      },
       update: { isActive: true },
       create: {
         cityId: defaultCity.id,
@@ -73,7 +77,9 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
     activeAreaId = area1.id;
 
     const area2 = await prisma.area.upsert({
-      where: { cityId_slug: { cityId: defaultCity.id, slug: 'unserved-order-e2e' } },
+      where: {
+        cityId_slug: { cityId: defaultCity.id, slug: 'unserved-order-e2e' },
+      },
       update: { isActive: true },
       create: {
         cityId: defaultCity.id,
@@ -268,7 +274,11 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
           restaurantSlug: owner1Slug,
           items: [
             { menuItemId: itemBaseId, quantity: 2 },
-            { menuItemId: itemVariantId, variantId: variantFullId, quantity: 1 },
+            {
+              menuItemId: itemVariantId,
+              variantId: variantFullId,
+              quantity: 1,
+            },
           ],
           deliveryAreaId: activeAreaId,
         })
@@ -306,8 +316,14 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
         .expect(200);
 
       expect(res.body.data.problems.length).toBeGreaterThanOrEqual(2);
-      expect(res.body.data.problems.some((p: string) => p.includes('out of stock'))).toBe(true);
-      expect(res.body.data.problems.some((p: string) => p.includes('Variant is required'))).toBe(true);
+      expect(
+        res.body.data.problems.some((p: string) => p.includes('out of stock')),
+      ).toBe(true);
+      expect(
+        res.body.data.problems.some((p: string) =>
+          p.includes('Variant is required'),
+        ),
+      ).toBe(true);
     });
   });
 
@@ -390,7 +406,11 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
           restaurantSlug: owner1Slug,
           items: [
             { menuItemId: itemBaseId, quantity: 1 }, // 20000
-            { menuItemId: itemVariantId, variantId: variantFullId, quantity: 1 }, // 110000
+            {
+              menuItemId: itemVariantId,
+              variantId: variantFullId,
+              quantity: 1,
+            }, // 110000
           ],
           customer: {
             name: 'Ahmad Khan',
@@ -407,13 +427,21 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
         .expect(201);
 
       expect(res.body.data.reference).toMatch(/^TM-[A-Z0-9]{6}$/);
-      expect(res.body.data.status).toBe(OrderIntentStatus.WHATSAPP_HANDOFF_READY);
+      expect(res.body.data.status).toBe(
+        OrderIntentStatus.WHATSAPP_HANDOFF_READY,
+      );
       expect(res.body.data.subtotal).toBe(130000);
       expect(res.body.data.items).toHaveLength(2);
-      expect(res.body.data.whatsappUrl).toContain('https://wa.me/923001234567?text=');
-      expect(res.body.data.message).toContain('Assalam o Alaikum, Shinwari Orders E2E!');
+      expect(res.body.data.whatsappUrl).toContain(
+        'https://wa.me/923001234567?text=',
+      );
+      expect(res.body.data.message).toContain(
+        'Assalam o Alaikum, Shinwari Orders E2E!',
+      );
       expect(res.body.data.message).toContain('Ahmad Khan');
-      expect(res.body.data.message).toContain('Location pin: https://maps.google.com/?q=34.8265,71.8412');
+      expect(res.body.data.message).toContain(
+        'Location pin: https://maps.google.com/?q=34.8265,71.8412',
+      );
 
       createdRef = res.body.data.reference;
     });
@@ -426,7 +454,11 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
           restaurantSlug: owner1Slug,
           items: [
             { menuItemId: itemBaseId, quantity: 1 },
-            { menuItemId: itemVariantId, variantId: variantFullId, quantity: 1 },
+            {
+              menuItemId: itemVariantId,
+              variantId: variantFullId,
+              quantity: 1,
+            },
           ],
           delivery: { areaId: activeAreaId, landmark: 'Near gate' },
           expectedSubtotal: 130000,
@@ -451,7 +483,9 @@ describe('Order Intents & WhatsApp Handoff Lifecycle (e2e)', () => {
 
       expect(res.body.data.reference).toBe(createdRef);
       expect(res.body.data.status).toBe(OrderIntentStatus.WHATSAPP_OPENED);
-      expect(res.body.data.whatsappUrl).toContain('https://wa.me/923001234567?text=');
+      expect(res.body.data.whatsappUrl).toContain(
+        'https://wa.me/923001234567?text=',
+      );
     });
   });
 

@@ -23,7 +23,11 @@ describe('PublicRestaurantsController', () => {
   });
 
   it('delegates getRestaurants to PublicRestaurantsService with query', async () => {
-    const query: QueryPublicRestaurantsDto = { q: 'Al-Noor', page: 1, limit: 10 };
+    const query: QueryPublicRestaurantsDto = {
+      q: 'Al-Noor',
+      page: 1,
+      limit: 10,
+    };
     const mockResponse = { data: [], meta: { page: 1, limit: 10, total: 0 } };
     mockService.getRestaurants.mockResolvedValue(mockResponse);
 
@@ -42,7 +46,9 @@ describe('PublicRestaurantsController', () => {
 
     const result = await controller.getRestaurantBySlug('hotel-al-noor');
 
-    expect(mockService.getRestaurantBySlug).toHaveBeenCalledWith('hotel-al-noor');
+    expect(mockService.getRestaurantBySlug).toHaveBeenCalledWith(
+      'hotel-al-noor',
+    );
     expect(result).toEqual(mockProfile);
   });
 
@@ -56,4 +62,3 @@ describe('PublicRestaurantsController', () => {
     expect(result).toEqual(mockMenu);
   });
 });
-

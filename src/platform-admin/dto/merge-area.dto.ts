@@ -7,4 +7,3 @@ export class MergeAreaDto {
   @IsNotEmpty()
   targetAreaId!: string;
 }
-

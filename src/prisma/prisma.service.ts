@@ -5,6 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import { PrismaClient } from '../generated/prisma/client.js';
 
 @Injectable()
@@ -13,14 +14,17 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
+  private readonly pool: Pool;
 
   constructor() {
-    super({
-      adapter: new PrismaPg({
-        connectionString: process.env.DATABASE_URL,
-        connectionTimeoutMillis: 15_000,
-      }),
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 15_000,
     });
+    super({
+      adapter: new PrismaPg(pool),
+    });
+    this.pool = pool;
   }
 
   async onModuleInit(): Promise<void> {
@@ -35,6 +39,7 @@ export class PrismaService
 
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
+    await this.pool.end();
     this.logger.log('Disconnected from database');
   }
 }

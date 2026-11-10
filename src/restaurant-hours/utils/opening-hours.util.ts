@@ -18,13 +18,6 @@ export function parseTimeToMinutes(timeStr: string): number {
   return h * 60 + m;
 }
 
-export function formatMinutesToTime(totalMinutes: number): string {
-  const normalized = ((totalMinutes % 1440) + 1440) % 1440;
-  const h = Math.floor(normalized / 60);
-  const m = normalized % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-}
-
 export function timeStringToDate(timeStr: string): Date {
   const parts = timeStr.split(':');
   const h = parts[0].padStart(2, '0');
@@ -34,7 +27,6 @@ export function timeStringToDate(timeStr: string): Date {
 
 export function dateTimeToTimeString(date: Date | string): string {
   if (typeof date === 'string') {
-    // If it's already an ISO string or time string
     const match = date.match(/(\d{2}):(\d{2})/);
     return match ? `${match[1]}:${match[2]}` : date;
   }
@@ -79,7 +71,6 @@ export function validateWeeklyHours(days: DayHoursDto[]): ParsedRange[] {
       });
     }
 
-    // Check overlaps within the same day
     for (let i = 0; i < dayParsed.length; i++) {
       for (let j = i + 1; j < dayParsed.length; j++) {
         const r1 = dayParsed[i];
@@ -91,9 +82,6 @@ export function validateWeeklyHours(days: DayHoursDto[]): ParsedRange[] {
           );
         }
 
-        // Compare intervals
-        // Note: touching ranges (e.g. 10:00-14:00 and 14:00-18:00) are allowed!
-        // Overlap occurs if max(start1, start2) < min(end1, end2)
         if (!r1.isOvernight && !r2.isOvernight) {
           const maxStart = Math.max(r1.openMinutes, r2.openMinutes);
           const minEnd = Math.min(r1.closeMinutes, r2.closeMinutes);
@@ -103,11 +91,9 @@ export function validateWeeklyHours(days: DayHoursDto[]): ParsedRange[] {
             );
           }
         } else {
-          // One is overnight, one is same day
           const overnight = r1.isOvernight ? r1 : r2;
           const sameDay = r1.isOvernight ? r2 : r1;
 
-          // The overnight range on day D covers [overnight.openMinutes, 1440) on day D
           if (sameDay.closeMinutes > overnight.openMinutes) {
             throw new BadRequestException(
               `Day ${day.dayOfWeek}: Range (${sameDay.openStr}-${sameDay.closeStr}) overlaps overnight range start (${overnight.openStr})`,
@@ -121,14 +107,12 @@ export function validateWeeklyHours(days: DayHoursDto[]): ParsedRange[] {
     allParsed.push(...dayParsed);
   }
 
-  // Cross-day check: An overnight range on day D extends into day (D + 1) as [0, closeMinutes)
   for (const r of allParsed) {
     if (r.isOvernight) {
       const nextDay = (r.dayOfWeek + 1) % 7;
       const nextDayRanges = rangesByDay.get(nextDay) ?? [];
 
       for (const nextR of nextDayRanges) {
-        // Next day range starts at nextR.openMinutes. If nextR.openMinutes < r.closeMinutes, they overlap!
         if (nextR.openMinutes < r.closeMinutes) {
           throw new BadRequestException(
             `Overnight range on day ${r.dayOfWeek} (${r.openStr}-${r.closeStr}) overlaps into day ${nextDay} early hours (${nextR.openStr}-${nextR.closeStr})`,
@@ -167,7 +151,6 @@ export function getCurrentKarachiTime(targetDate?: Date): {
     if (p.type === 'minute') minute = parseInt(p.value, 10);
   }
 
-  // Node Intl can return 24 for midnight depending on ICU version
   if (hour === 24) hour = 0;
 
   const dayMap: Record<string, number> = {
@@ -227,7 +210,8 @@ export function calculateNextOpenAt(
   }
 
   const now = nowDate ?? new Date();
-  const { dayOfWeek: currentDay, minutes: currentMinutes } = getCurrentKarachiTime(now);
+  const { dayOfWeek: currentDay, minutes: currentMinutes } =
+    getCurrentKarachiTime(now);
 
   for (let offset = 0; offset <= 7; offset++) {
     const targetDay = (currentDay + offset) % 7;
@@ -277,7 +261,9 @@ export function isRestaurantOpenNow(
       isOpenNow: false,
       manualStatus,
       unavailableNote: unavailableNote ?? null,
-      availabilityText: unavailableNote ? `Closed (${unavailableNote})` : 'Closed',
+      availabilityText: unavailableNote
+        ? `Closed (${unavailableNote})`
+        : 'Closed',
       nextOpenAt: null,
     };
   }
@@ -304,7 +290,8 @@ export function isRestaurantOpenNow(
     };
   }
 
-  const { dayOfWeek: currentDay, minutes: currentMinutes } = getCurrentKarachiTime(nowDate);
+  const { dayOfWeek: currentDay, minutes: currentMinutes } =
+    getCurrentKarachiTime(nowDate);
   const prevDay = (currentDay + 6) % 7;
 
   for (const h of hours) {
@@ -314,7 +301,6 @@ export function isRestaurantOpenNow(
     const closeMin = parseTimeToMinutes(closeStr);
     const isOvernight = closeMin < openMin;
 
-    // 1. Check if today's range is currently active
     if (h.dayOfWeek === currentDay) {
       if (!isOvernight) {
         if (currentMinutes >= openMin && currentMinutes < closeMin) {
@@ -327,7 +313,6 @@ export function isRestaurantOpenNow(
           };
         }
       } else {
-        // Overnight starting today
         if (currentMinutes >= openMin) {
           return {
             isOpenNow: true,
@@ -340,7 +325,6 @@ export function isRestaurantOpenNow(
       }
     }
 
-    // 2. Check if yesterday's overnight range is still active today
     if (h.dayOfWeek === prevDay && isOvernight) {
       if (currentMinutes < closeMin) {
         return {

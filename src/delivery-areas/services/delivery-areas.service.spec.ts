@@ -49,8 +49,20 @@ describe('DeliveryAreasService (unit)', () => {
     it('merges master areas with restaurant configuration', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
       mockPrisma.area.findMany.mockResolvedValue([
-        { id: 'area-1', name: 'Timergara', slug: 'timergara', isActive: true, isVerified: true },
-        { id: 'area-2', name: 'Balambat', slug: 'balambat', isActive: true, isVerified: true },
+        {
+          id: 'area-1',
+          name: 'Timergara',
+          slug: 'timergara',
+          isActive: true,
+          isVerified: true,
+        },
+        {
+          id: 'area-2',
+          name: 'Balambat',
+          slug: 'balambat',
+          isActive: true,
+          isVerified: true,
+        },
       ]);
       mockPrisma.restaurantDeliveryArea.findMany.mockResolvedValue([
         { areaId: 'area-1', deliveryFee: 10000n, isActive: true },
@@ -128,22 +140,27 @@ describe('DeliveryAreasService (unit)', () => {
           isActive: true,
         },
       });
-      expect(mockPrisma.restaurantDeliveryArea.updateMany).toHaveBeenCalledWith({
-        where: {
-          restaurantId: 'res-1',
-          areaId: { notIn: ['area-1'] },
-          isActive: true,
+      expect(mockPrisma.restaurantDeliveryArea.updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            restaurantId: 'res-1',
+            areaId: { notIn: ['area-1'] },
+            isActive: true,
+          },
+          data: {
+            isActive: false,
+          },
         },
-        data: {
-          isActive: false,
-        },
-      });
+      );
     });
   });
 
   describe('createCustomArea', () => {
     it('creates new custom area in restaurant city and activates it for delivery', async () => {
-      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1', cityId: 'city-1' });
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        cityId: 'city-1',
+      });
       mockPrisma.area.findMany.mockResolvedValue([]);
       mockPrisma.area.create.mockResolvedValue({
         id: 'new-area-id',
@@ -209,7 +226,10 @@ describe('DeliveryAreasService (unit)', () => {
     });
 
     it('re-uses existing area if already exists in this city', async () => {
-      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1', cityId: 'city-1' });
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        cityId: 'city-1',
+      });
       mockPrisma.area.findMany.mockResolvedValue([
         {
           id: 'existing-area-id',
@@ -239,7 +259,10 @@ describe('DeliveryAreasService (unit)', () => {
     });
 
     it('re-uses existing area if spaces or hyphens differ (fuzzy match)', async () => {
-      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1', cityId: 'city-1' });
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        cityId: 'city-1',
+      });
       mockPrisma.area.findMany.mockResolvedValue([
         {
           id: 'existing-fizagat-id',
@@ -269,10 +292,13 @@ describe('DeliveryAreasService (unit)', () => {
     });
 
     it('throws BadRequestException if name is empty', async () => {
-      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1', cityId: 'city-1' });
-      await expect(service.createCustomArea('res-1', { name: '   ' })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        cityId: 'city-1',
+      });
+      await expect(
+        service.createCustomArea('res-1', { name: '   ' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });

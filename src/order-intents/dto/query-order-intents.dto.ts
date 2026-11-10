@@ -19,21 +19,28 @@ export class QueryOrderIntentsDto {
   @Max(50)
   limit: number = 20;
 
-  @ApiPropertyOptional({ description: 'Search by reference code (e.g. TM-7K4P9Q)' })
+  @ApiPropertyOptional({
+    description: 'Search by reference code (e.g. TM-7K4P9Q)',
+  })
   @IsOptional()
   @IsString()
   q?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by intent status', enum: OrderIntentStatus })
+  @ApiPropertyOptional({
+    description: 'Filter by intent status',
+    enum: OrderIntentStatus,
+  })
   @IsOptional()
   @IsEnum(OrderIntentStatus)
   status?: OrderIntentStatus;
 }
 
 export class QueryStatsDto {
-  @ApiPropertyOptional({ description: 'Date range filter: 7d or 30d', default: '7d' })
+  @ApiPropertyOptional({
+    description: 'Date range filter: 7d or 30d',
+    default: '7d',
+  })
   @IsOptional()
   @IsString()
   range: string = '7d';
 }
-

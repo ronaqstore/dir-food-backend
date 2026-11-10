@@ -135,7 +135,9 @@ describe('OrderIntentsService', () => {
   it('detects price change and throws 409 PRICE_CHANGED without saving', async () => {
     prisma.orderIntent.findUnique.mockResolvedValue(null);
     prisma.restaurant.findUnique.mockResolvedValue(validRestaurant);
-    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(validDeliveryArea);
+    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(
+      validDeliveryArea,
+    );
     prisma.menuItem.findMany.mockResolvedValue([validItem]); // actual price 110000n
 
     await expect(
@@ -157,7 +159,9 @@ describe('OrderIntentsService', () => {
   it('rejects order below minimum order amount with 422', async () => {
     prisma.orderIntent.findUnique.mockResolvedValue(null);
     prisma.restaurant.findUnique.mockResolvedValue(validRestaurant); // min order is 100000n
-    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(validDeliveryArea);
+    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(
+      validDeliveryArea,
+    );
     prisma.menuItem.findMany.mockResolvedValue([
       {
         ...validItem,
@@ -182,7 +186,9 @@ describe('OrderIntentsService', () => {
   it('successfully creates order intent and snapshots data atomically', async () => {
     prisma.orderIntent.findUnique.mockResolvedValue(null);
     prisma.restaurant.findUnique.mockResolvedValue(validRestaurant);
-    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(validDeliveryArea);
+    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(
+      validDeliveryArea,
+    );
     prisma.menuItem.findMany.mockResolvedValue([validItem]);
 
     prisma.orderIntent.create.mockResolvedValue({
@@ -244,4 +250,3 @@ describe('OrderIntentsService', () => {
     );
   });
 });
-

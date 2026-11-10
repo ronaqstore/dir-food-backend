@@ -1,14 +1,9 @@
 import { randomInt } from 'node:crypto';
 
-// Characters excluded: 0, O, 1, I, L to prevent human reading confusion
 const CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 6;
 const PREFIX = 'TM-';
 
-/**
- * Generates a human-friendly reference code for WhatsApp handoff requests.
- * Format: TM-XXXXXX (e.g., TM-7K4P9Q)
- */
 export function generateReferenceCode(): string {
   let code = '';
   for (let i = 0; i < CODE_LENGTH; i++) {
@@ -25,4 +20,3 @@ export function isValidReferenceCode(code: string): boolean {
   const regex = new RegExp(`^${PREFIX}[${CHARSET}]{${CODE_LENGTH}}$`);
   return regex.test(code.toUpperCase());
 }
-

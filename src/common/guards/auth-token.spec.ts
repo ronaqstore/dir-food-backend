@@ -87,7 +87,12 @@ describe('auth-token', () => {
     );
 
     await expect(
-      verifyTokenOfType(jwtService, secret, token, AuthTokenType.PLATFORM_ADMIN),
+      verifyTokenOfType(
+        jwtService,
+        secret,
+        token,
+        AuthTokenType.PLATFORM_ADMIN,
+      ),
     ).rejects.toThrow();
   });
 
@@ -102,7 +107,12 @@ describe('auth-token', () => {
     );
 
     await expect(
-      verifyTokenOfType(jwtService, secret, token, AuthTokenType.RESTAURANT_OWNER),
+      verifyTokenOfType(
+        jwtService,
+        secret,
+        token,
+        AuthTokenType.RESTAURANT_OWNER,
+      ),
     ).rejects.toThrow();
   });
 });

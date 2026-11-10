@@ -38,7 +38,9 @@ describe('WhatsappMessageService', () => {
 
     expect(message).toContain('Assalam o Alaikum, Hotel Al-Noor!');
     expect(message).toContain('Ref: TM-7K4P9Q');
-    expect(message).toContain('1) Chicken Karahi (Full) x 1 — Rs 1,100 = Rs 1,100');
+    expect(message).toContain(
+      '1) Chicken Karahi (Full) x 1 — Rs 1,100 = Rs 1,100',
+    );
     expect(message).toContain('2) Naan x 4 — Rs 30 = Rs 120');
     expect(message).toContain('Items total: Rs 1,220');
     expect(message).toContain('Delivery charge: Rs 100');
@@ -47,8 +49,12 @@ describe('WhatsappMessageService', () => {
     expect(message).toContain('Area: Timergara');
     expect(message).toContain('Landmark: Near Girls Degree College gate');
     expect(message).toContain('Directions: Blue gate, 2nd house on left');
-    expect(message).toContain('Location pin: https://maps.google.com/?q=34.8265,71.8412');
-    expect(message).toContain('Please confirm the order, delivery charge, time and payment. Thank you.');
+    expect(message).toContain(
+      'Location pin: https://maps.google.com/?q=34.8265,71.8412',
+    );
+    expect(message).toContain(
+      'Please confirm the order, delivery charge, time and payment. Thank you.',
+    );
   });
 
   it('handles unconfirmed delivery charge and omitted customer name/phone/pin', () => {
@@ -100,8 +106,12 @@ describe('WhatsappMessageService', () => {
   });
 
   it('builds a valid wa.me URL with normalized phone and encoded message text', () => {
-    const url = service.buildWhatsAppUrl('03001234567', 'Assalam o Alaikum! Test message.');
-    expect(url).toBe('https://wa.me/923001234567?text=Assalam%20o%20Alaikum!%20Test%20message.');
+    const url = service.buildWhatsAppUrl(
+      '03001234567',
+      'Assalam o Alaikum! Test message.',
+    );
+    expect(url).toBe(
+      'https://wa.me/923001234567?text=Assalam%20o%20Alaikum!%20Test%20message.',
+    );
   });
 });
-

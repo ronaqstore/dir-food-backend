@@ -7,4 +7,3 @@ export class QueryActivityDto {
   @IsIn(['7d', '30d'])
   range?: string = '7d';
 }
-

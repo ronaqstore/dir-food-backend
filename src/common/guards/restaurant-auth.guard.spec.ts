@@ -5,7 +5,11 @@ import { AppConfigurationService } from '../../app-configuration/app-configurati
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuthTokenType } from './auth-token.js';
 import { JwtService } from '@nestjs/jwt';
-import { UserRole, UserStatus, RestaurantStatus } from '../../generated/prisma/enums.js';
+import {
+  UserRole,
+  UserStatus,
+  RestaurantStatus,
+} from '../../generated/prisma/enums.js';
 
 describe('RestaurantAuthGuard (DB checks)', () => {
   const secret = 'test-secret-at-least-16-chars-long';
@@ -22,7 +26,11 @@ describe('RestaurantAuthGuard (DB checks)', () => {
         findUnique: vi.fn(),
       },
     };
-    guard = new RestaurantAuthGuard(jwtService, configService, mockPrisma as PrismaService);
+    guard = new RestaurantAuthGuard(
+      jwtService,
+      configService,
+      mockPrisma as PrismaService,
+    );
   });
 
   const createMockContext = (
@@ -90,7 +98,10 @@ describe('RestaurantAuthGuard (DB checks)', () => {
       },
     });
 
-    const context = createMockContext({ authorization: `Bearer ${token}` }, 'POST');
+    const context = createMockContext(
+      { authorization: `Bearer ${token}` },
+      'POST',
+    );
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
   });
@@ -115,7 +126,10 @@ describe('RestaurantAuthGuard (DB checks)', () => {
       },
     });
 
-    const context = createMockContext({ authorization: `Bearer ${token}` }, 'POST');
+    const context = createMockContext(
+      { authorization: `Bearer ${token}` },
+      'POST',
+    );
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
   });
@@ -139,7 +153,10 @@ describe('RestaurantAuthGuard (DB checks)', () => {
       },
     });
 
-    const context = createMockContext({ authorization: `Bearer ${token}` }, 'GET');
+    const context = createMockContext(
+      { authorization: `Bearer ${token}` },
+      'GET',
+    );
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
   });
@@ -163,8 +180,13 @@ describe('RestaurantAuthGuard (DB checks)', () => {
       },
     });
 
-    const context = createMockContext({ authorization: `Bearer ${token}` }, 'PATCH');
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    const context = createMockContext(
+      { authorization: `Bearer ${token}` },
+      'PATCH',
+    );
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('blocks all requests on deactivated restaurants', async () => {
@@ -186,8 +208,13 @@ describe('RestaurantAuthGuard (DB checks)', () => {
       },
     });
 
-    const context = createMockContext({ authorization: `Bearer ${token}` }, 'GET');
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    const context = createMockContext(
+      { authorization: `Bearer ${token}` },
+      'GET',
+    );
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('blocks requests when user account is disabled', async () => {
@@ -210,6 +237,8 @@ describe('RestaurantAuthGuard (DB checks)', () => {
     });
 
     const context = createMockContext({ authorization: `Bearer ${token}` });
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 });

@@ -12,13 +12,18 @@ describe('PublicOrderIntentsController', () => {
       recordWhatsAppOpened: vi.fn(),
       getPublicOrderIntent: vi.fn(),
     };
-    controller = new PublicOrderIntentsController(service as OrderIntentsService);
+    controller = new PublicOrderIntentsController(
+      service as OrderIntentsService,
+    );
   });
 
   it('delegates order intent creation to service with client IP', async () => {
     service.createOrderIntent.mockResolvedValue({ reference: 'TM-7K4P9Q' });
 
-    const dto: any = { clientRequestId: 'req-1', restaurantSlug: 'hotel-al-noor' };
+    const dto: any = {
+      clientRequestId: 'req-1',
+      restaurantSlug: 'hotel-al-noor',
+    };
     const res = await controller.createOrderIntent(dto, '192.168.1.1');
 
     expect(service.createOrderIntent).toHaveBeenCalledWith(dto, '192.168.1.1');
@@ -26,7 +31,9 @@ describe('PublicOrderIntentsController', () => {
   });
 
   it('delegates recordWhatsAppOpened to service', async () => {
-    service.recordWhatsAppOpened.mockResolvedValue({ status: 'WHATSAPP_OPENED' });
+    service.recordWhatsAppOpened.mockResolvedValue({
+      status: 'WHATSAPP_OPENED',
+    });
 
     const res = await controller.recordWhatsAppOpened('TM-7K4P9Q');
     expect(service.recordWhatsAppOpened).toHaveBeenCalledWith('TM-7K4P9Q');
@@ -41,4 +48,3 @@ describe('PublicOrderIntentsController', () => {
     expect(res).toEqual({ reference: 'TM-7K4P9Q' });
   });
 });
-

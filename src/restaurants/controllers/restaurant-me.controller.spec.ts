@@ -16,7 +16,9 @@ describe('RestaurantMeController (unit)', () => {
       updateAvailability: vi.fn(),
     };
 
-    controller = new RestaurantMeController(mockRestaurantsService as RestaurantsService);
+    controller = new RestaurantMeController(
+      mockRestaurantsService as RestaurantsService,
+    );
   });
 
   it('should be defined', () => {
@@ -33,7 +35,9 @@ describe('RestaurantMeController (unit)', () => {
     mockRestaurantsService.getMyRestaurant.mockResolvedValue(mockResult);
 
     const result = await controller.getMyRestaurant(mockUser);
-    expect(mockRestaurantsService.getMyRestaurant).toHaveBeenCalledWith('rest-123');
+    expect(mockRestaurantsService.getMyRestaurant).toHaveBeenCalledWith(
+      'rest-123',
+    );
     expect(result).toEqual(mockResult);
   });
 
@@ -47,7 +51,9 @@ describe('RestaurantMeController (unit)', () => {
     mockRestaurantsService.getPublishReadiness.mockResolvedValue(mockResult);
 
     const result = await controller.getPublishReadiness(mockUser);
-    expect(mockRestaurantsService.getPublishReadiness).toHaveBeenCalledWith('rest-123');
+    expect(mockRestaurantsService.getPublishReadiness).toHaveBeenCalledWith(
+      'rest-123',
+    );
     expect(result).toEqual(mockResult);
   });
 
@@ -99,12 +105,18 @@ describe('RestaurantMeController (unit)', () => {
       role: UserRole.RESTAURANT_OWNER,
       restaurantId: 'rest-123',
     };
-    const dto = { manualStatus: ManualStatus.CLOSED, unavailableNote: 'Closed today' };
+    const dto = {
+      manualStatus: ManualStatus.CLOSED,
+      unavailableNote: 'Closed today',
+    };
     const mockResult = { id: 'rest-123', manualStatus: ManualStatus.CLOSED };
     mockRestaurantsService.updateAvailability.mockResolvedValue(mockResult);
 
     const result = await controller.updateAvailability(mockUser, dto);
-    expect(mockRestaurantsService.updateAvailability).toHaveBeenCalledWith('rest-123', dto);
+    expect(mockRestaurantsService.updateAvailability).toHaveBeenCalledWith(
+      'rest-123',
+      dto,
+    );
     expect(result).toEqual(mockResult);
   });
 
@@ -114,11 +126,25 @@ describe('RestaurantMeController (unit)', () => {
       role: UserRole.RESTAURANT_OWNER,
       restaurantId: 'rest-123',
     };
-    const mockFile = { buffer: Buffer.from('img'), size: 100, mimetype: 'image/jpeg' };
-    mockRestaurantsService.uploadRestaurantImage = vi.fn().mockResolvedValue({ logoUrl: 'https://images.dirfood.test/logo.jpg' });
+    const mockFile = {
+      buffer: Buffer.from('img'),
+      size: 100,
+      mimetype: 'image/jpeg',
+    };
+    mockRestaurantsService.uploadRestaurantImage = vi
+      .fn()
+      .mockResolvedValue({ logoUrl: 'https://images.dirfood.test/logo.jpg' });
 
-    const result = await controller.uploadImage(mockUser, 'logo', mockFile as any);
-    expect(mockRestaurantsService.uploadRestaurantImage).toHaveBeenCalledWith('rest-123', 'logo', mockFile);
+    const result = await controller.uploadImage(
+      mockUser,
+      'logo',
+      mockFile as any,
+    );
+    expect(mockRestaurantsService.uploadRestaurantImage).toHaveBeenCalledWith(
+      'rest-123',
+      'logo',
+      mockFile,
+    );
     expect(result).toEqual({ logoUrl: 'https://images.dirfood.test/logo.jpg' });
   });
 
@@ -128,7 +154,9 @@ describe('RestaurantMeController (unit)', () => {
       role: UserRole.RESTAURANT_OWNER,
       restaurantId: 'rest-123',
     };
-    await expect(controller.uploadImage(mockUser, 'banner', {} as any)).rejects.toThrow('Invalid image kind');
+    await expect(
+      controller.uploadImage(mockUser, 'banner', {} as any),
+    ).rejects.toThrow('Invalid image kind');
   });
 
   it('delegates deleteImage to RestaurantsService', async () => {
@@ -137,10 +165,15 @@ describe('RestaurantMeController (unit)', () => {
       role: UserRole.RESTAURANT_OWNER,
       restaurantId: 'rest-123',
     };
-    mockRestaurantsService.deleteRestaurantImage = vi.fn().mockResolvedValue({ coverUrl: null });
+    mockRestaurantsService.deleteRestaurantImage = vi
+      .fn()
+      .mockResolvedValue({ coverUrl: null });
 
     const result = await controller.deleteImage(mockUser, 'cover');
-    expect(mockRestaurantsService.deleteRestaurantImage).toHaveBeenCalledWith('rest-123', 'cover');
+    expect(mockRestaurantsService.deleteRestaurantImage).toHaveBeenCalledWith(
+      'rest-123',
+      'cover',
+    );
     expect(result).toEqual({ coverUrl: null });
   });
 });

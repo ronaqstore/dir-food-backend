@@ -6,7 +6,8 @@ export class UpdateAvailabilityDto {
   @ApiProperty({
     enum: ManualStatus,
     example: ManualStatus.AUTO,
-    description: 'Manual availability override: AUTO (follows hours), CLOSED, TEMP_UNAVAILABLE',
+    description:
+      'Manual availability override: AUTO (follows hours), CLOSED, TEMP_UNAVAILABLE',
   })
   @IsEnum(ManualStatus, {
     message: 'Manual status must be one of: AUTO, CLOSED, TEMP_UNAVAILABLE',

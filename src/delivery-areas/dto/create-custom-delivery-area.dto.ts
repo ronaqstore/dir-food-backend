@@ -12,7 +12,8 @@ export class CreateCustomDeliveryAreaDto {
 
   @ApiPropertyOptional({
     example: 10000,
-    description: 'Delivery fee in paisa (null for confirm on WhatsApp, 0 for free)',
+    description:
+      'Delivery fee in paisa (null for confirm on WhatsApp, 0 for free)',
   })
   @IsOptional()
   @IsInt()
@@ -21,11 +22,11 @@ export class CreateCustomDeliveryAreaDto {
 
   @ApiPropertyOptional({
     example: 50000,
-    description: 'Minimum order amount in paisa for this area (null to use restaurant default)',
+    description:
+      'Minimum order amount in paisa for this area (null to use restaurant default)',
   })
   @IsOptional()
   @IsInt()
   @Min(0)
   minOrderAmount?: number | null;
 }
-

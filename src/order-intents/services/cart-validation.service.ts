@@ -1,9 +1,9 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RestaurantStatus, DeliveryFeeStatus } from '../../generated/prisma/enums.js';
+import {
+  RestaurantStatus,
+  DeliveryFeeStatus,
+} from '../../generated/prisma/enums.js';
 import { isRestaurantOpenNow } from '../../restaurant-hours/utils/opening-hours.util.js';
 import type { CartItemDto } from '../dto/validate-cart.dto.js';
 
@@ -45,9 +45,6 @@ export interface ValidatedCartResult {
 export class CartValidationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Validates a cart against live database items, prices, availability, and opening hours.
-   */
   async validateCart(
     restaurantSlug: string,
     items: CartItemDto[],
@@ -55,7 +52,6 @@ export class CartValidationService {
   ): Promise<ValidatedCartResult> {
     const now = new Date();
 
-    // 1. Fetch eligible restaurant
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { slug: restaurantSlug },
       include: {
@@ -75,7 +71,6 @@ export class CartValidationService {
       });
     }
 
-    // 2. Calculate dynamic operating hours status
     const status = isRestaurantOpenNow(
       restaurant.hours,
       restaurant.manualStatus,
@@ -83,7 +78,6 @@ export class CartValidationService {
       now,
     );
 
-    // 3. Load all unique requested menu items belonging to this restaurant
     const itemIds = [...new Set(items.map((i) => i.menuItemId))];
     const dbItems = await this.prisma.menuItem.findMany({
       where: {
@@ -166,7 +160,6 @@ export class CartValidationService {
       });
     }
 
-    // 4. Validate delivery area if provided
     let deliveryInfo: ValidatedCartResult['delivery'] = null;
     let effectiveMinOrder = restaurant.minOrderAmount;
 
@@ -183,8 +176,14 @@ export class CartValidationService {
         },
       });
 
-      if (!deliveryArea || !deliveryArea.isActive || !deliveryArea.area.isActive) {
-        problems.push('Selected delivery area is not served by this restaurant');
+      if (
+        !deliveryArea ||
+        !deliveryArea.isActive ||
+        !deliveryArea.area.isActive
+      ) {
+        problems.push(
+          'Selected delivery area is not served by this restaurant',
+        );
       } else {
         deliveryInfo = {
           areaId: deliveryArea.areaId,
@@ -203,7 +202,9 @@ export class CartValidationService {
     }
 
     if (effectiveMinOrder !== null && subtotal < effectiveMinOrder) {
-      problems.push('Order subtotal does not meet the minimum order requirement');
+      problems.push(
+        'Order subtotal does not meet the minimum order requirement',
+      );
     }
 
     return {

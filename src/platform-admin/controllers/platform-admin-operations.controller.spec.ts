@@ -20,11 +20,16 @@ describe('PlatformAdminOperationsController (unit)', () => {
 
   it('delegates searchOrderIntents to service', async () => {
     const query = { ref: 'TM-7K4P9Q' };
-    const mockRes = { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+    const mockRes = {
+      data: [],
+      meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+    };
     mockOperationsService.searchOrderIntents.mockResolvedValue(mockRes);
 
     const result = await controller.searchOrderIntents(query);
-    expect(mockOperationsService.searchOrderIntents).toHaveBeenCalledWith(query);
+    expect(mockOperationsService.searchOrderIntents).toHaveBeenCalledWith(
+      query,
+    );
     expect(result).toEqual(mockRes);
   });
 
@@ -34,13 +39,18 @@ describe('PlatformAdminOperationsController (unit)', () => {
     mockOperationsService.getActivitySummary.mockResolvedValue(mockRes);
 
     const result = await controller.getActivitySummary(query);
-    expect(mockOperationsService.getActivitySummary).toHaveBeenCalledWith('30d');
+    expect(mockOperationsService.getActivitySummary).toHaveBeenCalledWith(
+      '30d',
+    );
     expect(result).toEqual(mockRes);
   });
 
   it('delegates getAuditLogs to service with query', async () => {
     const query = { restaurantId: 'r1', page: 1, limit: 10 };
-    const mockRes = { data: [], meta: { page: 1, limit: 10, total: 0, totalPages: 0 } };
+    const mockRes = {
+      data: [],
+      meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    };
     mockOperationsService.getAuditLogs.mockResolvedValue(mockRes);
 
     const result = await controller.getAuditLogs(query);
@@ -48,4 +58,3 @@ describe('PlatformAdminOperationsController (unit)', () => {
     expect(result).toEqual(mockRes);
   });
 });
-

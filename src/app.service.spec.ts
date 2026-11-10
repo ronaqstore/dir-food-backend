@@ -16,4 +16,3 @@ describe('AppService (unit)', () => {
     expect(appService.getHello()).toBe('Hello World!');
   });
 });
-

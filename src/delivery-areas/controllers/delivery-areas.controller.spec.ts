@@ -58,7 +58,13 @@ describe('DeliveryAreasController (unit)', () => {
       restaurantId: 'rest-1',
     };
     const dto = { name: 'Qambar', deliveryFee: 10000 };
-    const mockResult = { areaId: 'area-new', name: 'Qambar', isServed: true, deliveryFee: 10000, minOrderAmount: null };
+    const mockResult = {
+      areaId: 'area-new',
+      name: 'Qambar',
+      isServed: true,
+      deliveryFee: 10000,
+      minOrderAmount: null,
+    };
     mockService.createCustomArea.mockResolvedValue(mockResult);
 
     const res = await controller.createCustomArea(mockUser, dto);

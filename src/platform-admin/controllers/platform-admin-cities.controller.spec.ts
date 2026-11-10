@@ -14,7 +14,9 @@ describe('PlatformAdminCitiesController (unit)', () => {
       updateCity: vi.fn(),
     };
 
-    controller = new PlatformAdminCitiesController(mockCitiesService as PlatformAdminCitiesService);
+    controller = new PlatformAdminCitiesController(
+      mockCitiesService as PlatformAdminCitiesService,
+    );
   });
 
   const mockAdminUser = {
@@ -38,7 +40,11 @@ describe('PlatformAdminCitiesController (unit)', () => {
     mockCitiesService.createCity.mockResolvedValue(mockCreated);
 
     const result = await controller.createCity(dto, mockAdminUser, '127.0.0.1');
-    expect(mockCitiesService.createCity).toHaveBeenCalledWith(dto, 'admin-1', '127.0.0.1');
+    expect(mockCitiesService.createCity).toHaveBeenCalledWith(
+      dto,
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual(mockCreated);
   });
 
@@ -47,8 +53,18 @@ describe('PlatformAdminCitiesController (unit)', () => {
     const mockUpdated = { id: 'c2', name: 'Swat Valley' };
     mockCitiesService.updateCity.mockResolvedValue(mockUpdated);
 
-    const result = await controller.updateCity('c2', dto, mockAdminUser, '127.0.0.1');
-    expect(mockCitiesService.updateCity).toHaveBeenCalledWith('c2', dto, 'admin-1', '127.0.0.1');
+    const result = await controller.updateCity(
+      'c2',
+      dto,
+      mockAdminUser,
+      '127.0.0.1',
+    );
+    expect(mockCitiesService.updateCity).toHaveBeenCalledWith(
+      'c2',
+      dto,
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual(mockUpdated);
   });
 });

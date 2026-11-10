@@ -10,10 +10,11 @@ export class PublicCitiesController {
   constructor(private readonly citiesService: PublicCitiesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get active cities/districts for public restaurant discovery' })
+  @ApiOperation({
+    summary: 'Get active cities/districts for public restaurant discovery',
+  })
   @ApiResponse({ status: 200, description: 'List of available cities' })
   async getCities() {
     return this.citiesService.getCities();
   }
 }
-

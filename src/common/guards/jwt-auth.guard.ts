@@ -29,7 +29,9 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
+    const request = context
+      .switchToHttp()
+      .getRequest<Request & { user?: AuthenticatedUser }>();
     const token = this.extractToken(request);
 
     if (!token) {
@@ -65,12 +67,10 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private extractToken(request: Request): string | null {
-    // 1. Try httpOnly cookie 'dir_food_token'
     if (request.cookies && request.cookies.dir_food_token) {
       return request.cookies.dir_food_token;
     }
 
-    // 2. Fallback to Authorization: Bearer <token>
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       return authHeader.substring(7);

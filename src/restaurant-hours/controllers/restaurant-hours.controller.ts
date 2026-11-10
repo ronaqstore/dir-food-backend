@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedRestaurantUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.js';
@@ -27,17 +27,17 @@ export class RestaurantHoursController {
 
   @Get()
   @ApiOperation({ summary: 'Get current weekly operating hours' })
-  async getHours(@CurrentUser() user: AuthenticatedUser) {
-    return this.hoursService.getHours(user.restaurantId!);
+  async getHours(@CurrentUser() user: AuthenticatedRestaurantUser) {
+    return this.hoursService.getHours(user.restaurantId);
   }
 
   @Put()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Replace full weekly operating hours schedule' })
   async updateHours(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: UpdateRestaurantHoursDto,
   ) {
-    return this.hoursService.updateHours(user.restaurantId!, dto);
+    return this.hoursService.updateHours(user.restaurantId, dto);
   }
 }

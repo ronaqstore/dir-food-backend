@@ -21,10 +21,6 @@ import { OrderIntentRateLimiterService } from './services/rate-limiter.service.j
     WhatsappMessageService,
     OrderIntentRateLimiterService,
   ],
-  exports: [
-    CartValidationService,
-    OrderIntentsService,
-    WhatsappMessageService,
-  ],
+  exports: [CartValidationService, OrderIntentsService, WhatsappMessageService],
 })
 export class OrderIntentsModule {}

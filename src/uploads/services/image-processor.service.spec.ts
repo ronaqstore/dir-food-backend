@@ -63,9 +63,9 @@ describe('ImageProcessorService', () => {
       .gif()
       .toBuffer();
 
-    await expect(
-      service.process({ buffer: gifBuffer }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.process({ buffer: gifBuffer })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
   });
 
   it('processes valid JPEG image and returns metadata', async () => {

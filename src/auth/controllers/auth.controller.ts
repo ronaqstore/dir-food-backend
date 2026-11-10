@@ -31,18 +31,19 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'Register a new restaurant and owner account atomically' })
+  @ApiOperation({
+    summary: 'Register a new restaurant and owner account atomically',
+  })
   @HttpCode(HttpStatus.CREATED)
-  async register(
-    @Body() dto: RegisterRestaurantDto,
-    @Ip() ipAddress: string,
-  ) {
+  async register(@Body() dto: RegisterRestaurantDto, @Ip() ipAddress: string) {
     return this.authService.registerRestaurant(dto, ipAddress);
   }
 
   @Public()
   @Get('check-restaurant-name')
-  @ApiOperation({ summary: 'Check restaurant name availability and slug collision live' })
+  @ApiOperation({
+    summary: 'Check restaurant name availability and slug collision live',
+  })
   @HttpCode(HttpStatus.OK)
   async checkRestaurantName(@Query() query: CheckRestaurantNameDto) {
     return this.authService.checkRestaurantName(query.name);
@@ -59,12 +60,11 @@ export class AuthController {
   ) {
     const result = await this.authService.restaurantOwnerLogin(dto, ipAddress);
 
-    // Set httpOnly cookie for web security
     res.cookie('dir_food_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+      maxAge: 12 * 60 * 60 * 1000,
     });
 
     return {
@@ -89,12 +89,11 @@ export class AuthController {
   ) {
     const result = await this.authService.platformAdminLogin(dto, ipAddress);
 
-    // Set httpOnly cookie for web security
     res.cookie('dir_food_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 12 * 60 * 60 * 1000, // 12 hours
+      maxAge: 12 * 60 * 60 * 1000,
     });
 
     return {
@@ -108,7 +107,9 @@ export class AuthController {
 
   @Public()
   @Post('setup-password')
-  @ApiOperation({ summary: 'First-time password setup via one-time link token' })
+  @ApiOperation({
+    summary: 'First-time password setup via one-time link token',
+  })
   @HttpCode(HttpStatus.OK)
   async setupPassword(@Body() dto: SetupPasswordDto) {
     return this.authService.setupPassword(dto);
@@ -117,7 +118,9 @@ export class AuthController {
   @Post('change-password')
   @UseGuards(RestaurantAuthGuard)
   @ApiBearerAuth('bearer')
-  @ApiOperation({ summary: 'Change password for authenticated restaurant owner' })
+  @ApiOperation({
+    summary: 'Change password for authenticated restaurant owner',
+  })
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @CurrentUser() user: AuthenticatedUser,
@@ -136,7 +139,9 @@ export class AuthController {
 
   @Get('me')
   @ApiBearerAuth('bearer')
-  @ApiOperation({ summary: 'Get current authenticated user profile and restaurant info' })
+  @ApiOperation({
+    summary: 'Get current authenticated user profile and restaurant info',
+  })
   async me(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getMe(user.userId);
   }

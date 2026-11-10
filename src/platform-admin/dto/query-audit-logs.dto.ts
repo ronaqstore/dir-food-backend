@@ -33,4 +33,3 @@ export class QueryAuditLogsDto {
   @Max(50)
   limit?: number = 20;
 }
-

@@ -56,7 +56,11 @@ describe('PlatformAdminCitiesService (unit)', () => {
         isActive: true,
       });
 
-      const res = await service.createCity({ name: 'Swat' }, 'admin-1', '127.0.0.1');
+      const res = await service.createCity(
+        { name: 'Swat' },
+        'admin-1',
+        '127.0.0.1',
+      );
       expect(res.name).toBe('Swat');
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'CITY_CREATED' }),
@@ -65,16 +69,17 @@ describe('PlatformAdminCitiesService (unit)', () => {
 
     it('rejects if name already exists', async () => {
       mockPrisma.city.findUnique.mockResolvedValue({ id: 'existing' });
-      await expect(service.createCity({ name: 'Lower Dir' }, 'admin-1')).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(
+        service.createCity({ name: 'Lower Dir' }, 'admin-1'),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
   describe('updateCity', () => {
     it('updates city and logs audit', async () => {
       mockPrisma.city.findUnique.mockImplementation(async ({ where }: any) => {
-        if (where.id) return { id: 'c1', name: 'Swat', slug: 'swat', isActive: true };
+        if (where.id)
+          return { id: 'c1', name: 'Swat', slug: 'swat', isActive: true };
         return null;
       });
       mockPrisma.city.update.mockResolvedValue({
@@ -84,7 +89,11 @@ describe('PlatformAdminCitiesService (unit)', () => {
         isActive: true,
       });
 
-      const res = await service.updateCity('c1', { name: 'Swat Valley' }, 'admin-1');
+      const res = await service.updateCity(
+        'c1',
+        { name: 'Swat Valley' },
+        'admin-1',
+      );
       expect(res.name).toBe('Swat Valley');
       expect(mockAudit.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'CITY_UPDATED' }),
@@ -93,9 +102,9 @@ describe('PlatformAdminCitiesService (unit)', () => {
 
     it('throws 404 if city not found', async () => {
       mockPrisma.city.findUnique.mockResolvedValue(null);
-      await expect(service.updateCity('unknown', { name: 'Test' }, 'admin-1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.updateCity('unknown', { name: 'Test' }, 'admin-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

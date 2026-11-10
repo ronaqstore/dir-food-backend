@@ -6,7 +6,8 @@ export class UpdateRestaurantStatusDto {
   @ApiProperty({
     enum: RestaurantStatus,
     example: RestaurantStatus.ACTIVE,
-    description: 'Target restaurant status (PENDING, ACTIVE, SUSPENDED, DEACTIVATED)',
+    description:
+      'Target restaurant status (PENDING, ACTIVE, SUSPENDED, DEACTIVATED)',
   })
   @IsEnum(RestaurantStatus, {
     message: 'Status must be one of: PENDING, ACTIVE, SUSPENDED, DEACTIVATED',

@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from '../services/auth.service.js';
-import { UserRole, UserStatus, RestaurantStatus } from '../../generated/prisma/enums.js';
+import {
+  UserRole,
+  UserStatus,
+  RestaurantStatus,
+} from '../../generated/prisma/enums.js';
 
 describe('AuthController (unit)', () => {
   let controller: AuthController;
@@ -56,7 +60,10 @@ describe('AuthController (unit)', () => {
     mockAuthService.registerRestaurant.mockResolvedValue(mockCreated);
 
     const result = await controller.register(dto, '127.0.0.1');
-    expect(mockAuthService.registerRestaurant).toHaveBeenCalledWith(dto, '127.0.0.1');
+    expect(mockAuthService.registerRestaurant).toHaveBeenCalledWith(
+      dto,
+      '127.0.0.1',
+    );
     expect(result).toEqual(mockCreated);
   });
 
@@ -69,8 +76,12 @@ describe('AuthController (unit)', () => {
     };
     mockAuthService.checkRestaurantName.mockResolvedValue(mockCheckResult);
 
-    const result = await controller.checkRestaurantName({ name: 'Royal Restaurant' });
-    expect(mockAuthService.checkRestaurantName).toHaveBeenCalledWith('Royal Restaurant');
+    const result = await controller.checkRestaurantName({
+      name: 'Royal Restaurant',
+    });
+    expect(mockAuthService.checkRestaurantName).toHaveBeenCalledWith(
+      'Royal Restaurant',
+    );
     expect(result).toEqual(mockCheckResult);
   });
 
@@ -83,14 +94,28 @@ describe('AuthController (unit)', () => {
       accessToken: 'jwt-token-xyz',
       tokenType: 'Bearer',
       expiresIn: '12h',
-      user: { id: 'u-1', name: 'Owner Khan', phone: '923001234567', role: UserRole.RESTAURANT_OWNER },
+      user: {
+        id: 'u-1',
+        name: 'Owner Khan',
+        phone: '923001234567',
+        role: UserRole.RESTAURANT_OWNER,
+      },
       restaurantId: 'r-1',
-      restaurant: { id: 'r-1', name: 'Test Diner', slug: 'test-diner', status: RestaurantStatus.ACTIVE, subscriptionStatus: 'VALID' },
+      restaurant: {
+        id: 'r-1',
+        name: 'Test Diner',
+        slug: 'test-diner',
+        status: RestaurantStatus.ACTIVE,
+        subscriptionStatus: 'VALID',
+      },
     };
     mockAuthService.restaurantOwnerLogin.mockResolvedValue(loginResult);
 
     const result = await controller.ownerLogin(dto, mockResponse, '127.0.0.1');
-    expect(mockAuthService.restaurantOwnerLogin).toHaveBeenCalledWith(dto, '127.0.0.1');
+    expect(mockAuthService.restaurantOwnerLogin).toHaveBeenCalledWith(
+      dto,
+      '127.0.0.1',
+    );
     expect(mockResponse.cookie).toHaveBeenCalledWith(
       'dir_food_token',
       'jwt-token-xyz',
@@ -109,12 +134,24 @@ describe('AuthController (unit)', () => {
       accessToken: 'admin-jwt-token',
       tokenType: 'Bearer',
       expiresIn: '12h',
-      admin: { id: 'a-1', name: 'Super Admin', phone: '923009999999', role: UserRole.PLATFORM_ADMIN },
+      admin: {
+        id: 'a-1',
+        name: 'Super Admin',
+        phone: '923009999999',
+        role: UserRole.PLATFORM_ADMIN,
+      },
     };
     mockAuthService.platformAdminLogin.mockResolvedValue(adminLoginResult);
 
-    const result = await controller.platformAdminLogin(dto, mockResponse, '127.0.0.1');
-    expect(mockAuthService.platformAdminLogin).toHaveBeenCalledWith(dto, '127.0.0.1');
+    const result = await controller.platformAdminLogin(
+      dto,
+      mockResponse,
+      '127.0.0.1',
+    );
+    expect(mockAuthService.platformAdminLogin).toHaveBeenCalledWith(
+      dto,
+      '127.0.0.1',
+    );
     expect(mockResponse.cookie).toHaveBeenCalledWith(
       'dir_food_token',
       'admin-jwt-token',
@@ -147,7 +184,10 @@ describe('AuthController (unit)', () => {
       currentPassword: 'OldPassword123!',
       newPassword: 'NewPassword123!',
     };
-    const changeResult = { success: true, message: 'Password changed successfully' };
+    const changeResult = {
+      success: true,
+      message: 'Password changed successfully',
+    };
     mockAuthService.changePassword.mockResolvedValue(changeResult);
 
     const result = await controller.changePassword(mockUser, dto);
@@ -158,7 +198,10 @@ describe('AuthController (unit)', () => {
   it('delegates logout and clears cookie', async () => {
     const result = await controller.logout(mockResponse);
     expect(mockResponse.clearCookie).toHaveBeenCalledWith('dir_food_token');
-    expect(result).toEqual({ success: true, message: 'Logged out successfully' });
+    expect(result).toEqual({
+      success: true,
+      message: 'Logged out successfully',
+    });
   });
 
   it('delegates me to AuthService', async () => {

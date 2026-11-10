@@ -31,8 +31,21 @@ describe('MenuItemsController (unit)', () => {
     };
     mockService.getItems.mockResolvedValue({ data: [], meta: { page: 1 } });
 
-    const res = await controller.getItems(mockUser, 'cat-1', undefined, '2', '10');
-    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', 'cat-1', 2, 10, undefined, undefined);
+    const res = await controller.getItems(
+      mockUser,
+      'cat-1',
+      undefined,
+      '2',
+      '10',
+    );
+    expect(mockService.getItems).toHaveBeenCalledWith(
+      'rest-1',
+      'cat-1',
+      2,
+      10,
+      undefined,
+      undefined,
+    );
     expect(res.meta.page).toBe(1);
   });
 
@@ -44,8 +57,22 @@ describe('MenuItemsController (unit)', () => {
     };
     mockService.getItems.mockResolvedValue({ data: [], meta: { page: 1 } });
 
-    await controller.getItems(mockUser, undefined, undefined, '1', '20', 'true');
-    expect(mockService.getItems).toHaveBeenCalledWith('rest-1', undefined, 1, 20, undefined, true);
+    await controller.getItems(
+      mockUser,
+      undefined,
+      undefined,
+      '1',
+      '20',
+      'true',
+    );
+    expect(mockService.getItems).toHaveBeenCalledWith(
+      'rest-1',
+      undefined,
+      1,
+      20,
+      undefined,
+      true,
+    );
   });
 
   it('delegates createItem with user.restaurantId and dto', async () => {
@@ -69,10 +96,17 @@ describe('MenuItemsController (unit)', () => {
       restaurantId: 'rest-1',
     };
     const dto = { name: 'New Karahi' };
-    mockService.updateItem.mockResolvedValue({ id: 'item-1', name: 'New Karahi' });
+    mockService.updateItem.mockResolvedValue({
+      id: 'item-1',
+      name: 'New Karahi',
+    });
 
     const res = await controller.updateItem(mockUser, 'item-1', dto);
-    expect(mockService.updateItem).toHaveBeenCalledWith('rest-1', 'item-1', dto);
+    expect(mockService.updateItem).toHaveBeenCalledWith(
+      'rest-1',
+      'item-1',
+      dto,
+    );
     expect(res.name).toBe('New Karahi');
   });
 
@@ -86,7 +120,10 @@ describe('MenuItemsController (unit)', () => {
     mockService.reorderItems.mockResolvedValue([]);
 
     const res = await controller.reorderItems(mockUser, dto);
-    expect(mockService.reorderItems).toHaveBeenCalledWith('rest-1', 'cat-1', ['item-2', 'item-1']);
+    expect(mockService.reorderItems).toHaveBeenCalledWith('rest-1', 'cat-1', [
+      'item-2',
+      'item-1',
+    ]);
     expect(res).toEqual([]);
   });
 
@@ -100,7 +137,11 @@ describe('MenuItemsController (unit)', () => {
     mockService.replaceVariants.mockResolvedValue(dto.variants);
 
     const res = await controller.replaceVariants(mockUser, 'item-1', dto);
-    expect(mockService.replaceVariants).toHaveBeenCalledWith('rest-1', 'item-1', dto);
+    expect(mockService.replaceVariants).toHaveBeenCalledWith(
+      'rest-1',
+      'item-1',
+      dto,
+    );
     expect(res).toEqual(dto.variants);
   });
 
@@ -110,11 +151,26 @@ describe('MenuItemsController (unit)', () => {
       role: UserRole.RESTAURANT_OWNER,
       restaurantId: 'rest-1',
     };
-    const mockFile = { buffer: Buffer.from('img'), size: 100, mimetype: 'image/jpeg' };
-    mockService.uploadItemImage = vi.fn().mockResolvedValue({ id: 'item-1', imageUrl: 'https://images.dirfood.test/img.jpg' });
+    const mockFile = {
+      buffer: Buffer.from('img'),
+      size: 100,
+      mimetype: 'image/jpeg',
+    };
+    mockService.uploadItemImage = vi.fn().mockResolvedValue({
+      id: 'item-1',
+      imageUrl: 'https://images.dirfood.test/img.jpg',
+    });
 
-    const res = await controller.uploadItemImage(mockUser, 'item-1', mockFile as any);
-    expect(mockService.uploadItemImage).toHaveBeenCalledWith('rest-1', 'item-1', mockFile);
+    const res = await controller.uploadItemImage(
+      mockUser,
+      'item-1',
+      mockFile as any,
+    );
+    expect(mockService.uploadItemImage).toHaveBeenCalledWith(
+      'rest-1',
+      'item-1',
+      mockFile,
+    );
     expect(res.imageUrl).toContain('img.jpg');
   });
 
@@ -124,10 +180,15 @@ describe('MenuItemsController (unit)', () => {
       role: UserRole.RESTAURANT_OWNER,
       restaurantId: 'rest-1',
     };
-    mockService.deleteItemImage = vi.fn().mockResolvedValue({ id: 'item-1', imageUrl: null });
+    mockService.deleteItemImage = vi
+      .fn()
+      .mockResolvedValue({ id: 'item-1', imageUrl: null });
 
     const res = await controller.deleteItemImage(mockUser, 'item-1');
-    expect(mockService.deleteItemImage).toHaveBeenCalledWith('rest-1', 'item-1');
+    expect(mockService.deleteItemImage).toHaveBeenCalledWith(
+      'rest-1',
+      'item-1',
+    );
     expect(res.imageUrl).toBeNull();
   });
 });

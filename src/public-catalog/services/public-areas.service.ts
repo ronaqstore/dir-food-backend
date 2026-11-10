@@ -19,10 +19,7 @@ export class PublicAreasService {
         isVerified: true,
         ...(cityId ? { cityId } : {}),
       },
-      orderBy: [
-        { sortOrder: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: {
         id: true,
         cityId: true,
@@ -32,4 +29,3 @@ export class PublicAreasService {
     });
   }
 }
-

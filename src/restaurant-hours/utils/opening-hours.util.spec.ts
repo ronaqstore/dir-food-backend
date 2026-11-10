@@ -120,7 +120,11 @@ describe('opening-hours.util', () => {
     });
 
     it('returns false when restaurant has TEMP_UNAVAILABLE status', () => {
-      const res = isRestaurantOpenNow(hours, ManualStatus.TEMP_UNAVAILABLE, 'No electricity');
+      const res = isRestaurantOpenNow(
+        hours,
+        ManualStatus.TEMP_UNAVAILABLE,
+        'No electricity',
+      );
       expect(res.isOpenNow).toBe(false);
       expect(res.manualStatus).toBe(ManualStatus.TEMP_UNAVAILABLE);
       expect(res.availabilityText).toContain('No electricity');
@@ -129,21 +133,36 @@ describe('opening-hours.util', () => {
     it('evaluates open now at 23:30 on Monday for overnight range', () => {
       // 2026-10-19 is a Monday. 23:30 in Karachi (UTC+5) is 18:30 UTC.
       const mondayNight = new Date('2026-10-19T18:30:00.000Z');
-      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, mondayNight);
+      const res = isRestaurantOpenNow(
+        hours,
+        ManualStatus.AUTO,
+        null,
+        mondayNight,
+      );
       expect(res.isOpenNow).toBe(true);
     });
 
     it('evaluates open now at 01:00 on Tuesday morning for Monday overnight range', () => {
       // 2026-10-20 is Tuesday. 01:00 in Karachi (UTC+5) is 20:00 UTC on 2026-10-19.
       const tuesdayEarly = new Date('2026-10-19T20:00:00.000Z');
-      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, tuesdayEarly);
+      const res = isRestaurantOpenNow(
+        hours,
+        ManualStatus.AUTO,
+        null,
+        tuesdayEarly,
+      );
       expect(res.isOpenNow).toBe(true);
     });
 
     it('evaluates closed at 03:00 on Tuesday after overnight range closes', () => {
       // 03:00 Karachi on Tuesday = 22:00 UTC on Monday
       const tuesdayLateNight = new Date('2026-10-19T22:00:00.000Z');
-      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, tuesdayLateNight);
+      const res = isRestaurantOpenNow(
+        hours,
+        ManualStatus.AUTO,
+        null,
+        tuesdayLateNight,
+      );
       expect(res.isOpenNow).toBe(false);
     });
 
@@ -157,7 +176,12 @@ describe('opening-hours.util', () => {
       // Monday 18:00 is next open. Check at 14:00 on Monday.
       // 14:00 Karachi on 2026-10-19 = 09:00 UTC
       const mondayAfternoon = new Date('2026-10-19T09:00:00.000Z');
-      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, mondayAfternoon);
+      const res = isRestaurantOpenNow(
+        hours,
+        ManualStatus.AUTO,
+        null,
+        mondayAfternoon,
+      );
       expect(res.isOpenNow).toBe(false);
       expect(res.availabilityText).toBe('Closed, opens at 18:00');
       expect(res.nextOpenAt).toBe('2026-10-19T13:00:00.000Z'); // 18:00 PKT = 13:00 UTC
@@ -167,7 +191,12 @@ describe('opening-hours.util', () => {
       // After overnight range closes at 02:00 on Tuesday (e.g. at 03:00 PKT / 22:00 UTC Monday)
       // Next opening is Tuesday at 10:00 PKT = 05:00 UTC on Tuesday
       const tuesdayEarlyMorning = new Date('2026-10-19T22:00:00.000Z');
-      const res = isRestaurantOpenNow(hours, ManualStatus.AUTO, null, tuesdayEarlyMorning);
+      const res = isRestaurantOpenNow(
+        hours,
+        ManualStatus.AUTO,
+        null,
+        tuesdayEarlyMorning,
+      );
       expect(res.isOpenNow).toBe(false);
       expect(res.availabilityText).toBe('Closed, opens at 10:00');
       expect(res.nextOpenAt).toBe('2026-10-20T05:00:00.000Z');
@@ -184,7 +213,12 @@ describe('opening-hours.util', () => {
       ];
       // Tuesday 10:00 PKT = 05:00 UTC on 2026-10-20
       const tuesday = new Date('2026-10-20T05:00:00.000Z');
-      const res = isRestaurantOpenNow(fridayOnlyHours, ManualStatus.AUTO, null, tuesday);
+      const res = isRestaurantOpenNow(
+        fridayOnlyHours,
+        ManualStatus.AUTO,
+        null,
+        tuesday,
+      );
       expect(res.isOpenNow).toBe(false);
       expect(res.availabilityText).toBe('Closed, opens Fri at 12:00');
       expect(res.nextOpenAt).toBe('2026-10-23T07:00:00.000Z'); // 12:00 PKT = 07:00 UTC on Friday Oct 23

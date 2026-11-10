@@ -21,7 +21,12 @@ describe('PublicAreasService', () => {
 
   it('returns active areas ordered by sortOrder and name with only public fields', async () => {
     const mockAreas = [
-      { id: 'area-1', cityId: 'city-1', name: 'Timergara City', slug: 'timergara-city' },
+      {
+        id: 'area-1',
+        cityId: 'city-1',
+        name: 'Timergara City',
+        slug: 'timergara-city',
+      },
       { id: 'area-2', cityId: 'city-1', name: 'Balambat', slug: 'balambat' },
     ];
     mockPrisma.area.findMany.mockResolvedValue(mockAreas);
@@ -34,10 +39,7 @@ describe('PublicAreasService', () => {
         isVerified: true,
         cityId: 'city-1',
       },
-      orderBy: [
-        { sortOrder: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: {
         id: true,
         cityId: true,
@@ -48,4 +50,3 @@ describe('PublicAreasService', () => {
     expect(result).toEqual(mockAreas);
   });
 });
-

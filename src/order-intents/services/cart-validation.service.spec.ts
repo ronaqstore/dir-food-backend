@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CartValidationService } from './cart-validation.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RestaurantStatus, ManualStatus } from '../../generated/prisma/enums.js';
+import {
+  RestaurantStatus,
+  ManualStatus,
+} from '../../generated/prisma/enums.js';
 import { NotFoundException } from '@nestjs/common';
 
 describe('CartValidationService', () => {
@@ -27,7 +30,9 @@ describe('CartValidationService', () => {
     prisma.restaurant.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.validateCart('non-existent', [{ menuItemId: 'item-1', quantity: 1 }]),
+      service.validateCart('non-existent', [
+        { menuItemId: 'item-1', quantity: 1 },
+      ]),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -127,8 +132,9 @@ describe('CartValidationService', () => {
       { menuItemId: 'item-2', quantity: 1 }, // missing variantId!
     ]);
 
-    expect(result.problems).toContain("Item 'Cold Drink' is currently out of stock");
+    expect(result.problems).toContain(
+      "Item 'Cold Drink' is currently out of stock",
+    );
     expect(result.problems).toContain("Variant is required for 'Pizza'");
   });
 });
-

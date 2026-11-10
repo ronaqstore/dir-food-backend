@@ -1,10 +1,5 @@
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import {
-  Controller,
-  Get,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { PlatformAdminOperationsService } from '../services/platform-admin-operations.service.js';
 import { QueryAdminOrdersDto } from '../dto/query-admin-orders.dto.js';
 import { QueryActivityDto } from '../dto/query-activity.dto.js';
@@ -19,10 +14,15 @@ import { UserRole } from '../../generated/prisma/enums.js';
 @Roles(UserRole.PLATFORM_ADMIN)
 @UseGuards(RolesGuard)
 export class PlatformAdminOperationsController {
-  constructor(private readonly operationsService: PlatformAdminOperationsService) {}
+  constructor(
+    private readonly operationsService: PlatformAdminOperationsService,
+  ) {}
 
   @Get('order-intents')
-  @ApiOperation({ summary: 'Search order intents by reference code or customer details for support' })
+  @ApiOperation({
+    summary:
+      'Search order intents by reference code or customer details for support',
+  })
   async searchOrderIntents(@Query() query: QueryAdminOrdersDto) {
     return this.operationsService.searchOrderIntents(query);
   }
@@ -34,9 +34,10 @@ export class PlatformAdminOperationsController {
   }
 
   @Get('audit-logs')
-  @ApiOperation({ summary: 'View paginated platform audit logs with filtering' })
+  @ApiOperation({
+    summary: 'View paginated platform audit logs with filtering',
+  })
   async getAuditLogs(@Query() query: QueryAuditLogsDto) {
     return this.operationsService.getAuditLogs(query);
   }
 }
-

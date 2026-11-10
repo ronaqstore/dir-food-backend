@@ -17,7 +17,9 @@ describe('PlatformAdminAreasController (unit)', () => {
       mergeArea: vi.fn(),
     };
 
-    controller = new PlatformAdminAreasController(mockAreasService as PlatformAdminAreasService);
+    controller = new PlatformAdminAreasController(
+      mockAreasService as PlatformAdminAreasService,
+    );
   });
 
   const mockAdminUser = {
@@ -41,7 +43,11 @@ describe('PlatformAdminAreasController (unit)', () => {
     mockAreasService.createArea.mockResolvedValue(mockCreated);
 
     const result = await controller.createArea(dto, mockAdminUser, '127.0.0.1');
-    expect(mockAreasService.createArea).toHaveBeenCalledWith(dto, 'admin-1', '127.0.0.1');
+    expect(mockAreasService.createArea).toHaveBeenCalledWith(
+      dto,
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual(mockCreated);
   });
 
@@ -50,33 +56,73 @@ describe('PlatformAdminAreasController (unit)', () => {
     const mockUpdated = { id: 'a2', name: 'Balambat City' };
     mockAreasService.updateArea.mockResolvedValue(mockUpdated);
 
-    const result = await controller.updateArea('a2', dto, mockAdminUser, '127.0.0.1');
-    expect(mockAreasService.updateArea).toHaveBeenCalledWith('a2', dto, 'admin-1', '127.0.0.1');
+    const result = await controller.updateArea(
+      'a2',
+      dto,
+      mockAdminUser,
+      '127.0.0.1',
+    );
+    expect(mockAreasService.updateArea).toHaveBeenCalledWith(
+      'a2',
+      dto,
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual(mockUpdated);
   });
 
   it('delegates deleteArea to service', async () => {
     mockAreasService.deleteArea.mockResolvedValue({ success: true });
 
-    const result = await controller.deleteArea('a2', mockAdminUser, '127.0.0.1');
-    expect(mockAreasService.deleteArea).toHaveBeenCalledWith('a2', 'admin-1', '127.0.0.1');
+    const result = await controller.deleteArea(
+      'a2',
+      mockAdminUser,
+      '127.0.0.1',
+    );
+    expect(mockAreasService.deleteArea).toHaveBeenCalledWith(
+      'a2',
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual({ success: true });
   });
 
   it('delegates approveArea to service', async () => {
-    mockAreasService.approveArea.mockResolvedValue({ id: 'a2', isVerified: true });
+    mockAreasService.approveArea.mockResolvedValue({
+      id: 'a2',
+      isVerified: true,
+    });
 
-    const result = await controller.approveArea('a2', {}, mockAdminUser, '127.0.0.1');
-    expect(mockAreasService.approveArea).toHaveBeenCalledWith('a2', {}, 'admin-1', '127.0.0.1');
+    const result = await controller.approveArea(
+      'a2',
+      {},
+      mockAdminUser,
+      '127.0.0.1',
+    );
+    expect(mockAreasService.approveArea).toHaveBeenCalledWith(
+      'a2',
+      {},
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual({ id: 'a2', isVerified: true });
   });
 
   it('delegates mergeArea to service', async () => {
     mockAreasService.mergeArea.mockResolvedValue({ success: true });
 
-    const result = await controller.mergeArea('a2', { targetAreaId: 'a1' }, mockAdminUser, '127.0.0.1');
-    expect(mockAreasService.mergeArea).toHaveBeenCalledWith('a2', 'a1', 'admin-1', '127.0.0.1');
+    const result = await controller.mergeArea(
+      'a2',
+      { targetAreaId: 'a1' },
+      mockAdminUser,
+      '127.0.0.1',
+    );
+    expect(mockAreasService.mergeArea).toHaveBeenCalledWith(
+      'a2',
+      'a1',
+      'admin-1',
+      '127.0.0.1',
+    );
     expect(result).toEqual({ success: true });
   });
 });
-

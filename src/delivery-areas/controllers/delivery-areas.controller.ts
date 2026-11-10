@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedRestaurantUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.js';
@@ -28,28 +28,35 @@ export class DeliveryAreasController {
   constructor(private readonly areasService: DeliveryAreasService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all platform areas with restaurant served and fee status' })
-  async getDeliveryAreas(@CurrentUser() user: AuthenticatedUser) {
-    return this.areasService.getDeliveryAreas(user.restaurantId!);
+  @ApiOperation({
+    summary: 'Get all platform areas with restaurant served and fee status',
+  })
+  async getDeliveryAreas(@CurrentUser() user: AuthenticatedRestaurantUser) {
+    return this.areasService.getDeliveryAreas(user.restaurantId);
   }
 
   @Put()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Configure served delivery areas and delivery fees' })
+  @ApiOperation({
+    summary: 'Configure served delivery areas and delivery fees',
+  })
   async updateDeliveryAreas(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: UpdateDeliveryAreasDto,
   ) {
-    return this.areasService.updateDeliveryAreas(user.restaurantId!, dto);
+    return this.areasService.updateDeliveryAreas(user.restaurantId, dto);
   }
 
   @Post('custom')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Add a custom delivery area in restaurant city and activate for delivery' })
+  @ApiOperation({
+    summary:
+      'Add a custom delivery area in restaurant city and activate for delivery',
+  })
   async createCustomArea(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: CreateCustomDeliveryAreaDto,
   ) {
-    return this.areasService.createCustomArea(user.restaurantId!, dto);
+    return this.areasService.createCustomArea(user.restaurantId, dto);
   }
 }

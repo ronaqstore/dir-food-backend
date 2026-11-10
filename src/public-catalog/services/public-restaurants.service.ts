@@ -105,7 +105,6 @@ export class PublicRestaurantsService {
       };
     }
 
-    // 1. Fetch eligible active restaurants with their hours
     const restaurants = await this.prisma.restaurant.findMany({
       where,
       select: {
@@ -130,7 +129,6 @@ export class PublicRestaurantsService {
       },
     });
 
-    // 2. Filter by cuisine (case-insensitive) if requested
     let filteredList = restaurants;
     if (query.cuisine) {
       const targetCuisine = query.cuisine.trim().toLowerCase();
@@ -139,7 +137,6 @@ export class PublicRestaurantsService {
       );
     }
 
-    // 3. Compute dynamic open status, availabilityText, and nextOpenAt
     const evaluated: PublicRestaurantCard[] = filteredList.map((r) => {
       const openStatus = isRestaurantOpenNow(
         r.hours,
@@ -159,18 +156,15 @@ export class PublicRestaurantsService {
       };
     });
 
-    // 4. Filter openNow if toggle is on
     const finalFiltered = query.openNow
       ? evaluated.filter((r) => r.isOpenNow)
       : evaluated;
 
-    // 5. Open restaurants first, then preserve secondary sorting
     finalFiltered.sort((a, b) => {
       if (a.isOpenNow === b.isOpenNow) return 0;
       return a.isOpenNow ? -1 : 1;
     });
 
-    // 6. Pagination
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const total = finalFiltered.length;
@@ -243,7 +237,6 @@ export class PublicRestaurantsService {
       });
     }
 
-    // Must be ACTIVE with unexpired subscription
     if (
       restaurant.status !== RestaurantStatus.ACTIVE ||
       !restaurant.subscriptionEndsAt ||
@@ -305,7 +298,9 @@ export class PublicRestaurantsService {
     };
   }
 
-  async getRestaurantMenu(slug: string): Promise<{ categories: PublicMenuCategory[] }> {
+  async getRestaurantMenu(
+    slug: string,
+  ): Promise<{ categories: PublicMenuCategory[] }> {
     const now = new Date();
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { slug },
@@ -401,4 +396,3 @@ export class PublicRestaurantsService {
     return { categories };
   }
 }
-

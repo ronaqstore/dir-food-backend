@@ -14,15 +14,15 @@ describe('PlatformAdminAuthController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PlatformAdminAuthController],
-      providers: [
-        { provide: AuthService, useValue: mockAuthService },
-      ],
+      providers: [{ provide: AuthService, useValue: mockAuthService }],
     })
       .overrideGuard(PlatformAdminGuard)
       .useValue({ canActivate: () => true })
       .compile();
 
-    controller = module.get<PlatformAdminAuthController>(PlatformAdminAuthController);
+    controller = module.get<PlatformAdminAuthController>(
+      PlatformAdminAuthController,
+    );
   });
 
   it('should be defined', () => {
@@ -42,6 +42,8 @@ describe('PlatformAdminAuthController', () => {
 
     const result = await controller.issuePasswordSetupLink('user-123');
     expect(result).toEqual(mockResponse);
-    expect(mockAuthService.issuePasswordSetupLink).toHaveBeenCalledWith('user-123');
+    expect(mockAuthService.issuePasswordSetupLink).toHaveBeenCalledWith(
+      'user-123',
+    );
   });
 });

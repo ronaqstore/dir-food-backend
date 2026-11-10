@@ -4,7 +4,8 @@ import { Equals, IsDateString, IsNotEmpty, IsString } from 'class-validator';
 export class ShortenSubscriptionDto {
   @ApiProperty({
     example: '2026-11-01T00:00:00.000Z',
-    description: 'Earlier subscription end date (must be < current end and >= trialStartedAt)',
+    description:
+      'Earlier subscription end date (must be < current end and >= trialStartedAt)',
   })
   @IsDateString()
   subscriptionEndsAt!: string;
@@ -24,4 +25,3 @@ export class ShortenSubscriptionDto {
   @Equals(true, { message: 'confirm must be explicitly true' })
   confirm!: boolean;
 }
-

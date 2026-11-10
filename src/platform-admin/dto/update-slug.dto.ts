@@ -7,8 +7,8 @@ export class UpdateSlugDto {
   @IsNotEmpty()
   @MinLength(3)
   @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-    message: 'Slug must contain only lowercase alphanumeric characters and hyphens',
+    message:
+      'Slug must contain only lowercase alphanumeric characters and hyphens',
   })
   slug!: string;
 }
-

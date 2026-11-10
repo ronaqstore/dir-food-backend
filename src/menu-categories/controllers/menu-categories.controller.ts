@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedRestaurantUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.js';
@@ -31,38 +31,40 @@ export class MenuCategoriesController {
   constructor(private readonly categoriesService: MenuCategoriesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List all menu categories for the current restaurant' })
-  async getCategories(@CurrentUser() user: AuthenticatedUser) {
-    return this.categoriesService.getCategories(user.restaurantId!);
+  @ApiOperation({
+    summary: 'List all menu categories for the current restaurant',
+  })
+  async getCategories(@CurrentUser() user: AuthenticatedRestaurantUser) {
+    return this.categoriesService.getCategories(user.restaurantId);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new menu category' })
   async createCategory(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: CreateCategoryDto,
   ) {
-    return this.categoriesService.createCategory(user.restaurantId!, dto);
+    return this.categoriesService.createCategory(user.restaurantId, dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update or rename a menu category' })
   async updateCategory(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
   ) {
-    return this.categoriesService.updateCategory(user.restaurantId!, id, dto);
+    return this.categoriesService.updateCategory(user.restaurantId, id, dto);
   }
 
   @Put('order')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update display ordering of menu categories' })
   async reorderCategories(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: ReorderCategoriesDto,
   ) {
-    return this.categoriesService.reorderCategories(user.restaurantId!, dto.ids);
+    return this.categoriesService.reorderCategories(user.restaurantId, dto.ids);
   }
 }

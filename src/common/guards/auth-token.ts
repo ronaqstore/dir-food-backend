@@ -8,42 +8,19 @@ export enum AuthTokenType {
   PLATFORM_ADMIN = 'PLATFORM_ADMIN',
 }
 
-export interface OwnerTokenPayload {
-  sub: string;
-  userId: string;
-  role: UserRole;
-  restaurantId: string;
-  typ: AuthTokenType.RESTAURANT_OWNER;
-}
-
-export interface AdminTokenPayload {
-  sub: string;
-  userId: string;
-  role: UserRole;
-  typ: AuthTokenType.PLATFORM_ADMIN;
-}
-
-export type JwtPayloadClaims = OwnerTokenPayload | AdminTokenPayload;
-
-export interface AuthenticatedOwner {
-  userId: string;
-  restaurantId: string;
-  role: UserRole;
-}
-
-export interface AuthenticatedPlatformAdmin {
-  userId: string;
-  name?: string;
-  role: UserRole;
+export interface JwtPayloadClaims {
+  sub?: string;
+  userId?: string;
+  role?: UserRole;
+  restaurantId?: string | null;
+  typ?: AuthTokenType | string;
 }
 
 export const extractRawToken = (request: Request): string | null => {
-  // 1. Try httpOnly cookie 'dir_food_token'
   if (request.cookies && request.cookies.dir_food_token) {
     return request.cookies.dir_food_token;
   }
 
-  // 2. Fallback to Authorization: Bearer <token>
   const authHeader = request.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7).trim();
@@ -62,7 +39,7 @@ export const verifyTokenOfType = async (
     throw new UnauthorizedException('Authentication required');
   }
 
-  let payload: any;
+  let payload: JwtPayloadClaims | undefined;
   try {
     payload = await jwtService.verifyAsync<JwtPayloadClaims>(rawToken, {
       secret,
@@ -95,8 +72,13 @@ export const verifyTokenOfType = async (
     }
   }
 
-  if (expectedType === AuthTokenType.RESTAURANT_OWNER && !payload.restaurantId) {
-    throw new UnauthorizedException('Restaurant token must include a restaurantId');
+  if (
+    expectedType === AuthTokenType.RESTAURANT_OWNER &&
+    !payload.restaurantId
+  ) {
+    throw new UnauthorizedException(
+      'Restaurant token must include a restaurantId',
+    );
   }
 
   return {

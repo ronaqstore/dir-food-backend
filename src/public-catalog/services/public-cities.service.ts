@@ -17,10 +17,7 @@ export class PublicCitiesService {
       where: {
         isActive: true,
       },
-      orderBy: [
-        { sortOrder: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: {
         id: true,
         name: true,
@@ -30,4 +27,3 @@ export class PublicCitiesService {
     });
   }
 }
-

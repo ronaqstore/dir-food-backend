@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ExecutionContext, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PlatformAdminGuard } from './platform-admin.guard.js';
 import { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -22,7 +26,11 @@ describe('PlatformAdminGuard (DB checks)', () => {
         findUnique: vi.fn(),
       },
     };
-    guard = new PlatformAdminGuard(jwtService, configService, mockPrisma as PrismaService);
+    guard = new PlatformAdminGuard(
+      jwtService,
+      configService,
+      mockPrisma as PrismaService,
+    );
   });
 
   const createMockContext = (
@@ -77,7 +85,9 @@ describe('PlatformAdminGuard (DB checks)', () => {
     });
 
     const context = createMockContext({ authorization: `Bearer ${token}` });
-    await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('blocks access when user is not a platform admin in DB', async () => {
@@ -94,7 +104,9 @@ describe('PlatformAdminGuard (DB checks)', () => {
     });
 
     const context = createMockContext({ authorization: `Bearer ${token}` });
-    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('blocks access when admin does not exist in DB', async () => {
@@ -107,6 +119,8 @@ describe('PlatformAdminGuard (DB checks)', () => {
     mockPrisma.user.findUnique.mockResolvedValue(null);
 
     const context = createMockContext({ authorization: `Bearer ${token}` });
-    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    await expect(guard.canActivate(context)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 });

@@ -1,8 +1,17 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class UpdateAreaDto {
-  @ApiPropertyOptional({ example: '01920000-0000-7000-8000-000000000001', description: 'City/District UUID' })
+  @ApiPropertyOptional({
+    example: '01920000-0000-7000-8000-000000000001',
+    description: 'City/District UUID',
+  })
   @IsOptional()
   @IsUUID('all')
   cityId?: string;
@@ -27,4 +36,3 @@ export class UpdateAreaDto {
   @IsBoolean()
   isActive?: boolean;
 }
-

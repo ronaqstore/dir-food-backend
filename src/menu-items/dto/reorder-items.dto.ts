@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { ArrayNotEmpty, IsArray, IsNotEmpty, IsUUID } from 'class-validator';
 
 export class ReorderMenuItemsDto {
-  @ApiProperty({ example: '0192a000-0000-7000-8000-000000000001', description: 'Category ID' })
+  @ApiProperty({
+    example: '0192a000-0000-7000-8000-000000000001',
+    description: 'Category ID',
+  })
   @IsUUID('7')
   @IsNotEmpty()
   categoryId!: string;

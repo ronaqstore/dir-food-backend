@@ -13,7 +13,6 @@ export function normalizePhone(rawPhone: string): string {
 
 export function isValidPakistaniMobile(phone: string): boolean {
   const normalized = normalizePhone(phone);
-  // Must be 923XXXXXXXXX (12 digits)
   return /^923\d{9}$/.test(normalized);
 }
 
@@ -25,4 +24,3 @@ export function slugify(text: string): string {
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
-

@@ -56,4 +56,3 @@ describe('AuditService (unit)', () => {
     ).resolves.not.toThrow();
   });
 });
-

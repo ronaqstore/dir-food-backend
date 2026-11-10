@@ -28,4 +28,3 @@ export class QueryAdminOrdersDto {
   @Max(50)
   limit?: number = 20;
 }
-

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
-import { RestaurantStatus, ManualStatus } from '../../generated/prisma/enums.js';
+import {
+  RestaurantStatus,
+  ManualStatus,
+} from '../../generated/prisma/enums.js';
 import { PublicRestaurantsService } from './public-restaurants.service.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 
@@ -23,7 +26,9 @@ describe('PublicRestaurantsService', () => {
         findUnique: vi.fn(),
       },
     };
-    service = new PublicRestaurantsService(mockPrisma as unknown as PrismaService);
+    service = new PublicRestaurantsService(
+      mockPrisma as unknown as PrismaService,
+    );
   });
 
   describe('getRestaurants', () => {
@@ -343,4 +348,3 @@ describe('PublicRestaurantsService', () => {
     });
   });
 });
-

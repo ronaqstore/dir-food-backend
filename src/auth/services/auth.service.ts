@@ -3,12 +3,11 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
-  NotFoundException,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import bcrypt from 'bcrypt';
-import { Prisma } from '../../generated/prisma/client.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
 import { RegisterRestaurantDto } from '../dto/register.dto.js';
@@ -23,27 +22,30 @@ import {
 } from '../dto/login-response.dto.js';
 import { PasswordSetupLinkResponseDto } from '../dto/password-setup-link-response.dto.js';
 import { CheckRestaurantNameResponse } from '../dto/check-restaurant-name.dto.js';
-import { normalizePhone, isValidPakistaniMobile, slugify } from '../../common/utils/phone.js';
+import type { AuthTokenClaims } from '../dto/jwt-claims.dto.js';
 import {
-  generateOpaqueToken,
-  hashOpaqueToken,
-  isWellFormedToken,
-} from '../../common/utils/token.helper.js';
+  normalizePhone,
+  isValidPakistaniMobile,
+  slugify,
+} from '../../common/utils/phone.js';
 import { seedRestaurantDefaults } from '../../common/utils/restaurant-defaults.js';
-import { RestaurantStatus, UserRole, UserStatus } from '../../generated/prisma/enums.js';
+import {
+  RestaurantStatus,
+  UserRole,
+  UserStatus,
+} from '../../generated/prisma/enums.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { AuthTokenType } from '../../common/guards/auth-token.js';
-
 import { JwtService } from '@nestjs/jwt';
+import {
+  handleBuildSetupLink,
+  handleIssuePasswordSetupLink,
+  handleSetupPassword,
+  handleChangePassword,
+} from '../helpers/auth-password.helper.js';
 
-/**
- * Pre-computed bcrypt hash of an impossible password, used to ensure
- * invalid phone queries take the same duration as wrong password attempts.
- */
 const TIMING_EQUALISER_HASH =
   '$2b$12$C6UzMDM.H6dfI/f/IKcEe.7QGK2M4Yw1nBqzYlJ0Z7iVfZ1zUq7r2K';
-
-const SETUP_PASSWORD_PATH = '/setup-password';
 
 @Injectable()
 export class AuthService {
@@ -58,13 +60,7 @@ export class AuthService {
     private readonly auditService: AuditService,
   ) {}
 
-  private async signToken(claims: {
-    sub: string;
-    userId: string;
-    typ: AuthTokenType;
-    restaurantId?: string | null;
-    role?: string;
-  }): Promise<string> {
+  private async signToken(claims: AuthTokenClaims): Promise<string> {
     return this.jwtService.signAsync(claims, {
       secret: this.configService.jwtSecret,
       expiresIn: '12h',
@@ -74,14 +70,18 @@ export class AuthService {
   async registerRestaurant(dto: RegisterRestaurantDto, ipAddress?: string) {
     const normalizedPhone = normalizePhone(dto.phone);
     if (!isValidPakistaniMobile(normalizedPhone)) {
-      throw new BadRequestException('Invalid Pakistani mobile number for owner');
+      throw new BadRequestException(
+        'Invalid Pakistani mobile number for owner',
+      );
     }
 
     let normalizedWa: string | undefined = undefined;
     if (dto.whatsappNumber) {
       normalizedWa = normalizePhone(dto.whatsappNumber);
       if (!isValidPakistaniMobile(normalizedWa)) {
-        throw new BadRequestException('Invalid Pakistani mobile number for WhatsApp');
+        throw new BadRequestException(
+          'Invalid Pakistani mobile number for WhatsApp',
+        );
       }
     }
 
@@ -89,7 +89,9 @@ export class AuthService {
       where: { phone: normalizedPhone },
     });
     if (existingUser) {
-      throw new ConflictException('A user with this phone number already exists');
+      throw new ConflictException(
+        'A user with this phone number already exists',
+      );
     }
 
     let baseSlug = slugify(dto.restaurantName);
@@ -112,7 +114,9 @@ export class AuthService {
 
     let cityId = dto.cityId;
     if (cityId) {
-      const city = await this.prisma.city.findUnique({ where: { id: cityId } });
+      const city = await this.prisma.city?.findUnique({
+        where: { id: cityId },
+      });
       if (!city) {
         throw new BadRequestException('Invalid city/district ID');
       }
@@ -173,7 +177,7 @@ export class AuthService {
       details: {
         name: result.restaurant.name,
         slug: result.restaurant.slug,
-        ownerPhone: normalizedPhone,
+        phone: normalizedPhone,
       },
       ipAddress,
     });
@@ -197,11 +201,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Restaurant Owner login endpoint (POST /auth/login).
-   * Verifies credentials, applies account lockout on failed attempts,
-   * checks restaurant status, and signs an OWNER JWT token.
-   */
   async restaurantOwnerLogin(
     dto: OwnerLoginDto,
     _ipAddress?: string,
@@ -214,50 +213,49 @@ export class AuthService {
         role: UserRole.RESTAURANT_OWNER,
       },
       include: {
-        restaurant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            status: true,
-            subscriptionEndsAt: true,
-          },
-        },
+        restaurant: true,
       },
     });
 
+    const now = new Date();
+
     if (!user) {
       await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
-      throw new UnauthorizedException('Phone or password is incorrect');
+      throw new UnauthorizedException('Invalid phone or password');
     }
 
     if (!user.passwordHash) {
       await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
-      throw new UnauthorizedException('Phone or password is incorrect');
+      throw new UnauthorizedException(
+        'Password not set. Please use your setup link.',
+      );
     }
 
-    const now = new Date();
     if (user.lockedUntil && user.lockedUntil > now) {
       const remainingMinutes = Math.ceil(
-        (user.lockedUntil.getTime() - now.getTime()) / 60000,
+        (user.lockedUntil.getTime() - now.getTime()) / 60_000,
       );
       throw new HttpException(
         {
           code: 'ACCOUNT_LOCKED',
-          message: `Account is temporarily locked. Please try again in ${remainingMinutes} minute(s).`,
+          message: `Account is temporarily locked. Try again in ${remainingMinutes} minute(s).`,
+          lockedUntil: user.lockedUntil.toISOString(),
         },
-        HttpStatus.LOCKED,
+        HttpStatus.FORBIDDEN,
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
 
     if (!isPasswordValid) {
       const newAttempts = user.failedLoginCount + 1;
       let lockedUntil: Date | null = null;
 
       if (newAttempts >= this.MAX_FAILED_ATTEMPTS) {
-        lockedUntil = new Date(Date.now() + this.LOCKOUT_MINUTES * 60 * 1000);
+        lockedUntil = new Date(now.getTime() + this.LOCKOUT_MINUTES * 60_000);
       }
 
       await this.prisma.user.update({
@@ -272,13 +270,14 @@ export class AuthService {
         throw new HttpException(
           {
             code: 'ACCOUNT_LOCKED',
-            message: `Too many failed attempts. Account locked for ${this.LOCKOUT_MINUTES} minutes.`,
+            message: `Account has been locked due to too many failed attempts. Try again in ${this.LOCKOUT_MINUTES} minutes.`,
+            lockedUntil: lockedUntil.toISOString(),
           },
-          HttpStatus.LOCKED,
+          HttpStatus.FORBIDDEN,
         );
       }
 
-      throw new UnauthorizedException('Phone or password is incorrect');
+      throw new UnauthorizedException('Invalid phone or password');
     }
 
     if (user.failedLoginCount > 0 || user.lockedUntil !== null) {
@@ -292,31 +291,38 @@ export class AuthService {
     }
 
     if (user.status !== UserStatus.ACTIVE) {
-      throw new UnauthorizedException(
-        'Your account has been disabled. Contact support.',
+      throw new HttpException(
+        {
+          code: 'USER_INACTIVE',
+          message:
+            'Your account is inactive or suspended. Please contact support.',
+        },
+        HttpStatus.FORBIDDEN,
       );
     }
 
-    const token = await this.signToken({
-      sub: user.id,
-      userId: user.id,
-      role: user.role,
-      restaurantId: user.restaurantId,
-      typ: AuthTokenType.RESTAURANT_OWNER,
-    });
-
-    let subscriptionStatus = 'VALID';
+    let subscriptionStatus = 'EXPIRED';
     if (user.restaurant) {
       if (
-        !user.restaurant.subscriptionEndsAt ||
-        user.restaurant.subscriptionEndsAt <= now
+        user.restaurant.subscriptionEndsAt &&
+        user.restaurant.subscriptionEndsAt.getTime() > now.getTime()
       ) {
-        subscriptionStatus = 'EXPIRED';
+        subscriptionStatus = 'ACTIVE';
+      } else if (user.restaurant.status === RestaurantStatus.PENDING) {
+        subscriptionStatus = 'PENDING_APPROVAL';
       }
     }
 
+    const accessToken = await this.signToken({
+      sub: user.id,
+      userId: user.id,
+      typ: AuthTokenType.RESTAURANT_OWNER,
+      restaurantId: user.restaurantId ?? null,
+      role: user.role,
+    });
+
     return {
-      accessToken: token,
+      accessToken,
       tokenType: 'Bearer',
       expiresIn: '12h',
       user: {
@@ -325,7 +331,7 @@ export class AuthService {
         phone: user.phone,
         role: user.role,
       },
-      restaurantId: user.restaurantId!,
+      restaurantId: user.restaurantId ?? '',
       restaurant: user.restaurant
         ? {
             id: user.restaurant.id,
@@ -344,10 +350,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Platform Admin login endpoint (POST /auth/platform-admin/login).
-   * Verifies admin credentials and signs a PLATFORM_ADMIN JWT token.
-   */
   async platformAdminLogin(
     dto: PlatformAdminLoginDto,
     _ipAddress?: string,
@@ -361,31 +363,51 @@ export class AuthService {
       },
     });
 
+    const now = new Date();
+
     if (!admin || !admin.passwordHash) {
       await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
-      throw new UnauthorizedException('Phone or password is incorrect');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, admin.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      admin.passwordHash,
+    );
+
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Phone or password is incorrect');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     if (admin.status !== UserStatus.ACTIVE) {
-      throw new UnauthorizedException(
-        'Your account has been disabled. Contact support.',
+      throw new HttpException(
+        {
+          code: 'USER_INACTIVE',
+          message: 'Account is inactive. Access denied.',
+        },
+        HttpStatus.FORBIDDEN,
       );
     }
 
-    const token = await this.signToken({
+    if (admin.failedLoginCount > 0 || admin.lockedUntil !== null) {
+      await this.prisma.user.update({
+        where: { id: admin.id },
+        data: {
+          failedLoginCount: 0,
+          lockedUntil: null,
+        },
+      });
+    }
+
+    const accessToken = await this.signToken({
       sub: admin.id,
       userId: admin.id,
-      role: admin.role,
       typ: AuthTokenType.PLATFORM_ADMIN,
+      role: admin.role,
     });
 
     return {
-      accessToken: token,
+      accessToken,
       tokenType: 'Bearer',
       expiresIn: '12h',
       admin: {
@@ -397,9 +419,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Backward-compatible alias for existing tests / calls.
-   */
   async login(dto: LoginDto, ipAddress?: string) {
     const res = await this.restaurantOwnerLogin(dto, ipAddress);
     return {
@@ -409,138 +428,31 @@ export class AuthService {
     };
   }
 
-  /**
-   * Admin issues a one-time password setup link for a restaurant owner.
-   */
   async issuePasswordSetupLink(
     userId: string,
   ): Promise<PasswordSetupLinkResponseDto> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    const replacedPreviousLink = Boolean(
-      user.setupTokenHash &&
-        user.setupExpiresAt &&
-        user.setupExpiresAt.getTime() > Date.now(),
+    return handleIssuePasswordSetupLink(
+      this.prisma,
+      this.configService,
+      userId,
     );
-
-    const link = await this.buildSetupLink(user.id);
-
-    return {
-      userId: user.id,
-      userName: user.name,
-      userPhone: user.phone,
-      expiresAt: link.expiresAt,
-      setupUrl: link.setupUrl,
-      setupLink: link.setupUrl,
-      replacedPreviousLink,
-    };
   }
 
-  /**
-   * Helper to build and persist setup token on the user row.
-   */
   async buildSetupLink(
     userId: string,
     client: PrismaService | Prisma.TransactionClient = this.prisma,
   ): Promise<{ setupUrl: string; expiresAt: Date }> {
-    const token = generateOpaqueToken();
-    const setupTokenHash = hashOpaqueToken(token);
-    const expiresAt = new Date(
-      Date.now() + this.configService.passwordSetupTokenTtlMinutes * 60_000,
-    );
-
-    await client.user.update({
-      where: { id: userId },
-      data: {
-        setupTokenHash,
-        setupExpiresAt: expiresAt,
-      },
-    });
-
-    const setupUrl = `${this.configService.appBaseUrl}${SETUP_PASSWORD_PATH}?token=${token}`;
-    return { setupUrl, expiresAt };
+    return handleBuildSetupLink(client, this.configService, userId);
   }
 
-  /**
-   * Owner consumes the one-time setup token and sets their password.
-   */
   async setupPassword(dto: SetupPasswordDto) {
-    if (!isWellFormedToken(dto.token)) {
-      throw new BadRequestException('Invalid or expired setup token');
-    }
-
-    const tokenHash = hashOpaqueToken(dto.token);
-
-    const user = await this.prisma.user.findFirst({
-      where: { setupTokenHash: tokenHash },
-    });
-
-    if (!user || !user.setupExpiresAt) {
-      throw new BadRequestException('Invalid or expired setup token');
-    }
-
-    if (user.setupExpiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Invalid or expired setup token');
-    }
-
-    const passwordHash = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-
-    const consumed = await this.prisma.user.updateMany({
-      where: {
-        id: user.id,
-        setupTokenHash: tokenHash,
-        setupExpiresAt: { gt: new Date() },
-      },
-      data: {
-        passwordHash,
-        setupTokenHash: null,
-        setupExpiresAt: null,
-      },
-    });
-
-    if (consumed.count !== 1) {
-      throw new BadRequestException('Invalid or expired setup token');
-    }
-
-    return { success: true, message: 'Password set successfully' };
+    return handleSetupPassword(this.prisma, dto, this.SALT_ROUNDS);
   }
 
-  /**
-   * Owner changes their current password.
-   */
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-
-    if (!user?.passwordHash) {
-      throw new NotFoundException(`User with ID ${userId} not found`);
-    }
-
-    const passwordMatches = await bcrypt.compare(
-      dto.currentPassword,
-      user.passwordHash,
-    );
-
-    if (!passwordMatches) {
-      throw new BadRequestException('Current password is incorrect');
-    }
-
-    const passwordHash = await bcrypt.hash(dto.newPassword, this.SALT_ROUNDS);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash },
-    });
-
-    return { success: true, message: 'Password changed successfully' };
+    return handleChangePassword(this.prisma, userId, dto, this.SALT_ROUNDS);
   }
 
-  /**
-   * GET /auth/me - Cold-start query for current user & restaurant status.
-   */
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -573,11 +485,9 @@ export class AuthService {
     return user;
   }
 
-  /**
-   * Check if a restaurant name / slug is available or collides with an existing restaurant.
-   * Returns suggested slug with area guidance if duplicate.
-   */
-  async checkRestaurantName(name: string): Promise<CheckRestaurantNameResponse> {
+  async checkRestaurantName(
+    name: string,
+  ): Promise<CheckRestaurantNameResponse> {
     const trimmed = name?.trim() || '';
     let baseSlug = slugify(trimmed);
     if (!baseSlug || baseSlug.length < 3) {
@@ -602,10 +512,13 @@ export class AuthService {
       };
     }
 
-    // Name/slug collides with an existing restaurant
     let counter = 1;
     let suggestedSlug = baseSlug;
-    while (await this.prisma.restaurant.findUnique({ where: { slug: suggestedSlug } })) {
+    while (
+      await this.prisma.restaurant.findUnique({
+        where: { slug: suggestedSlug },
+      })
+    ) {
       counter++;
       suggestedSlug = `${baseSlug}-${counter}`;
     }

@@ -12,27 +12,37 @@ import {
 } from 'class-validator';
 
 export class UpdateRestaurantProfileDto {
-  @ApiPropertyOptional({ example: 'Hotel Al-Noor', description: 'Restaurant name' })
+  @ApiPropertyOptional({
+    example: 'Hotel Al-Noor',
+    description: 'Restaurant name',
+  })
   @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(80)
   name?: string;
 
-  @ApiPropertyOptional({ example: 'Best traditional Karahi and BBQ in Timergara' })
+  @ApiPropertyOptional({
+    example: 'Best traditional Karahi and BBQ in Timergara',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(500)
   description?: string;
 
-  @ApiPropertyOptional({ example: ['Karahi', 'Fast Food', 'BBQ'], type: [String] })
+  @ApiPropertyOptional({
+    example: ['Karahi', 'Fast Food', 'BBQ'],
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(5)
   @IsString({ each: true })
   cuisines?: string[];
 
-  @ApiPropertyOptional({ example: 'Main Bazaar, Near College Chowk, Timergara' })
+  @ApiPropertyOptional({
+    example: 'Main Bazaar, Near College Chowk, Timergara',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
@@ -46,7 +56,10 @@ export class UpdateRestaurantProfileDto {
   })
   contactPhone?: string;
 
-  @ApiPropertyOptional({ example: '03007654321', description: 'WhatsApp number for orders' })
+  @ApiPropertyOptional({
+    example: '03007654321',
+    description: 'WhatsApp number for orders',
+  })
   @IsOptional()
   @IsString()
   @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
@@ -54,13 +67,19 @@ export class UpdateRestaurantProfileDto {
   })
   whatsappNumber?: string;
 
-  @ApiPropertyOptional({ example: 50000, description: 'Minimum order amount in paisa (Rs 500 = 50000)' })
+  @ApiPropertyOptional({
+    example: 50000,
+    description: 'Minimum order amount in paisa (Rs 500 = 50000)',
+  })
   @IsOptional()
   @IsInt()
   @Min(0)
   minOrderAmount?: number;
 
-  @ApiPropertyOptional({ example: '01920000-0000-7000-8000-000000000001', description: 'City/District UUID' })
+  @ApiPropertyOptional({
+    example: '01920000-0000-7000-8000-000000000001',
+    description: 'City/District UUID',
+  })
   @IsOptional()
   @IsString()
   cityId?: string;

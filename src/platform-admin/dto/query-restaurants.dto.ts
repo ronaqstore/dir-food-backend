@@ -9,7 +9,9 @@ export class QueryRestaurantsDto {
   @IsEnum(RestaurantStatus)
   status?: RestaurantStatus;
 
-  @ApiPropertyOptional({ description: 'Search term by name, slug, or contact phone' })
+  @ApiPropertyOptional({
+    description: 'Search term by name, slug, or contact phone',
+  })
   @IsOptional()
   @IsString()
   q?: string;
@@ -29,4 +31,3 @@ export class QueryRestaurantsDto {
   @Max(100)
   limit?: number = 20;
 }
-

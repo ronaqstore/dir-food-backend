@@ -25,7 +25,10 @@ describe('RestaurantOrderIntentsController', () => {
   };
 
   it('delegates getOrderIntents with user.restaurantId', async () => {
-    service.getOwnerOrderIntents.mockResolvedValue({ data: [], meta: { total: 0 } });
+    service.getOwnerOrderIntents.mockResolvedValue({
+      data: [],
+      meta: { total: 0 },
+    });
 
     const query: any = { page: 1, limit: 20 };
     const res = await controller.getOrderIntents(mockUser, query);
@@ -39,12 +42,18 @@ describe('RestaurantOrderIntentsController', () => {
 
     const res = await controller.getOrderIntentDetail(mockUser, 'intent-1');
 
-    expect(service.getOwnerOrderIntentDetail).toHaveBeenCalledWith('rest-1', 'intent-1');
+    expect(service.getOwnerOrderIntentDetail).toHaveBeenCalledWith(
+      'rest-1',
+      'intent-1',
+    );
     expect(res).toEqual({ id: 'intent-1' });
   });
 
   it('delegates getStats with user.restaurantId and range', async () => {
-    service.getOwnerStats.mockResolvedValue({ range: '7d', requestsCreated: 10 });
+    service.getOwnerStats.mockResolvedValue({
+      range: '7d',
+      requestsCreated: 10,
+    });
 
     const res = await controller.getStats(mockUser, { range: '7d' });
 
@@ -52,4 +61,3 @@ describe('RestaurantOrderIntentsController', () => {
     expect(res).toEqual({ range: '7d', requestsCreated: 10 });
   });
 });
-

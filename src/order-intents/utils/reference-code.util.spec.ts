@@ -34,4 +34,3 @@ describe('reference-code.util', () => {
     expect(isValidReferenceCode('')).toBe(false);
   });
 });
-

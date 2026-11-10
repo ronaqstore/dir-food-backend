@@ -1,15 +1,23 @@
 import {
   Injectable,
   NotFoundException,
-  UnprocessableEntityException,
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { RestaurantStatus, UserRole, UserStatus } from '../../generated/prisma/enums.js';
+import {
+  RestaurantStatus,
+  UserRole,
+  UserStatus,
+} from '../../generated/prisma/enums.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { AuthService } from '../../auth/services/auth.service.js';
-import { normalizePhone, isValidPakistaniMobile, slugify } from '../../common/utils/phone.js';
+import {
+  normalizePhone,
+  isValidPakistaniMobile,
+  slugify,
+} from '../../common/utils/phone.js';
 import { seedRestaurantDefaults } from '../../common/utils/restaurant-defaults.js';
 import { UpdateRestaurantStatusDto } from '../dto/update-status.dto.js';
 import { QueryRestaurantsDto } from '../dto/query-restaurants.dto.js';
@@ -18,6 +26,15 @@ import { UpdateRestaurantAdminDto } from '../dto/update-restaurant-admin.dto.js'
 import { ExtendSubscriptionDto } from '../dto/extend-subscription.dto.js';
 import { ShortenSubscriptionDto } from '../dto/shorten-subscription.dto.js';
 import { UpdateSlugDto } from '../dto/update-slug.dto.js';
+import {
+  handleExtendSubscription,
+  handleShortenSubscription,
+} from '../helpers/platform-admin-subscriptions.helper.js';
+import {
+  handleUpdateRestaurantStatus,
+  handleIssueSetupLink,
+} from '../helpers/platform-admin-status.helper.js';
+import { handleChangeSlug } from '../helpers/platform-admin-slug.helper.js';
 
 @Injectable()
 export class PlatformAdminService {
@@ -27,15 +44,12 @@ export class PlatformAdminService {
     private readonly authService: AuthService,
   ) {}
 
-  /**
-   * List all restaurants with filtering by status, search keyword, and pagination.
-   */
   async listRestaurants(query: QueryRestaurantsDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.RestaurantWhereInput = {};
     if (query.status) {
       where.status = query.status;
     }
@@ -89,10 +103,6 @@ export class PlatformAdminService {
     };
   }
 
-  /**
-   * Admin-assisted restaurant onboarding: creates restaurant + owner account atomically
-   * and builds a single-use password setup link for the owner.
-   */
   async createRestaurant(
     dto: CreateRestaurantAdminDto,
     adminUserId: string,
@@ -100,19 +110,25 @@ export class PlatformAdminService {
   ) {
     const normalizedOwnerPhone = normalizePhone(dto.owner.phone);
     if (!isValidPakistaniMobile(normalizedOwnerPhone)) {
-      throw new BadRequestException('Invalid Pakistani mobile number for owner');
+      throw new BadRequestException(
+        'Invalid Pakistani mobile number for owner',
+      );
     }
 
     const normalizedContact = normalizePhone(dto.contactPhone);
     if (!isValidPakistaniMobile(normalizedContact)) {
-      throw new BadRequestException('Invalid Pakistani mobile number for contactPhone');
+      throw new BadRequestException(
+        'Invalid Pakistani mobile number for contactPhone',
+      );
     }
 
     let normalizedWa: string | undefined = undefined;
     if (dto.whatsappNumber) {
       normalizedWa = normalizePhone(dto.whatsappNumber);
       if (!isValidPakistaniMobile(normalizedWa)) {
-        throw new BadRequestException('Invalid Pakistani mobile number for whatsappNumber');
+        throw new BadRequestException(
+          'Invalid Pakistani mobile number for whatsappNumber',
+        );
       }
     }
 
@@ -120,7 +136,9 @@ export class PlatformAdminService {
       where: { phone: normalizedOwnerPhone },
     });
     if (existingUser) {
-      throw new ConflictException('A user with this phone number already exists');
+      throw new ConflictException(
+        'A user with this phone number already exists',
+      );
     }
 
     let baseSlug = slugify(dto.name);
@@ -141,7 +159,9 @@ export class PlatformAdminService {
 
     let cityId = dto.cityId;
     if (cityId) {
-      const city = await this.prisma.city?.findUnique({ where: { id: cityId } });
+      const city = await this.prisma.city?.findUnique({
+        where: { id: cityId },
+      });
       if (!city) {
         throw new BadRequestException('Invalid city/district ID');
       }
@@ -215,9 +235,6 @@ export class PlatformAdminService {
     };
   }
 
-  /**
-   * Backward-compatible alias for existing tests / calls.
-   */
   async getPendingRestaurants(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
@@ -261,9 +278,6 @@ export class PlatformAdminService {
     };
   }
 
-  /**
-   * Full restaurant detail including completeness warnings for onboarding approval.
-   */
   async getRestaurantDetail(id: string) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id },
@@ -311,7 +325,9 @@ export class PlatformAdminService {
       missingPrerequisites.push('At least one active menu item is required');
     }
     if (restaurant._count.deliveryAreas === 0) {
-      missingPrerequisites.push('At least one active delivery area is required');
+      missingPrerequisites.push(
+        'At least one active delivery area is required',
+      );
     }
 
     return {
@@ -323,16 +339,15 @@ export class PlatformAdminService {
     };
   }
 
-  /**
-   * Edit restaurant profile (support edits and admin notes).
-   */
   async updateRestaurant(
     id: string,
     dto: UpdateRestaurantAdminDto,
     adminUserId: string,
     ipAddress?: string,
   ) {
-    const restaurant = await this.prisma.restaurant.findUnique({ where: { id } });
+    const restaurant = await this.prisma.restaurant.findUnique({
+      where: { id },
+    });
     if (!restaurant) {
       throw new NotFoundException('Restaurant not found');
     }
@@ -341,7 +356,9 @@ export class PlatformAdminService {
     if (dto.contactPhone) {
       normalizedContact = normalizePhone(dto.contactPhone);
       if (!isValidPakistaniMobile(normalizedContact)) {
-        throw new BadRequestException('Invalid Pakistani mobile number for contactPhone');
+        throw new BadRequestException(
+          'Invalid Pakistani mobile number for contactPhone',
+        );
       }
     }
 
@@ -352,7 +369,9 @@ export class PlatformAdminService {
       } else {
         normalizedWa = normalizePhone(dto.whatsappNumber);
         if (!isValidPakistaniMobile(normalizedWa)) {
-          throw new BadRequestException('Invalid Pakistani mobile number for whatsappNumber');
+          throw new BadRequestException(
+            'Invalid Pakistani mobile number for whatsappNumber',
+          );
         }
       }
     }
@@ -364,24 +383,29 @@ export class PlatformAdminService {
           : null
         : undefined;
 
-    const data: any = {};
+    const data: Prisma.RestaurantUpdateInput = {};
     if (dto.name !== undefined) data.name = dto.name.trim();
-    if (dto.description !== undefined) data.description = dto.description?.trim() ?? null;
+    if (dto.description !== undefined)
+      data.description = dto.description?.trim() ?? null;
     if (dto.cuisines !== undefined) data.cuisines = dto.cuisines;
-    if (dto.addressText !== undefined) data.addressText = dto.addressText?.trim() ?? null;
+    if (dto.addressText !== undefined)
+      data.addressText = dto.addressText?.trim() ?? null;
     if (dto.contactPhone !== undefined) data.contactPhone = normalizedContact;
     if (dto.whatsappNumber !== undefined) data.whatsappNumber = normalizedWa;
     if (minOrder !== undefined) data.minOrderAmount = minOrder;
-    if (dto.adminNotes !== undefined) data.adminNotes = dto.adminNotes?.trim() ?? null;
+    if (dto.adminNotes !== undefined)
+      data.adminNotes = dto.adminNotes?.trim() ?? null;
     if (dto.cityId !== undefined) {
       if (dto.cityId) {
-        const city = await this.prisma.city.findUnique({ where: { id: dto.cityId } });
+        const city = await this.prisma.city.findUnique({
+          where: { id: dto.cityId },
+        });
         if (!city) {
           throw new BadRequestException('Invalid city/district ID');
         }
-        data.cityId = dto.cityId;
+        data.city = { connect: { id: dto.cityId } };
       } else {
-        data.cityId = null;
+        data.city = { disconnect: true };
       }
     }
 
@@ -405,445 +429,82 @@ export class PlatformAdminService {
     return updated;
   }
 
-  /**
-   * Approve, suspend, or deactivate a restaurant.
-   */
   async updateRestaurantStatus(
     restaurantId: string,
     dto: UpdateRestaurantStatusDto,
     adminUserId: string,
     ipAddress?: string,
   ) {
-    const restaurant = await this.prisma.restaurant.findUnique({
-      where: { id: restaurantId },
-      include: {
-        hours: true,
-        items: { where: { isActive: true } },
-        deliveryAreas: { where: { isActive: true } },
-      },
-    });
-
-    if (!restaurant) {
-      throw new NotFoundException('Restaurant not found');
-    }
-
-    // Rule: DEACTIVATED is terminal through normal workflows
-    if (restaurant.status === RestaurantStatus.DEACTIVATED) {
-      throw new ConflictException(
-        'Deactivated restaurants cannot be modified or reactivated',
-      );
-    }
-
-    if (
-      (dto.status === RestaurantStatus.SUSPENDED ||
-        dto.status === RestaurantStatus.DEACTIVATED) &&
-      !dto.reason?.trim()
-    ) {
-      throw new BadRequestException(
-        'A reason is required when suspending or deactivating a restaurant',
-      );
-    }
-
-    const oldStatus = restaurant.status;
-    const newStatus = dto.status;
-    const now = new Date();
-
-    // APPROVAL WORKFLOW: PENDING -> ACTIVE
-    if (
-      newStatus === RestaurantStatus.ACTIVE &&
-      oldStatus === RestaurantStatus.PENDING
-    ) {
-      const missingPrerequisites: string[] = [];
-
-      if (!restaurant.whatsappNumber) {
-        missingPrerequisites.push(
-          'A valid WhatsApp contact number is required',
-        );
-      }
-      if (restaurant.hours.length === 0) {
-        missingPrerequisites.push('Configured opening hours are required');
-      }
-      if (restaurant.items.length === 0) {
-        missingPrerequisites.push('At least one active menu item is required');
-      }
-      if (restaurant.deliveryAreas.length === 0) {
-        missingPrerequisites.push(
-          'At least one active delivery area is required',
-        );
-      }
-
-      if (missingPrerequisites.length > 0) {
-        throw new UnprocessableEntityException({
-          code: 'APPROVAL_PREREQUISITES_NOT_MET',
-          message: 'Cannot approve restaurant: prerequisites not satisfied',
-          details: missingPrerequisites,
-        });
-      }
-
-      // Starts 30-day trial
-      const subscriptionEndsAt = new Date(
-        now.getTime() + 30 * 24 * 60 * 60 * 1000,
-      );
-
-      const updated = await this.prisma.restaurant.update({
-        where: { id: restaurantId },
-        data: {
-          status: RestaurantStatus.ACTIVE,
-          statusReason: dto.reason ?? null,
-          statusChangedAt: now,
-          trialStartedAt: now,
-          subscriptionEndsAt,
-        },
-      });
-
-      await this.auditService.log({
-        actorUserId: adminUserId,
-        restaurantId: restaurant.id,
-        action: 'RESTAURANT_APPROVED',
-        entityType: 'restaurant',
-        entityId: restaurant.id,
-        details: {
-          oldStatus,
-          newStatus,
-          trialStartedAt: now,
-          subscriptionEndsAt,
-        },
-        ipAddress,
-      });
-
-      return updated;
-    }
-
-    // REACTIVATION: SUSPENDED -> ACTIVE
-    if (
-      newStatus === RestaurantStatus.ACTIVE &&
-      oldStatus === RestaurantStatus.SUSPENDED
-    ) {
-      // Rule: Reactivating never alters subscription dates.
-      const updated = await this.prisma.restaurant.update({
-        where: { id: restaurantId },
-        data: {
-          status: RestaurantStatus.ACTIVE,
-          statusReason: dto.reason ?? null,
-          statusChangedAt: now,
-        },
-      });
-
-      await this.auditService.log({
-        actorUserId: adminUserId,
-        restaurantId: restaurant.id,
-        action: 'RESTAURANT_REACTIVATED',
-        entityType: 'restaurant',
-        entityId: restaurant.id,
-        details: {
-          oldStatus,
-          newStatus,
-          reason: dto.reason,
-        },
-        ipAddress,
-      });
-
-      return updated;
-    }
-
-    // SUSPEND OR DEACTIVATE
-    const updated = await this.prisma.restaurant.update({
-      where: { id: restaurantId },
-      data: {
-        status: newStatus,
-        statusReason: dto.reason ?? null,
-        statusChangedAt: now,
-      },
-    });
-
-    const action =
-      newStatus === RestaurantStatus.SUSPENDED
-        ? 'RESTAURANT_SUSPENDED'
-        : 'RESTAURANT_DEACTIVATED';
-
-    await this.auditService.log({
-      actorUserId: adminUserId,
-      restaurantId: restaurant.id,
-      action,
-      entityType: 'restaurant',
-      entityId: restaurant.id,
-      details: {
-        oldStatus,
-        newStatus,
-        reason: dto.reason,
-      },
+    return handleUpdateRestaurantStatus(
+      this.prisma,
+      this.auditService,
+      restaurantId,
+      dto,
+      adminUserId,
       ipAddress,
-    });
-
-    return updated;
+    );
   }
 
-  /**
-   * Extend a restaurant's subscription after receiving manual offline payment.
-   * Rule: Updates only subscription_ends_at; never changes status!
-   */
   async extendSubscription(
     id: string,
     dto: ExtendSubscriptionDto,
     adminUserId: string,
     ipAddress?: string,
   ) {
-    const restaurant = await this.prisma.restaurant.findUnique({ where: { id } });
-    if (!restaurant) {
-      throw new NotFoundException('Restaurant not found');
-    }
-
-    if (restaurant.status === RestaurantStatus.DEACTIVATED) {
-      throw new ConflictException('Cannot extend subscription of a deactivated restaurant');
-    }
-
-    if (!restaurant.trialStartedAt) {
-      throw new ConflictException(
-        'Cannot extend subscription: restaurant has never been approved',
-      );
-    }
-
-    const hasEndsAt = dto.subscriptionEndsAt !== undefined && dto.subscriptionEndsAt !== null;
-    const hasAddDays = dto.addDays !== undefined && dto.addDays !== null;
-
-    if ((hasEndsAt && hasAddDays) || (!hasEndsAt && !hasAddDays)) {
-      throw new BadRequestException('Provide exactly one of subscriptionEndsAt or addDays');
-    }
-
-    const now = new Date();
-    let newEndsAt: Date;
-
-    if (hasAddDays) {
-      const currentEnd = restaurant.subscriptionEndsAt
-        ? new Date(restaurant.subscriptionEndsAt)
-        : now;
-      const baseTime = currentEnd.getTime() > now.getTime() ? currentEnd.getTime() : now.getTime();
-      newEndsAt = new Date(baseTime + dto.addDays! * 24 * 60 * 60 * 1000);
-    } else {
-      newEndsAt = new Date(dto.subscriptionEndsAt!);
-      if (isNaN(newEndsAt.getTime()) || newEndsAt.getTime() <= now.getTime()) {
-        throw new BadRequestException('subscriptionEndsAt must be a valid future ISO timestamp');
-      }
-      if (
-        restaurant.subscriptionEndsAt &&
-        newEndsAt.getTime() <= new Date(restaurant.subscriptionEndsAt).getTime()
-      ) {
-        throw new BadRequestException(
-          'subscriptionEndsAt must be later than the current subscription end',
-        );
-      }
-    }
-
-    const oldEndsAt = restaurant.subscriptionEndsAt;
-
-    const updated = await this.prisma.restaurant.update({
-      where: { id },
-      data: {
-        subscriptionEndsAt: newEndsAt,
-      },
-    });
-
-    await this.auditService.log({
-      actorUserId: adminUserId,
-      restaurantId: id,
-      action: 'RESTAURANT_SUBSCRIPTION_EXTENDED',
-      entityType: 'restaurant',
-      entityId: id,
-      details: {
-        oldEndsAt,
-        newEndsAt,
-        addedDays: dto.addDays ?? null,
-      },
+    return handleExtendSubscription(
+      this.prisma,
+      this.auditService,
+      id,
+      dto,
+      adminUserId,
       ipAddress,
-    });
-
-    return {
-      restaurantId: updated.id,
-      subscriptionEndsAt: updated.subscriptionEndsAt,
-      previousSubscriptionEndsAt: oldEndsAt,
-    };
+    );
   }
 
-  /**
-   * Corrective action: move subscription end date earlier.
-   */
   async shortenSubscription(
     id: string,
     dto: ShortenSubscriptionDto,
     adminUserId: string,
     ipAddress?: string,
   ) {
-    const restaurant = await this.prisma.restaurant.findUnique({ where: { id } });
-    if (!restaurant) {
-      throw new NotFoundException('Restaurant not found');
-    }
-
-    if (restaurant.status === RestaurantStatus.DEACTIVATED) {
-      throw new ConflictException('Cannot modify subscription of a deactivated restaurant');
-    }
-
-    if (!restaurant.trialStartedAt) {
-      throw new ConflictException('Restaurant has never been approved');
-    }
-
-    if (dto.confirm !== true) {
-      throw new BadRequestException('confirm must be explicitly true');
-    }
-
-    if (!dto.reason?.trim()) {
-      throw new BadRequestException('A reason is required to shorten a subscription');
-    }
-
-    const newEndsAt = new Date(dto.subscriptionEndsAt);
-    if (isNaN(newEndsAt.getTime())) {
-      throw new BadRequestException('Invalid subscriptionEndsAt timestamp');
-    }
-
-    if (newEndsAt.getTime() < new Date(restaurant.trialStartedAt).getTime()) {
-      throw new BadRequestException(
-        'subscriptionEndsAt cannot be earlier than initial trialStartedAt',
-      );
-    }
-
-    if (
-      !restaurant.subscriptionEndsAt ||
-      newEndsAt.getTime() >= new Date(restaurant.subscriptionEndsAt).getTime()
-    ) {
-      throw new BadRequestException(
-        'Corrective shortening requires a timestamp earlier than current subscriptionEndsAt',
-      );
-    }
-
-    const oldEndsAt = restaurant.subscriptionEndsAt;
-
-    const updated = await this.prisma.restaurant.update({
-      where: { id },
-      data: {
-        subscriptionEndsAt: newEndsAt,
-      },
-    });
-
-    await this.auditService.log({
-      actorUserId: adminUserId,
-      restaurantId: id,
-      action: 'RESTAURANT_SUBSCRIPTION_SHORTENED',
-      entityType: 'restaurant',
-      entityId: id,
-      details: {
-        oldEndsAt,
-        newEndsAt,
-        reason: dto.reason.trim(),
-      },
+    return handleShortenSubscription(
+      this.prisma,
+      this.auditService,
+      id,
+      dto,
+      adminUserId,
       ipAddress,
-    });
-
-    return {
-      restaurantId: updated.id,
-      subscriptionEndsAt: updated.subscriptionEndsAt,
-      previousSubscriptionEndsAt: oldEndsAt,
-      reason: dto.reason.trim(),
-    };
+    );
   }
 
-  /**
-   * Change restaurant slug with uniqueness validation and audit logging.
-   */
   async changeSlug(
     id: string,
     dto: UpdateSlugDto,
     adminUserId: string,
     ipAddress?: string,
   ) {
-    const restaurant = await this.prisma.restaurant.findUnique({ where: { id } });
-    if (!restaurant) {
-      throw new NotFoundException('Restaurant not found');
-    }
-
-    const newSlug = slugify(dto.slug);
-    if (!newSlug || newSlug.length < 3) {
-      throw new BadRequestException('Slug must be at least 3 characters');
-    }
-
-    const reserved = ['admin', 'api', 'dashboard', 'login', 'r', 'www'];
-    if (reserved.includes(newSlug)) {
-      throw new BadRequestException('This slug is reserved and cannot be used');
-    }
-
-    const existing = await this.prisma.restaurant.findUnique({
-      where: { slug: newSlug },
-    });
-    if (existing && existing.id !== id) {
-      throw new ConflictException('Slug is already in use by another restaurant');
-    }
-
-    const oldSlug = restaurant.slug;
-    const updated = await this.prisma.restaurant.update({
-      where: { id },
-      data: { slug: newSlug },
-    });
-
-    await this.auditService.log({
-      actorUserId: adminUserId,
-      restaurantId: id,
-      action: 'RESTAURANT_SLUG_CHANGED',
-      entityType: 'restaurant',
-      entityId: id,
-      details: {
-        oldSlug,
-        newSlug,
-      },
+    return handleChangeSlug(
+      this.prisma,
+      this.auditService,
+      id,
+      dto,
+      adminUserId,
       ipAddress,
-    });
-
-    return {
-      id: updated.id,
-      slug: updated.slug,
-      oldSlug,
-    };
+    );
   }
 
-  /**
-   * Issue a new single-use password setup link for the restaurant owner.
-   */
   async issueSetupLink(
     restaurantId: string,
     adminUserId: string,
     ipAddress?: string,
   ) {
-    const restaurant = await this.prisma.restaurant.findUnique({
-      where: { id: restaurantId },
-      include: {
-        users: {
-          where: { role: UserRole.RESTAURANT_OWNER },
-        },
-      },
-    });
-
-    if (!restaurant) {
-      throw new NotFoundException('Restaurant not found');
-    }
-
-    const owner = restaurant.users[0];
-    if (!owner) {
-      throw new NotFoundException('No owner user found for this restaurant');
-    }
-
-    const res = await this.authService.issuePasswordSetupLink(owner.id);
-
-    await this.auditService.log({
-      actorUserId: adminUserId,
+    return handleIssueSetupLink(
+      this.prisma,
+      this.authService,
+      this.auditService,
       restaurantId,
-      action: 'PASSWORD_SETUP_LINK_ISSUED',
-      entityType: 'user',
-      entityId: owner.id,
-      details: {
-        userId: owner.id,
-        userPhone: owner.phone,
-        replacedPreviousLink: res.replacedPreviousLink,
-      },
+      adminUserId,
       ipAddress,
-    });
-
-    return res;
+    );
   }
 }

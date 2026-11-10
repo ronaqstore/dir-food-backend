@@ -4,12 +4,15 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { serializeBigInts } from '../interceptors/response-envelope.interceptor.js';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -30,13 +33,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         const obj = res as Record<string, unknown>;
         message = (obj.message as string) || message;
         code = (obj.code as string) || this.statusToCode(status);
-        details = obj.details ?? (Array.isArray(obj.message) ? obj.message : undefined);
+        details =
+          obj.details ?? (Array.isArray(obj.message) ? obj.message : undefined);
         if (Array.isArray(obj.message)) {
           message = 'Validation failed';
         }
       }
     } else {
-      console.error('UNHANDLED_EXCEPTION_IN_FILTER:', exception);
+      this.logger.error('UNHANDLED_EXCEPTION_IN_FILTER:', exception);
     }
 
     const payload = serializeBigInts({
@@ -71,4 +75,3 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
   }
 }
-

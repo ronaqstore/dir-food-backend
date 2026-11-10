@@ -12,8 +12,14 @@ export class PublicCartController {
 
   @Post('validate')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Re-check and validate a cart against live prices and availability' })
-  @ApiResponse({ status: 200, description: 'Validated cart lines, subtotal, and any detected problems' })
+  @ApiOperation({
+    summary:
+      'Re-check and validate a cart against live prices and availability',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Validated cart lines, subtotal, and any detected problems',
+  })
   async validateCart(@Body() dto: ValidateCartDto) {
     return this.cartValidationService.validateCart(
       dto.restaurantSlug,
@@ -22,4 +28,3 @@ export class PublicCartController {
     );
   }
 }
-

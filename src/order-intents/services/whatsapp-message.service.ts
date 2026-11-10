@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
 import { normalizePhone } from '../../common/utils/phone.js';
 
 export interface WhatsAppMessageLine {
@@ -32,22 +33,23 @@ export function formatPaisaToRupees(paisa: bigint): string {
 
 @Injectable()
 export class WhatsappMessageService {
-  /**
-   * Builds the formatted plain text message for WhatsApp handoff according to Dir Food specifications.
-   */
   buildMessage(params: WhatsAppMessageParams): string {
     const lines: string[] = [];
 
     lines.push(`Assalam o Alaikum, ${params.restaurantName.trim()}!`);
-    lines.push(`I want to place an order (Ref: ${params.reference})`);
+    lines.push('I would like to place an order from your Dir Food menu:');
+    lines.push('');
+    lines.push(`Ref: ${params.reference.trim()}`);
     lines.push('');
 
     params.items.forEach((item, index) => {
-      const variantText = item.variant ? ` (${item.variant})` : '';
-      const unitPriceFormatted = formatPaisaToRupees(item.unitPrice);
-      const lineTotalFormatted = formatPaisaToRupees(item.lineTotal);
+      const variantText = item.variant?.trim()
+        ? ` (${item.variant.trim()})`
+        : '';
+      const unitPriceText = formatPaisaToRupees(item.unitPrice);
+      const lineTotalText = formatPaisaToRupees(item.lineTotal);
       lines.push(
-        `${index + 1}) ${item.name}${variantText} x ${item.quantity} — ${unitPriceFormatted} = ${lineTotalFormatted}`,
+        `${index + 1}) ${item.name.trim()}${variantText} x ${item.quantity} — ${unitPriceText} = ${lineTotalText}`,
       );
     });
 
@@ -57,15 +59,21 @@ export class WhatsappMessageService {
     let deliveryChargeText = 'please confirm';
     if (params.deliveryFee === 0n) {
       deliveryChargeText = 'Free';
-    } else if (params.deliveryFee !== null && params.deliveryFee !== undefined && params.deliveryFee > 0n) {
+    } else if (
+      params.deliveryFee !== null &&
+      params.deliveryFee !== undefined &&
+      params.deliveryFee > 0n
+    ) {
       deliveryChargeText = formatPaisaToRupees(params.deliveryFee);
     }
     lines.push(`Delivery charge: ${deliveryChargeText}`);
     lines.push('');
+    lines.push('Delivery Details:');
 
     if (params.customerName?.trim()) {
       lines.push(`Name: ${params.customerName.trim()}`);
     }
+
     if (params.customerPhone?.trim()) {
       lines.push(`Phone: ${params.customerPhone.trim()}`);
     }
@@ -84,23 +92,21 @@ export class WhatsappMessageService {
       params.mapLng !== undefined
     ) {
       lines.push(
-        `Location pin: https://maps.google.com/?q=${params.mapLat},${params.mapLng}`,
+        `Location pin: ${AppConfigurationService.GOOGLE_MAPS_BASE_URL}${params.mapLat},${params.mapLng}`,
       );
     }
 
     lines.push('');
-    lines.push('Please confirm the order, delivery charge, time and payment. Thank you.');
+    lines.push(
+      'Please confirm the order, delivery charge, time and payment. Thank you.',
+    );
 
     return lines.join('\n');
   }
 
-  /**
-   * Constructs the WhatsApp URL with prefilled URL-encoded message text.
-   */
   buildWhatsAppUrl(whatsappNumber: string, message: string): string {
     const normalizedPhone = normalizePhone(whatsappNumber);
     const encodedText = encodeURIComponent(message);
     return `https://wa.me/${normalizedPhone}?text=${encodedText}`;
   }
 }
-

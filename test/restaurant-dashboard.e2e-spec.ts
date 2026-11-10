@@ -48,9 +48,13 @@ describe('Restaurant Dashboard & Menu Management (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // 1. Ensure test delivery area exists
-    const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
+    const defaultCity = await prisma.city.findFirstOrThrow({
+      where: { slug: 'lower-dir' },
+    });
     const area = await prisma.area.upsert({
-      where: { cityId_slug: { cityId: defaultCity.id, slug: 'timergara-city-e2e' } },
+      where: {
+        cityId_slug: { cityId: defaultCity.id, slug: 'timergara-city-e2e' },
+      },
       update: { isActive: true, isVerified: true },
       create: {
         cityId: defaultCity.id,
@@ -195,7 +199,9 @@ describe('Restaurant Dashboard & Menu Management (e2e)', () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(7);
       const monday = res.body.data.find((d: any) => d.dayOfWeek === 1);
-      expect(monday.ranges).toEqual([{ openTime: '18:00', closeTime: '02:00' }]);
+      expect(monday.ranges).toEqual([
+        { openTime: '18:00', closeTime: '02:00' },
+      ]);
     });
 
     it('rejects overlapping schedule ranges on the same day', async () => {
@@ -244,7 +250,9 @@ describe('Restaurant Dashboard & Menu Management (e2e)', () => {
         });
 
       expect(res.status).toBe(200);
-      const configured = res.body.data.find((a: any) => a.areaId === testAreaId);
+      const configured = res.body.data.find(
+        (a: any) => a.areaId === testAreaId,
+      );
       expect(configured.isServed).toBe(true);
       expect(configured.deliveryFee).toBe(15000);
     });
@@ -448,7 +456,11 @@ describe('Restaurant Dashboard & Menu Management (e2e)', () => {
       // Reset Restaurant 1 to PENDING to test owner self-publishing transition
       await prisma.restaurant.update({
         where: { id: owner1RestId },
-        data: { status: 'PENDING', trialStartedAt: null, subscriptionEndsAt: null },
+        data: {
+          status: 'PENDING',
+          trialStartedAt: null,
+          subscriptionEndsAt: null,
+        },
       });
 
       const res = await request(app.getHttpServer())

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { RestaurantStatus } from '../../generated/prisma/enums.js';
 import { QueryAdminOrdersDto } from '../dto/query-admin-orders.dto.js';
@@ -8,15 +9,12 @@ import { QueryAuditLogsDto } from '../dto/query-audit-logs.dto.js';
 export class PlatformAdminOperationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Search order intents by reference code or customer details for support.
-   */
   async searchOrderIntents(query: QueryAdminOrdersDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.OrderIntentWhereInput = {};
     if (query.ref?.trim()) {
       where.publicRef = {
         contains: query.ref.trim(),
@@ -66,9 +64,6 @@ export class PlatformAdminOperationsService {
     };
   }
 
-  /**
-   * Platform-wide 7-day or 30-day activity summary.
-   */
   async getActivitySummary(range = '7d') {
     const days = range === '30d' ? 30 : 7;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -84,19 +79,36 @@ export class PlatformAdminOperationsService {
       topRestaurants,
     ] = await Promise.all([
       this.prisma.restaurant.count(),
-      this.prisma.restaurant.count({ where: { status: RestaurantStatus.PENDING } }),
-      this.prisma.restaurant.count({ where: { status: RestaurantStatus.ACTIVE } }),
-      this.prisma.restaurant.count({ where: { status: RestaurantStatus.SUSPENDED } }),
-      this.prisma.restaurant.count({ where: { status: RestaurantStatus.DEACTIVATED } }),
-      this.prisma.orderIntent.count({ where: { createdAt: { gte: since } } }),
+      this.prisma.restaurant.count({
+        where: { status: RestaurantStatus.PENDING },
+      }),
+      this.prisma.restaurant.count({
+        where: { status: RestaurantStatus.ACTIVE },
+      }),
+      this.prisma.restaurant.count({
+        where: { status: RestaurantStatus.SUSPENDED },
+      }),
+      this.prisma.restaurant.count({
+        where: { status: RestaurantStatus.DEACTIVATED },
+      }),
       this.prisma.orderIntent.count({
-        where: { createdAt: { gte: since }, whatsappOpenedAt: { not: null } },
+        where: { createdAt: { gte: since } },
+      }),
+      this.prisma.orderIntent.count({
+        where: {
+          createdAt: { gte: since },
+          whatsappOpenedAt: { not: null },
+        },
       }),
       this.prisma.orderIntent.groupBy({
         by: ['restaurantId'],
         where: { createdAt: { gte: since } },
         _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
+        orderBy: {
+          _count: {
+            id: 'desc',
+          },
+        },
         take: 5,
       }),
     ]);
@@ -104,7 +116,11 @@ export class PlatformAdminOperationsService {
     const restaurantIds = topRestaurants.map((r) => r.restaurantId);
     const restaurants = await this.prisma.restaurant.findMany({
       where: { id: { in: restaurantIds } },
-      select: { id: true, name: true, slug: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
     });
     const restMap = new Map(restaurants.map((r) => [r.id, r]));
 
@@ -139,15 +155,12 @@ export class PlatformAdminOperationsService {
     };
   }
 
-  /**
-   * Audit logs viewer.
-   */
   async getAuditLogs(query: QueryAuditLogsDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (query.restaurantId) {
       where.restaurantId = query.restaurantId;
     }
@@ -196,4 +209,3 @@ export class PlatformAdminOperationsService {
     };
   }
 }
-

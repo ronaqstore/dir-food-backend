@@ -13,6 +13,7 @@ import { RestaurantStatus } from '../../generated/prisma/enums.js';
 import { normalizePhone } from '../../common/utils/phone.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
 import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
+import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
 import type { UpdateRestaurantProfileDto } from '../dto/update-restaurant-profile.dto.js';
 import type { UpdateAvailabilityDto } from '../dto/update-availability.dto.js';
 
@@ -79,18 +80,25 @@ export class RestaurantsService {
     const data: Record<string, unknown> = {};
 
     if (dto.name !== undefined) data.name = dto.name.trim();
-    if (dto.description !== undefined) data.description = dto.description.trim() || null;
+    if (dto.description !== undefined)
+      data.description = dto.description.trim() || null;
     if (dto.cuisines !== undefined) data.cuisines = dto.cuisines;
-    if (dto.addressText !== undefined) data.addressText = dto.addressText.trim() || null;
+    if (dto.addressText !== undefined)
+      data.addressText = dto.addressText.trim() || null;
     if (dto.contactPhone !== undefined) {
-      data.contactPhone = dto.contactPhone ? normalizePhone(dto.contactPhone) : null;
+      data.contactPhone = dto.contactPhone
+        ? normalizePhone(dto.contactPhone)
+        : null;
     }
     if (dto.minOrderAmount !== undefined) {
-      data.minOrderAmount = dto.minOrderAmount !== null ? BigInt(dto.minOrderAmount) : null;
+      data.minOrderAmount =
+        dto.minOrderAmount !== null ? BigInt(dto.minOrderAmount) : null;
     }
     if (dto.cityId !== undefined) {
       if (dto.cityId) {
-        const city = await this.prisma.city.findUnique({ where: { id: dto.cityId } });
+        const city = await this.prisma.city.findUnique({
+          where: { id: dto.cityId },
+        });
         if (!city) {
           throw new BadRequestException('Invalid city/district ID');
         }
@@ -162,7 +170,7 @@ export class RestaurantsService {
   async uploadRestaurantImage(
     restaurantId: string,
     kind: 'logo' | 'cover',
-    file?: { buffer?: Buffer; size?: number; mimetype?: string },
+    file?: RawUploadFile,
   ) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -203,10 +211,7 @@ export class RestaurantsService {
     }
   }
 
-  async deleteRestaurantImage(
-    restaurantId: string,
-    kind: 'logo' | 'cover',
-  ) {
+  async deleteRestaurantImage(restaurantId: string, kind: 'logo' | 'cover') {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
       select: { id: true, logoUrl: true, coverUrl: true },
@@ -266,7 +271,9 @@ export class RestaurantsService {
       missingPrerequisites.push('At least one active menu item is required');
     }
     if (restaurant._count.deliveryAreas === 0) {
-      missingPrerequisites.push('At least one active delivery area is required');
+      missingPrerequisites.push(
+        'At least one active delivery area is required',
+      );
     }
 
     return {
@@ -330,7 +337,9 @@ export class RestaurantsService {
       missingPrerequisites.push('At least one active menu item is required');
     }
     if (restaurant.deliveryAreas.length === 0) {
-      missingPrerequisites.push('At least one active delivery area is required');
+      missingPrerequisites.push(
+        'At least one active delivery area is required',
+      );
     }
 
     if (missingPrerequisites.length > 0) {
@@ -383,4 +392,3 @@ export class RestaurantsService {
     };
   }
 }
-

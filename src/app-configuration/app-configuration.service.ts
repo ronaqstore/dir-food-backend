@@ -4,6 +4,8 @@ import Joi from 'joi';
 
 @Injectable()
 export class AppConfigurationService {
+  static readonly GOOGLE_MAPS_BASE_URL = 'https://maps.google.com/?q=';
+
   constructor(private readonly configService: ConfigService) {}
 
   static validate(config: Record<string, unknown>): Record<string, unknown> {
@@ -56,7 +58,9 @@ export class AppConfigurationService {
     });
 
     if (result.error) {
-      throw new Error(`Configuration validation error: ${result.error.message}`);
+      throw new Error(
+        `Configuration validation error: ${result.error.message}`,
+      );
     }
 
     const value = result.value;
@@ -95,7 +99,8 @@ export class AppConfigurationService {
   }
 
   get appBaseUrl(): string {
-    const value = this.configService.get<string>('APP_BASE_URL') ?? 'http://localhost:3000';
+    const value =
+      this.configService.get<string>('APP_BASE_URL') ?? 'http://localhost:3000';
     return value.replace(/\/+$/, '');
   }
 
@@ -104,7 +109,7 @@ export class AppConfigurationService {
   }
 
   get passwordSetupTokenTtlMinutes(): number {
-    return 60 * 24; // 24 hours (matches Ronaq Store setup token TTL)
+    return 60 * 24;
   }
 
   get r2StorageEnabled(): boolean {
@@ -130,9 +135,12 @@ export class AppConfigurationService {
     return {
       accountId: this.configService.get<string>('R2_ACCOUNT_ID') ?? '',
       accessKeyId: this.configService.get<string>('R2_ACCESS_KEY_ID') ?? '',
-      secretAccessKey: this.configService.get<string>('R2_SECRET_ACCESS_KEY') ?? '',
+      secretAccessKey:
+        this.configService.get<string>('R2_SECRET_ACCESS_KEY') ?? '',
       bucket: this.configService.get<string>('R2_BUCKET') ?? '',
-      publicUrlBase: (this.configService.get<string>('R2_PUBLIC_URL_BASE') ?? '').replace(/\/+$/, ''),
+      publicUrlBase: (
+        this.configService.get<string>('R2_PUBLIC_URL_BASE') ?? ''
+      ).replace(/\/+$/, ''),
     };
   }
 }

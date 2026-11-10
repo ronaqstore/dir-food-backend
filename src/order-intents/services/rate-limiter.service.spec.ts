@@ -21,7 +21,9 @@ describe('OrderIntentRateLimiterService', () => {
     try {
       rateLimiter.checkAndRecord(ip, restId);
     } catch (err) {
-      expect((err as HttpException).getStatus()).toBe(HttpStatus.TOO_MANY_REQUESTS);
+      expect((err as HttpException).getStatus()).toBe(
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
   });
 
@@ -50,4 +52,3 @@ describe('OrderIntentRateLimiterService', () => {
     expect(() => rateLimiter.checkAndRecord(ip, restId, null)).toThrow();
   });
 });
-

@@ -21,7 +21,8 @@ export class DeliveryAreaItemDto {
 
   @ApiPropertyOptional({
     example: 10000,
-    description: 'Delivery fee in paisa (Rs 100 = 10000). Set null for WhatsApp confirmation',
+    description:
+      'Delivery fee in paisa (Rs 100 = 10000). Set null for WhatsApp confirmation',
     nullable: true,
   })
   @IsOptional()
@@ -31,7 +32,8 @@ export class DeliveryAreaItemDto {
 
   @ApiPropertyOptional({
     example: 80000,
-    description: 'Minimum order amount in paisa for this area (Rs 800 = 80000). Set null to use restaurant default',
+    description:
+      'Minimum order amount in paisa for this area (Rs 800 = 80000). Set null to use restaurant default',
     nullable: true,
   })
   @IsOptional()
@@ -43,7 +45,8 @@ export class DeliveryAreaItemDto {
 export class UpdateDeliveryAreasDto {
   @ApiProperty({
     type: [DeliveryAreaItemDto],
-    description: 'List of served delivery areas and their respective delivery fees',
+    description:
+      'List of served delivery areas and their respective delivery fees',
   })
   @IsArray()
   @ValidateNested({ each: true })

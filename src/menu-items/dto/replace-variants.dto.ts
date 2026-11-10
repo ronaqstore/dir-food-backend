@@ -16,7 +16,10 @@ import {
 } from 'class-validator';
 
 export class VariantItemDto {
-  @ApiPropertyOptional({ example: '0192a000-0000-7000-8000-000000000099', description: 'Existing variant ID' })
+  @ApiPropertyOptional({
+    example: '0192a000-0000-7000-8000-000000000099',
+    description: 'Existing variant ID',
+  })
   @IsOptional()
   @IsUUID('7')
   id?: string;
@@ -40,7 +43,10 @@ export class VariantItemDto {
 }
 
 export class ReplaceVariantsDto {
-  @ApiProperty({ type: [VariantItemDto], description: 'Full set of variants for the item' })
+  @ApiProperty({
+    type: [VariantItemDto],
+    description: 'Full set of variants for the item',
+  })
   @IsArray()
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })

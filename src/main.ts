@@ -71,10 +71,7 @@ if (!process.env.VERCEL) {
   await app.listen(config.port);
 }
 
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function handler(req: Request, res: Response): Promise<void> {
   const app = await createApp();
   const instance = app.getHttpAdapter().getInstance() as (
     req: Request,

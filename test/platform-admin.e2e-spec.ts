@@ -62,14 +62,12 @@ describe('Platform Admin Management & Operations (e2e)', () => {
 
     // 2. Register standard restaurant owner for access-control verification
     const ownerPhone = getUniquePakistaniPhone();
-    await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({
-        restaurantName: 'Access Control Test Kitchen',
-        ownerName: 'Kitchen Owner',
-        phone: ownerPhone,
-        password: 'Password123!',
-      });
+    await request(app.getHttpServer()).post('/auth/register').send({
+      restaurantName: 'Access Control Test Kitchen',
+      ownerName: 'Kitchen Owner',
+      phone: ownerPhone,
+      password: 'Password123!',
+    });
 
     const ownerLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
@@ -149,7 +147,9 @@ describe('Platform Admin Management & Operations (e2e)', () => {
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.meta).toBeDefined();
-      expect(res.body.data.some((r: { id: string }) => r.id === createdRestId)).toBe(true);
+      expect(
+        res.body.data.some((r: { id: string }) => r.id === createdRestId),
+      ).toBe(true);
     });
 
     it('gets full restaurant detail with completeness checklist (GET /admin/restaurants/:id)', async () => {
@@ -271,7 +271,9 @@ describe('Platform Admin Management & Operations (e2e)', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.restaurantId).toBe(createdRestId);
       expect(res.body.data.subscriptionEndsAt).toBeDefined();
-      expect(new Date(res.body.data.subscriptionEndsAt).getTime()).toBeGreaterThan(
+      expect(
+        new Date(res.body.data.subscriptionEndsAt).getTime(),
+      ).toBeGreaterThan(
         new Date(res.body.data.previousSubscriptionEndsAt).getTime(),
       );
     });
@@ -281,7 +283,9 @@ describe('Platform Admin Management & Operations (e2e)', () => {
         .get(`/admin/restaurants/${createdRestId}`)
         .set('Authorization', `Bearer ${adminToken}`);
       const currentEndsAt = new Date(detailRes.body.data.subscriptionEndsAt);
-      const shorterDate = new Date(currentEndsAt.getTime() - 15 * 24 * 60 * 60 * 1000);
+      const shorterDate = new Date(
+        currentEndsAt.getTime() - 15 * 24 * 60 * 60 * 1000,
+      );
 
       const res = await request(app.getHttpServer())
         .post(`/admin/restaurants/${createdRestId}/subscription/shorten`)
@@ -294,7 +298,9 @@ describe('Platform Admin Management & Operations (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.restaurantId).toBe(createdRestId);
-      expect(new Date(res.body.data.subscriptionEndsAt).toISOString()).toBe(shorterDate.toISOString());
+      expect(new Date(res.body.data.subscriptionEndsAt).toISOString()).toBe(
+        shorterDate.toISOString(),
+      );
     });
 
     it('changes restaurant slug with validation (PATCH /admin/restaurants/:id/slug)', async () => {
@@ -337,8 +343,12 @@ describe('Platform Admin Management & Operations (e2e)', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
-      expect(res.body.data.some((a: { id: string }) => a.id === createdAreaId)).toBe(true);
-      const targetArea = res.body.data.find((a: { id: string }) => a.id === createdAreaId);
+      expect(
+        res.body.data.some((a: { id: string }) => a.id === createdAreaId),
+      ).toBe(true);
+      const targetArea = res.body.data.find(
+        (a: { id: string }) => a.id === createdAreaId,
+      );
       expect(targetArea.activeRestaurantsCount).toBeDefined();
     });
 
@@ -397,7 +407,11 @@ describe('Platform Admin Management & Operations (e2e)', () => {
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
       expect(res.body.data.length).toBeGreaterThan(0);
-      expect(res.body.data.some((l: { action: string }) => l.action === 'RESTAURANT_CREATED_BY_ADMIN')).toBe(true);
+      expect(
+        res.body.data.some(
+          (l: { action: string }) => l.action === 'RESTAURANT_CREATED_BY_ADMIN',
+        ),
+      ).toBe(true);
     });
   });
 });

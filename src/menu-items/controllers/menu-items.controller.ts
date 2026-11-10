@@ -24,18 +24,19 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
-import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedRestaurantUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { RestaurantAuthGuard } from '../../common/guards/restaurant-auth.guard.js';
-import { UserRole } from '../../generated/prisma/enums.js';
 import { MenuItemsService } from '../services/menu-items.service.js';
 import { CreateMenuItemDto } from '../dto/create-item.dto.js';
 import { UpdateMenuItemDto } from '../dto/update-item.dto.js';
 import { ReorderMenuItemsDto } from '../dto/reorder-items.dto.js';
 import { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
+import { UserRole } from '../../generated/prisma/enums.js';
+import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
 
-@ApiTags('Restaurant Owner - Menu Items')
+@ApiTags('Menu Items')
 @ApiBearerAuth('bearer')
 @Controller('me/restaurant/items')
 @Roles(UserRole.RESTAURANT_OWNER)
@@ -44,14 +45,18 @@ export class MenuItemsController {
   constructor(private readonly itemsService: MenuItemsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'List menu items for current restaurant with variants' })
-  @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category ID' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search dish name or description' })
+  @ApiOperation({ summary: 'List menu items for owner restaurant' })
+  @ApiQuery({ name: 'categoryId', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
-  @ApiQuery({ name: 'isDeal', required: false, description: 'Filter by deal flag (true/false)' })
+  @ApiQuery({
+    name: 'isDeal',
+    required: false,
+    description: 'Filter by deal flag (true/false)',
+  })
   async getItems(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Query('categoryId') categoryId?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
@@ -63,7 +68,7 @@ export class MenuItemsController {
     const isDealBool =
       isDeal === 'true' ? true : isDeal === 'false' ? false : undefined;
     return this.itemsService.getItems(
-      user.restaurantId!,
+      user.restaurantId,
       categoryId,
       pageNum,
       limitNum,
@@ -74,33 +79,37 @@ export class MenuItemsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new menu item with basePrice or variants' })
+  @ApiOperation({
+    summary: 'Create a new menu item with basePrice or variants',
+  })
   async createItem(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: CreateMenuItemDto,
   ) {
-    return this.itemsService.createItem(user.restaurantId!, dto);
+    return this.itemsService.createItem(user.restaurantId, dto);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update menu item details, availability, or category' })
+  @ApiOperation({
+    summary: 'Update menu item details, availability, or category',
+  })
   async updateItem(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('id') id: string,
     @Body() dto: UpdateMenuItemDto,
   ) {
-    return this.itemsService.updateItem(user.restaurantId!, id, dto);
+    return this.itemsService.updateItem(user.restaurantId, id, dto);
   }
 
   @Put('order')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reorder menu items within a category' })
   async reorderItems(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: ReorderMenuItemsDto,
   ) {
     return this.itemsService.reorderItems(
-      user.restaurantId!,
+      user.restaurantId,
       dto.categoryId,
       dto.ids,
     );
@@ -110,11 +119,11 @@ export class MenuItemsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Replace size variants for a menu item' })
   async replaceVariants(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('id') id: string,
     @Body() dto: ReplaceVariantsDto,
   ) {
-    return this.itemsService.replaceVariants(user.restaurantId!, id, dto);
+    return this.itemsService.replaceVariants(user.restaurantId, id, dto);
   }
 
   @Post(':id/image')
@@ -138,11 +147,11 @@ export class MenuItemsController {
     }),
   )
   async uploadItemImage(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('id') id: string,
-    @UploadedFile() file?: { buffer: Buffer; size: number; mimetype: string },
+    @UploadedFile() file?: RawUploadFile,
   ) {
-    return this.itemsService.uploadItemImage(user.restaurantId!, id, file);
+    return this.itemsService.uploadItemImage(user.restaurantId, id, file);
   }
 
   @Delete(':id/image')
@@ -152,9 +161,9 @@ export class MenuItemsController {
       'Clears the image URL for this menu item and removes the object from storage.',
   })
   async deleteItemImage(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('id') id: string,
   ) {
-    return this.itemsService.deleteItemImage(user.restaurantId!, id);
+    return this.itemsService.deleteItemImage(user.restaurantId, id);
   }
 }

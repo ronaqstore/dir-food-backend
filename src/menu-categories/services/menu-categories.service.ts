@@ -104,7 +104,6 @@ export class MenuCategoriesService {
       throw new NotFoundException('Restaurant not found');
     }
 
-    // Verify all IDs belong to this restaurant
     const count = await this.prisma.menuCategory.count({
       where: {
         id: { in: ids },

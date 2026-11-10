@@ -19,7 +19,9 @@ describe('MenuCategoriesService (unit)', () => {
         update: vi.fn(),
         count: vi.fn(),
       },
-      $transaction: vi.fn().mockImplementation(async (promises) => Promise.all(promises)),
+      $transaction: vi
+        .fn()
+        .mockImplementation(async (promises) => Promise.all(promises)),
     };
 
     service = new MenuCategoriesService(mockPrisma);

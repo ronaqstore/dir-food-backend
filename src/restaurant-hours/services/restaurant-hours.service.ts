@@ -26,7 +26,10 @@ export class RestaurantHoursService {
       orderBy: [{ dayOfWeek: 'asc' }, { openTime: 'asc' }],
     });
 
-    const daysMap = new Map<number, Array<{ openTime: string; closeTime: string }>>();
+    const daysMap = new Map<
+      number,
+      Array<{ openTime: string; closeTime: string }>
+    >();
     for (let day = 0; day <= 6; day++) {
       daysMap.set(day, []);
     }

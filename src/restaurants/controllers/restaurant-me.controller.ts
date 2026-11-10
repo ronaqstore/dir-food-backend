@@ -5,7 +5,7 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
-import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedRestaurantUser } from '../../common/decorators/current-user.decorator.js';
 import {
   Controller,
   Get,
@@ -30,6 +30,7 @@ import { UserRole } from '../../generated/prisma/enums.js';
 import { RestaurantsService } from '../services/restaurants.service.js';
 import { UpdateRestaurantProfileDto } from '../dto/update-restaurant-profile.dto.js';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto.js';
+import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
 
 @ApiTags('Restaurant Owner - Profile')
 @ApiBearerAuth('bearer')
@@ -40,23 +41,28 @@ export class RestaurantMeController {
   constructor(private readonly restaurantsService: RestaurantsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get current authenticated restaurant profile, hours, and areas' })
-  async getMyRestaurant(@CurrentUser() user: AuthenticatedUser) {
+  @ApiOperation({
+    summary: 'Get current authenticated restaurant profile, hours, and areas',
+  })
+  async getMyRestaurant(@CurrentUser() user: AuthenticatedRestaurantUser) {
     return this.restaurantsService.getMyRestaurant(user.restaurantId);
   }
 
   @Get('readiness')
-  @ApiOperation({ summary: 'Check onboarding readiness prerequisites before self-publishing' })
-  async getPublishReadiness(@CurrentUser() user: AuthenticatedUser) {
+  @ApiOperation({
+    summary: 'Check onboarding readiness prerequisites before self-publishing',
+  })
+  async getPublishReadiness(@CurrentUser() user: AuthenticatedRestaurantUser) {
     return this.restaurantsService.getPublishReadiness(user.restaurantId);
   }
 
   @Post('publish')
   @ApiOperation({
-    summary: 'Self-publish restaurant (PENDING -> ACTIVE) and start 30-day trial',
+    summary:
+      'Self-publish restaurant (PENDING -> ACTIVE) and start 30-day trial',
   })
   async publishRestaurant(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Ip() ipAddress: string,
   ) {
     return this.restaurantsService.publishRestaurant(
@@ -67,14 +73,17 @@ export class RestaurantMeController {
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Update restaurant profile details (name, WhatsApp, description, etc.)' })
+  @ApiOperation({
+    summary:
+      'Update restaurant profile details (name, WhatsApp, description, etc.)',
+  })
   async updateProfile(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: UpdateRestaurantProfileDto,
     @Ip() ipAddress: string,
   ) {
     return this.restaurantsService.updateProfile(
-      user.restaurantId!,
+      user.restaurantId,
       dto,
       user.userId,
       ipAddress,
@@ -82,12 +91,15 @@ export class RestaurantMeController {
   }
 
   @Put('availability')
-  @ApiOperation({ summary: 'Update restaurant availability switch (AUTO, CLOSED, TEMP_UNAVAILABLE)' })
+  @ApiOperation({
+    summary:
+      'Update restaurant availability switch (AUTO, CLOSED, TEMP_UNAVAILABLE)',
+  })
   async updateAvailability(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Body() dto: UpdateAvailabilityDto,
   ) {
-    return this.restaurantsService.updateAvailability(user.restaurantId!, dto);
+    return this.restaurantsService.updateAvailability(user.restaurantId, dto);
   }
 
   @Post('images/:kind')
@@ -111,9 +123,9 @@ export class RestaurantMeController {
     }),
   )
   async uploadImage(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('kind') kind: string,
-    @UploadedFile() file?: { buffer: Buffer; size: number; mimetype: string },
+    @UploadedFile() file?: RawUploadFile,
   ) {
     if (kind !== 'logo' && kind !== 'cover') {
       throw new BadRequestException(
@@ -121,7 +133,7 @@ export class RestaurantMeController {
       );
     }
     return this.restaurantsService.uploadRestaurantImage(
-      user.restaurantId!,
+      user.restaurantId,
       kind,
       file,
     );
@@ -134,7 +146,7 @@ export class RestaurantMeController {
       'Clears the image URL in database and removes the object from storage.',
   })
   async deleteImage(
-    @CurrentUser() user: AuthenticatedUser,
+    @CurrentUser() user: AuthenticatedRestaurantUser,
     @Param('kind') kind: string,
   ) {
     if (kind !== 'logo' && kind !== 'cover') {
@@ -143,9 +155,8 @@ export class RestaurantMeController {
       );
     }
     return this.restaurantsService.deleteRestaurantImage(
-      user.restaurantId!,
+      user.restaurantId,
       kind,
     );
   }
 }
-

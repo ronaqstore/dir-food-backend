@@ -61,7 +61,11 @@ describe('MenuCategoriesController (unit)', () => {
     mockService.updateCategory.mockResolvedValue({ id: 'cat-1', ...dto });
 
     const res = await controller.updateCategory(mockUser, 'cat-1', dto);
-    expect(mockService.updateCategory).toHaveBeenCalledWith('rest-1', 'cat-1', dto);
+    expect(mockService.updateCategory).toHaveBeenCalledWith(
+      'rest-1',
+      'cat-1',
+      dto,
+    );
     expect(res.name).toBe('Handi');
   });
 
@@ -75,7 +79,10 @@ describe('MenuCategoriesController (unit)', () => {
     mockService.reorderCategories.mockResolvedValue([]);
 
     const res = await controller.reorderCategories(mockUser, dto);
-    expect(mockService.reorderCategories).toHaveBeenCalledWith('rest-1', ['cat-2', 'cat-1']);
+    expect(mockService.reorderCategories).toHaveBeenCalledWith('rest-1', [
+      'cat-2',
+      'cat-1',
+    ]);
     expect(res).toEqual([]);
   });
 });

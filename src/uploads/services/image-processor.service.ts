@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import sharp from 'sharp';
 
 export interface ProcessedImage {
@@ -10,21 +7,19 @@ export interface ProcessedImage {
   contentType: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
-export const MAX_IMAGE_BYTES = 3 * 1024 * 1024; // 3 MB
+export interface RawUploadFile {
+  buffer?: Buffer;
+  size?: number;
+  mimetype?: string;
+}
+
+export const MAX_IMAGE_BYTES = 3 * 1024 * 1024;
 export const MAX_DIMENSION_PX = 1600;
 export const SUPPORTED_IMAGE_FORMATS = new Set(['jpeg', 'png', 'webp']);
 
 @Injectable()
 export class ImageProcessorService {
-  /**
-   * Validates image by actual content (magic bytes/metadata), strips EXIF/GPS,
-   * auto-rotates, and resizes to max 1600px without enlarging.
-   */
-  async process(file?: {
-    buffer?: Buffer;
-    size?: number;
-    mimetype?: string;
-  }): Promise<ProcessedImage> {
+  async process(file?: RawUploadFile): Promise<ProcessedImage> {
     if (!file || !file.buffer || file.buffer.length === 0) {
       throw new BadRequestException('Image file is required');
     }
@@ -45,10 +40,7 @@ export class ImageProcessorService {
       );
     }
 
-    if (
-      !format ||
-      !SUPPORTED_IMAGE_FORMATS.has(format)
-    ) {
+    if (!format || !SUPPORTED_IMAGE_FORMATS.has(format)) {
       throw new BadRequestException(
         'Unsupported image format. Allowed formats: JPEG, PNG, WebP',
       );
@@ -56,14 +48,12 @@ export class ImageProcessorService {
 
     let processedBuffer: Buffer;
     try {
-      const pipeline = sharp(file.buffer, sharpOptions)
-        .rotate()
-        .resize({
-          width: MAX_DIMENSION_PX,
-          height: MAX_DIMENSION_PX,
-          fit: 'inside',
-          withoutEnlargement: true,
-        });
+      const pipeline = sharp(file.buffer, sharpOptions).rotate().resize({
+        width: MAX_DIMENSION_PX,
+        height: MAX_DIMENSION_PX,
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
 
       if (format === 'jpeg') {
         processedBuffer = await pipeline.jpeg({ quality: 85 }).toBuffer();
@@ -73,7 +63,9 @@ export class ImageProcessorService {
           contentType: 'image/jpeg',
         };
       } else if (format === 'png') {
-        processedBuffer = await pipeline.png({ compressionLevel: 8 }).toBuffer();
+        processedBuffer = await pipeline
+          .png({ compressionLevel: 8 })
+          .toBuffer();
         return {
           buffer: processedBuffer,
           ext: 'png',

@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 export interface EnvelopeResponse<T> {
-  data: T;
+  data: T | null;
   meta?: Record<string, unknown>;
 }
 
@@ -42,20 +42,19 @@ export function serializeBigInts(value: unknown): unknown {
 }
 
 @Injectable()
-export class ResponseEnvelopeInterceptor<T>
-  implements NestInterceptor<T, EnvelopeResponse<T>>
-{
+export class ResponseEnvelopeInterceptor<T> implements NestInterceptor<
+  T,
+  EnvelopeResponse<T>
+> {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<EnvelopeResponse<T>> {
     return next.handle().pipe(
       map((res) => {
-        // If response is null/undefined
         if (res === null || res === undefined) {
-          return { data: null as unknown as T };
+          return { data: null };
         }
-        // If response is already formatted with data/meta
         if (typeof res === 'object' && res !== null && 'data' in res) {
           return serializeBigInts(res) as EnvelopeResponse<T>;
         }
@@ -64,4 +63,3 @@ export class ResponseEnvelopeInterceptor<T>
     );
   }
 }
-

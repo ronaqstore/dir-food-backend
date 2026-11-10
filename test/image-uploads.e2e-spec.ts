@@ -157,7 +157,9 @@ describe('Image Uploads & Storage Adapter (e2e)', () => {
         .attach('file', sampleJpeg, 'logo.jpg');
 
       expect(res.status).toBe(503);
-      expect(res.body.error.message).toContain('Cloudflare R2 storage is not configured');
+      expect(res.body.error.message).toContain(
+        'Cloudflare R2 storage is not configured',
+      );
 
       // Verify no fake placeholder URL was saved to DB
       const rest = await prisma.restaurant.findUnique({
@@ -203,7 +205,9 @@ describe('Image Uploads & Storage Adapter (e2e)', () => {
         .attach('file', fakeImage, 'fake.jpg');
 
       expect(res.status).toBe(400);
-      expect(res.body.error.message).toContain('Invalid or corrupted image file');
+      expect(res.body.error.message).toContain(
+        'Invalid or corrupted image file',
+      );
     });
 
     it('uploads valid JPEG logo with auto-rotation, EXIF stripping, and prefix', async () => {

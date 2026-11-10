@@ -41,4 +41,3 @@ describe('PublicCitiesService (unit)', () => {
     expect(result).toEqual(mockCities);
   });
 });
-

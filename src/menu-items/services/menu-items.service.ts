@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import {
   Injectable,
   NotFoundException,
@@ -9,9 +8,14 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
 import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
+import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
 import type { CreateMenuItemDto } from '../dto/create-item.dto.js';
 import type { UpdateMenuItemDto } from '../dto/update-item.dto.js';
 import type { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
+import {
+  handleUploadItemImage,
+  handleDeleteItemImage,
+} from '../helpers/menu-item-images.helper.js';
 
 @Injectable()
 export class MenuItemsService {
@@ -98,8 +102,7 @@ export class MenuItemsService {
       throw new NotFoundException('Restaurant not found');
     }
 
-    const hasBasePrice =
-      dto.basePrice !== undefined && dto.basePrice !== null;
+    const hasBasePrice = dto.basePrice !== undefined && dto.basePrice !== null;
     const hasVariants = dto.variants && dto.variants.length > 0;
 
     if (!hasBasePrice && !hasVariants) {
@@ -112,7 +115,9 @@ export class MenuItemsService {
       dto.originalPrice !== undefined &&
       dto.originalPrice !== null &&
       hasBasePrice &&
-      dto.originalPrice <= dto.basePrice!
+      dto.basePrice !== undefined &&
+      dto.basePrice !== null &&
+      dto.originalPrice <= dto.basePrice
     ) {
       throw new BadRequestException(
         'Original price must be greater than selling base price',
@@ -148,10 +153,11 @@ export class MenuItemsService {
         }
         targetCategoryId = dealsCategory.id;
       } else {
-        throw new BadRequestException('categoryId is required for regular menu items');
+        throw new BadRequestException(
+          'categoryId is required for regular menu items',
+        );
       }
     } else {
-      // Verify category belongs to this restaurant
       const category = await this.prisma.menuCategory.findUnique({
         where: {
           id_restaurantId: {
@@ -162,7 +168,9 @@ export class MenuItemsService {
       });
 
       if (!category) {
-        throw new NotFoundException('Menu category not found for this restaurant');
+        throw new NotFoundException(
+          'Menu category not found for this restaurant',
+        );
       }
     }
 
@@ -200,7 +208,12 @@ export class MenuItemsService {
             categoryId: targetCategoryId,
             name: dto.name.trim(),
             description: dto.description?.trim() || null,
-            basePrice: hasBasePrice ? BigInt(dto.basePrice!) : null,
+            basePrice:
+              hasBasePrice &&
+              dto.basePrice !== undefined &&
+              dto.basePrice !== null
+                ? BigInt(dto.basePrice)
+                : null,
             originalPrice:
               dto.originalPrice !== undefined && dto.originalPrice !== null
                 ? BigInt(dto.originalPrice)
@@ -210,9 +223,9 @@ export class MenuItemsService {
           },
         });
 
-        if (hasVariants) {
-          for (let index = 0; index < dto.variants!.length; index++) {
-            const v = dto.variants![index];
+        if (hasVariants && dto.variants) {
+          for (let index = 0; index < dto.variants.length; index++) {
+            const v = dto.variants[index];
             await tx.menuItemVariant.create({
               data: {
                 restaurantId,
@@ -251,11 +264,7 @@ export class MenuItemsService {
     }
   }
 
-  async updateItem(
-    restaurantId: string,
-    id: string,
-    dto: UpdateMenuItemDto,
-  ) {
+  async updateItem(restaurantId: string, id: string, dto: UpdateMenuItemDto) {
     const existing = await this.prisma.menuItem.findUnique({
       where: {
         id_restaurantId: {
@@ -280,7 +289,9 @@ export class MenuItemsService {
       });
 
       if (!category) {
-        throw new NotFoundException('Target menu category not found for this restaurant');
+        throw new NotFoundException(
+          'Target menu category not found for this restaurant',
+        );
       }
     }
 
@@ -292,7 +303,10 @@ export class MenuItemsService {
         : existing.basePrice;
 
     if (dto.originalPrice !== undefined && dto.originalPrice !== null) {
-      if (finalBasePrice !== null && BigInt(dto.originalPrice) <= finalBasePrice) {
+      if (
+        finalBasePrice !== null &&
+        BigInt(dto.originalPrice) <= finalBasePrice
+      ) {
         throw new BadRequestException(
           'Original price must be greater than selling base price',
         );
@@ -322,13 +336,15 @@ export class MenuItemsService {
 
     const data: Record<string, unknown> = {};
     if (dto.name !== undefined) data.name = dto.name.trim();
-    if (dto.description !== undefined) data.description = dto.description?.trim() || null;
+    if (dto.description !== undefined)
+      data.description = dto.description?.trim() || null;
     if (dto.categoryId !== undefined) data.categoryId = dto.categoryId;
     if (dto.basePrice !== undefined) {
       data.basePrice = dto.basePrice !== null ? BigInt(dto.basePrice) : null;
     }
     if (dto.originalPrice !== undefined) {
-      data.originalPrice = dto.originalPrice !== null ? BigInt(dto.originalPrice) : null;
+      data.originalPrice =
+        dto.originalPrice !== null ? BigInt(dto.originalPrice) : null;
     }
     if (dto.isDeal !== undefined) data.isDeal = dto.isDeal;
     if (dto.isAvailable !== undefined) data.isAvailable = dto.isAvailable;
@@ -366,11 +382,7 @@ export class MenuItemsService {
     }
   }
 
-  async reorderItems(
-    restaurantId: string,
-    categoryId: string,
-    ids: string[],
-  ) {
+  async reorderItems(restaurantId: string, categoryId: string, ids: string[]) {
     const category = await this.prisma.menuCategory.findUnique({
       where: {
         id_restaurantId: {
@@ -381,7 +393,9 @@ export class MenuItemsService {
     });
 
     if (!category) {
-      throw new NotFoundException('Menu category not found for this restaurant');
+      throw new NotFoundException(
+        'Menu category not found for this restaurant',
+      );
     }
 
     const count = await this.prisma.menuItem.count({
@@ -440,7 +454,6 @@ export class MenuItemsService {
       .filter((id): id is string => Boolean(id));
 
     await this.prisma.$transaction(async (tx) => {
-      // 1. Deactivate existing variants not in the submitted list
       await tx.menuItemVariant.updateMany({
         where: {
           restaurantId,
@@ -453,11 +466,9 @@ export class MenuItemsService {
         },
       });
 
-      // 2. Create or update each submitted variant
       for (let i = 0; i < dto.variants.length; i++) {
         const v = dto.variants[i];
         if (v.id) {
-          // Update existing variant (must belong to this restaurant and item)
           await tx.menuItemVariant.update({
             where: {
               id_restaurantId_menuItemId: {
@@ -474,7 +485,6 @@ export class MenuItemsService {
             },
           });
         } else {
-          // Create new variant
           await tx.menuItemVariant.create({
             data: {
               restaurantId,
@@ -502,89 +512,24 @@ export class MenuItemsService {
   async uploadItemImage(
     restaurantId: string,
     itemId: string,
-    file?: { buffer?: Buffer; size?: number; mimetype?: string },
+    file?: RawUploadFile,
   ) {
-    const item = await this.prisma.menuItem.findUnique({
-      where: {
-        id_restaurantId: {
-          id: itemId,
-          restaurantId,
-        },
-      },
-      select: { id: true, imageUrl: true },
-    });
-
-    if (!item) {
-      throw new NotFoundException('Menu item not found for this restaurant');
-    }
-
-    const processed = await this.imageProcessor.process(file);
-    const key = `restaurants/${restaurantId}/menu-items/${itemId}/${randomUUID()}.${processed.ext}`;
-    const url = await this.r2Storage.put(
-      key,
-      processed.buffer,
-      processed.contentType,
+    return handleUploadItemImage(
+      this.prisma,
+      this.imageProcessor,
+      this.r2Storage,
+      restaurantId,
+      itemId,
+      file,
     );
-
-    const oldUrl = item.imageUrl;
-
-    try {
-      const updated = await this.prisma.menuItem.update({
-        where: {
-          id_restaurantId: {
-            id: itemId,
-            restaurantId,
-          },
-        },
-        data: {
-          imageUrl: url,
-        },
-      });
-
-      if (oldUrl) {
-        await this.r2Storage.deleteByUrl(oldUrl, restaurantId);
-      }
-
-      return updated;
-    } catch (error) {
-      await this.r2Storage.deleteByUrl(url, restaurantId);
-      throw error;
-    }
   }
 
   async deleteItemImage(restaurantId: string, itemId: string) {
-    const item = await this.prisma.menuItem.findUnique({
-      where: {
-        id_restaurantId: {
-          id: itemId,
-          restaurantId,
-        },
-      },
-      select: { id: true, imageUrl: true },
-    });
-
-    if (!item) {
-      throw new NotFoundException('Menu item not found for this restaurant');
-    }
-
-    const oldUrl = item.imageUrl;
-
-    const updated = await this.prisma.menuItem.update({
-      where: {
-        id_restaurantId: {
-          id: itemId,
-          restaurantId,
-        },
-      },
-      data: {
-        imageUrl: null,
-      },
-    });
-
-    if (oldUrl) {
-      await this.r2Storage.deleteByUrl(oldUrl, restaurantId);
-    }
-
-    return updated;
+    return handleDeleteItemImage(
+      this.prisma,
+      this.r2Storage,
+      restaurantId,
+      itemId,
+    );
   }
 }

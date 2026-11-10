@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 export interface AuditLogParams {
@@ -26,12 +27,13 @@ export class AuditService {
           action: params.action,
           entityType: params.entityType,
           entityId: params.entityId ?? null,
-          details: (params.details as any) ?? null,
+          details: params.details
+            ? (params.details as Prisma.InputJsonValue)
+            : undefined,
           ipAddress: params.ipAddress ?? null,
         },
       });
     } catch (error) {
-      // Never crash critical operations if logging encounters an issue, but log error
       this.logger.error(
         `Failed to record audit log: ${(error as Error).message}`,
         (error as Error).stack,
@@ -39,4 +41,3 @@ export class AuditService {
     }
   }
 }
-

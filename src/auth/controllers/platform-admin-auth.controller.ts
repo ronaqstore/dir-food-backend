@@ -18,10 +18,11 @@ export class PlatformAdminAuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('users/:userId/password-setup-link')
-  @ApiOperation({ summary: 'Generate a single-use password setup link for a restaurant owner' })
+  @ApiOperation({
+    summary: 'Generate a single-use password setup link for a restaurant owner',
+  })
   @HttpCode(HttpStatus.OK)
   async issuePasswordSetupLink(@Param('userId') userId: string) {
     return this.authService.issuePasswordSetupLink(userId);
   }
 }
-

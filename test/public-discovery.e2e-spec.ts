@@ -5,7 +5,10 @@ import request from 'supertest';
 import cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
-import { RestaurantStatus, ManualStatus } from '../src/generated/prisma/enums.js';
+import {
+  RestaurantStatus,
+  ManualStatus,
+} from '../src/generated/prisma/enums.js';
 import { timeStringToDate } from '../src/restaurant-hours/utils/opening-hours.util.js';
 
 describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
@@ -45,9 +48,13 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
     prisma = app.get(PrismaService);
 
     // 1. Setup Areas
-    const defaultCity = await prisma.city.findFirstOrThrow({ where: { slug: 'lower-dir' } });
+    const defaultCity = await prisma.city.findFirstOrThrow({
+      where: { slug: 'lower-dir' },
+    });
     const activeArea = await prisma.area.upsert({
-      where: { cityId_slug: { cityId: defaultCity.id, slug: 'timergara-pub-e2e' } },
+      where: {
+        cityId_slug: { cityId: defaultCity.id, slug: 'timergara-pub-e2e' },
+      },
       update: { isActive: true },
       create: {
         cityId: defaultCity.id,
@@ -60,7 +67,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
     activeAreaId = activeArea.id;
 
     const inactiveArea = await prisma.area.upsert({
-      where: { cityId_slug: { cityId: defaultCity.id, slug: 'inactive-pub-e2e' } },
+      where: {
+        cityId_slug: { cityId: defaultCity.id, slug: 'inactive-pub-e2e' },
+      },
       update: { isActive: false },
       create: {
         cityId: defaultCity.id,
@@ -234,7 +243,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
 
     // 3. Expired Subscription Restaurant (Active status, but subscription in the past)
     expiredRestSlug = `expired-pub-${Date.now()}`;
-    const pastTrialStart = new Date(pastDate.getTime() - 1000 * 60 * 60 * 24 * 30);
+    const pastTrialStart = new Date(
+      pastDate.getTime() - 1000 * 60 * 60 * 24 * 30,
+    );
     await prisma.restaurant.create({
       data: {
         name: 'Expired Subscription Cafe',
@@ -346,7 +357,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       expect(slugs).not.toContain('inactive-pub-e2e');
 
       // Verify only appropriate public fields are returned
-      const area = res.body.data.find((a: { slug: string }) => a.slug === 'timergara-pub-e2e');
+      const area = res.body.data.find(
+        (a: { slug: string }) => a.slug === 'timergara-pub-e2e',
+      );
       expect(area).toHaveProperty('id');
       expect(area).toHaveProperty('name', 'Timergara Public E2E');
       expect(area).toHaveProperty('slug', 'timergara-pub-e2e');
@@ -367,21 +380,27 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
         .get('/public/restaurants')
         .query({ q: activeRestName, limit: 10 });
       expect(resActive.status).toBe(200);
-      expect(resActive.body.data.map((r: { slug: string }) => r.slug)).toContain(activeRestSlug);
+      expect(
+        resActive.body.data.map((r: { slug: string }) => r.slug),
+      ).toContain(activeRestSlug);
 
       // 2. Closed but active/unexpired restaurant is included
       const resClosed = await request(app.getHttpServer())
         .get('/public/restaurants')
         .query({ q: closedRestName, limit: 10 });
       expect(resClosed.status).toBe(200);
-      expect(resClosed.body.data.map((r: { slug: string }) => r.slug)).toContain(closedRestSlug);
+      expect(
+        resClosed.body.data.map((r: { slug: string }) => r.slug),
+      ).toContain(closedRestSlug);
 
       // 3. Scheduled active/unexpired restaurant is included
       const resScheduled = await request(app.getHttpServer())
         .get('/public/restaurants')
         .query({ q: scheduledRestName, limit: 10 });
       expect(resScheduled.status).toBe(200);
-      expect(resScheduled.body.data.map((r: { slug: string }) => r.slug)).toContain(scheduledRestSlug);
+      expect(
+        resScheduled.body.data.map((r: { slug: string }) => r.slug),
+      ).toContain(scheduledRestSlug);
 
       // 4. Must exclude expired, pending, suspended, and deactivated restaurants
       const resExpired = await request(app.getHttpServer())
@@ -411,7 +430,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
         .query({ q: 'Al-Noor Public' });
 
       expect(res.status).toBe(200);
-      const restaurant = res.body.data.find((r: { slug: string }) => r.slug === activeRestSlug);
+      const restaurant = res.body.data.find(
+        (r: { slug: string }) => r.slug === activeRestSlug,
+      );
       expect(restaurant).toBeDefined();
 
       // Allowed public fields
@@ -568,7 +589,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       expect(data.description).toBe('Best Karahi in Timergara');
       expect(data.cuisines).toEqual(['Karahi', 'Desi']);
       expect(data.logoUrl).toBe('https://images.example.com/al-noor-logo.jpg');
-      expect(data.coverUrl).toBe('https://images.example.com/al-noor-cover.jpg');
+      expect(data.coverUrl).toBe(
+        'https://images.example.com/al-noor-cover.jpg',
+      );
       expect(data.contactPhone).toBe('923001234567');
       expect(data.whatsappNumber).toBe('923007654321');
       expect(data.addressText).toBe('Main College Chowk, Timergara');
@@ -603,7 +626,9 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       expect(res.body.data.isOpenNow).toBe(false);
       expect(res.body.data.manualStatus).toBe(ManualStatus.CLOSED);
       expect(res.body.data.unavailableNote).toBe('Under kitchen renovation');
-      expect(res.body.data.availabilityText).toContain('Under kitchen renovation');
+      expect(res.body.data.availabilityText).toContain(
+        'Under kitchen renovation',
+      );
     });
 
     it('returns 404 RESTAURANT_NOT_AVAILABLE for unknown slug', async () => {
@@ -678,15 +703,21 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       expect(cat.items).toHaveLength(3);
 
       // Item 1: Chicken Karahi
-      const item1 = cat.items.find((i: { name: string }) => i.name === 'Chicken Karahi');
+      const item1 = cat.items.find(
+        (i: { name: string }) => i.name === 'Chicken Karahi',
+      );
       expect(item1).toBeDefined();
       expect(item1.price).toBe(120000); // 120000 paisa serialized
       expect(item1.isAvailable).toBe(true);
-      expect(item1.imageUrl).toBe('https://images.example.com/chicken-karahi.jpg');
+      expect(item1.imageUrl).toBe(
+        'https://images.example.com/chicken-karahi.jpg',
+      );
       expect(item1.variants).toEqual([]);
 
       // Item 2: Mutton Karahi (has 2 active variants; 1 inactive variant excluded)
-      const item2 = cat.items.find((i: { name: string }) => i.name === 'Mutton Karahi');
+      const item2 = cat.items.find(
+        (i: { name: string }) => i.name === 'Mutton Karahi',
+      );
       expect(item2).toBeDefined();
       expect(item2.price).toBeNull(); // basePrice is null
       expect(item2.variants).toHaveLength(2);
@@ -702,13 +733,17 @@ describe('Public Restaurant Discovery & Menu APIs (e2e)', () => {
       });
 
       // Item 4: Special Trout Fish (active, but isAvailable: false)
-      const item4 = cat.items.find((i: { name: string }) => i.name === 'Special Trout Fish');
+      const item4 = cat.items.find(
+        (i: { name: string }) => i.name === 'Special Trout Fish',
+      );
       expect(item4).toBeDefined();
       expect(item4.isAvailable).toBe(false);
       expect(item4.price).toBe(180000);
 
       // Inactive item 3 must not be present
-      const item3 = cat.items.find((i: { name: string }) => i.name === 'Old Discontinued Item');
+      const item3 = cat.items.find(
+        (i: { name: string }) => i.name === 'Old Discontinued Item',
+      );
       expect(item3).toBeUndefined();
     });
 

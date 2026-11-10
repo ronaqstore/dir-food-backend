@@ -27,4 +27,3 @@ describe('PublicAreasController', () => {
     expect(result).toEqual(areas);
   });
 });
-

@@ -6,7 +6,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service.js';
-import { ManualStatus, RestaurantStatus } from '../../generated/prisma/enums.js';
+import {
+  ManualStatus,
+  RestaurantStatus,
+} from '../../generated/prisma/enums.js';
 
 describe('RestaurantsService (unit)', () => {
   let service: RestaurantsService;
@@ -72,7 +75,9 @@ describe('RestaurantsService (unit)', () => {
     };
     mockPrisma.restaurant.findUnique.mockResolvedValue(mockRestaurant);
 
-    const result = await service.getMyRestaurant('0192aaaa-0000-7000-8000-000000000001');
+    const result = await service.getMyRestaurant(
+      '0192aaaa-0000-7000-8000-000000000001',
+    );
     expect(result).toEqual(mockRestaurant);
   });
 
@@ -243,7 +248,8 @@ describe('RestaurantsService (unit)', () => {
     it('sets image column to null and deletes object from R2', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({
         id: 'res-1',
-        coverUrl: 'https://images.dirfood.test/restaurants/res-1/profile/cover-123.jpg',
+        coverUrl:
+          'https://images.dirfood.test/restaurants/res-1/profile/cover-123.jpg',
       });
       mockPrisma.restaurant.update.mockResolvedValue({
         id: 'res-1',
@@ -273,9 +279,9 @@ describe('RestaurantsService (unit)', () => {
 
     it('throws NotFoundException when restaurant is not found', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue(null);
-      await expect(
-        service.getPublishReadiness('res-1'),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getPublishReadiness('res-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns isReadyToPublish: false with missing prerequisites when incomplete', async () => {
@@ -338,9 +344,9 @@ describe('RestaurantsService (unit)', () => {
 
     it('throws NotFoundException when restaurant is not found', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue(null);
-      await expect(
-        service.publishRestaurant('res-1'),
-      ).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.publishRestaurant('res-1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('throws ConflictException when restaurant is already active', async () => {
@@ -352,9 +358,9 @@ describe('RestaurantsService (unit)', () => {
         deliveryAreas: [{ id: 'area-1' }],
       });
 
-      await expect(
-        service.publishRestaurant('res-1'),
-      ).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.publishRestaurant('res-1')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
     });
 
     it('throws ForbiddenException when restaurant is suspended or deactivated', async () => {
@@ -366,9 +372,9 @@ describe('RestaurantsService (unit)', () => {
         deliveryAreas: [{ id: 'area-1' }],
       });
 
-      await expect(
-        service.publishRestaurant('res-1'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      await expect(service.publishRestaurant('res-1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
     });
 
     it('throws UnprocessableEntityException when prerequisites are missing', async () => {
@@ -381,9 +387,9 @@ describe('RestaurantsService (unit)', () => {
         deliveryAreas: [],
       });
 
-      await expect(
-        service.publishRestaurant('res-1'),
-      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+      await expect(service.publishRestaurant('res-1')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
     });
 
     it('successfully publishes restaurant, initializes 30-day trial, and writes audit log', async () => {

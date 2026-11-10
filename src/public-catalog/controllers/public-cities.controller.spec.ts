@@ -18,7 +18,9 @@ describe('PublicCitiesController (unit)', () => {
   });
 
   it('delegates getCities call to service', async () => {
-    const cities = [{ id: 'city-1', name: 'Lower Dir', slug: 'lower-dir', sortOrder: 1 }];
+    const cities = [
+      { id: 'city-1', name: 'Lower Dir', slug: 'lower-dir', sortOrder: 1 },
+    ];
     mockService.getCities.mockResolvedValue(cities);
 
     const result = await controller.getCities();
@@ -27,4 +29,3 @@ describe('PublicCitiesController (unit)', () => {
     expect(result).toEqual(cities);
   });
 });
-

@@ -14,11 +14,17 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CartItemDto {
-  @ApiProperty({ description: 'Menu Item UUID', example: '0192e4ab-1234-7000-8000-000000000001' })
+  @ApiProperty({
+    description: 'Menu Item UUID',
+    example: '0192e4ab-1234-7000-8000-000000000001',
+  })
   @IsUUID()
   menuItemId!: string;
 
-  @ApiPropertyOptional({ description: 'Menu Item Variant UUID if applicable', example: '0192e4ab-1234-7000-8000-000000000002' })
+  @ApiPropertyOptional({
+    description: 'Menu Item Variant UUID if applicable',
+    example: '0192e4ab-1234-7000-8000-000000000002',
+  })
   @IsOptional()
   @IsUUID()
   variantId?: string;
@@ -43,9 +49,11 @@ export class ValidateCartDto {
   @Type(() => CartItemDto)
   items!: CartItemDto[];
 
-  @ApiPropertyOptional({ description: 'Selected delivery area UUID', example: '0192e4ab-1234-7000-8000-000000000003' })
+  @ApiPropertyOptional({
+    description: 'Selected delivery area UUID',
+    example: '0192e4ab-1234-7000-8000-000000000003',
+  })
   @IsOptional()
   @IsUUID()
   deliveryAreaId?: string;
 }
-

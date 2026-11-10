@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { slugify } from '../../common/utils/phone.js';
 import type { UpdateDeliveryAreasDto } from '../dto/update-delivery-areas.dto.js';
@@ -31,7 +32,7 @@ export class DeliveryAreasService {
     });
     const servedAreaIds = restaurantAreas.map((ra) => ra.areaId);
 
-    const areaWhere: any = {
+    const areaWhere: Prisma.AreaWhereInput = {
       isActive: true,
       OR: [{ isVerified: true }, { id: { in: servedAreaIds } }],
     };
@@ -44,9 +45,20 @@ export class DeliveryAreasService {
       orderBy: { sortOrder: 'asc' },
     });
 
-    const rMap = new Map<string, { deliveryFee: bigint | null; minOrderAmount: bigint | null; isActive: boolean }>();
+    const rMap = new Map<
+      string,
+      {
+        deliveryFee: bigint | null;
+        minOrderAmount: bigint | null;
+        isActive: boolean;
+      }
+    >();
     for (const ra of restaurantAreas) {
-      rMap.set(ra.areaId, { deliveryFee: ra.deliveryFee, minOrderAmount: ra.minOrderAmount, isActive: ra.isActive });
+      rMap.set(ra.areaId, {
+        deliveryFee: ra.deliveryFee,
+        minOrderAmount: ra.minOrderAmount,
+        isActive: ra.isActive,
+      });
     }
 
     return allAreas.map((area) => {
@@ -62,17 +74,15 @@ export class DeliveryAreasService {
             ? Number(config.deliveryFee)
             : null,
         minOrderAmount:
-          config?.minOrderAmount !== null && config?.minOrderAmount !== undefined
+          config?.minOrderAmount !== null &&
+          config?.minOrderAmount !== undefined
             ? Number(config.minOrderAmount)
             : null,
       };
     });
   }
 
-  async updateDeliveryAreas(
-    restaurantId: string,
-    dto: UpdateDeliveryAreasDto,
-  ) {
+  async updateDeliveryAreas(restaurantId: string, dto: UpdateDeliveryAreasDto) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
       select: { id: true },
@@ -84,7 +94,6 @@ export class DeliveryAreasService {
 
     const targetAreaIds = dto.areas.map((a) => a.areaId);
 
-    // Validate all target areas exist and are active
     if (targetAreaIds.length > 0) {
       const validAreas = await this.prisma.area.findMany({
         where: {
@@ -104,7 +113,6 @@ export class DeliveryAreasService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      // 1. Upsert or activate chosen areas
       for (const item of dto.areas) {
         const fee =
           item.deliveryFee !== null && item.deliveryFee !== undefined
@@ -137,7 +145,6 @@ export class DeliveryAreasService {
         });
       }
 
-      // 2. Deactivate areas not included in the payload
       if (targetAreaIds.length > 0) {
         await tx.restaurantDeliveryArea.updateMany({
           where: {
@@ -202,7 +209,6 @@ export class DeliveryAreasService {
 
     const cleanInput = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // 1. Check if an alias matches this input in this city
     const matchedAlias = await this.prisma.areaAlias.findUnique({
       where: { cityId_normalized: { cityId, normalized: cleanInput } },
       include: { area: true },
@@ -210,7 +216,6 @@ export class DeliveryAreasService {
 
     let area = matchedAlias?.area;
 
-    // 2. If no alias, check if an area with this name, slug, or normalized spelling already exists
     if (!area) {
       const existingAreas =
         (await this.prisma.area.findMany({
@@ -218,8 +223,12 @@ export class DeliveryAreasService {
         })) || [];
 
       area = existingAreas.find((a) => {
-        const cleanExistingName = a.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const cleanExistingSlug = a.slug.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanExistingName = a.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
+        const cleanExistingSlug = a.slug
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '');
         return (
           cleanExistingName === cleanInput ||
           cleanExistingSlug === cleanInput ||
@@ -279,7 +288,8 @@ export class DeliveryAreasService {
       isServed: rda.isActive,
       isVerified: area.isVerified,
       deliveryFee: rda.deliveryFee !== null ? Number(rda.deliveryFee) : null,
-      minOrderAmount: rda.minOrderAmount !== null ? Number(rda.minOrderAmount) : null,
+      minOrderAmount:
+        rda.minOrderAmount !== null ? Number(rda.minOrderAmount) : null,
     };
   }
 }
