@@ -11,7 +11,7 @@ export class AppConfigurationService {
       NODE_ENV: Joi.string()
         .valid('development', 'staging', 'production', 'test')
         .default('development'),
-      PORT: Joi.number().integer().min(1).max(65535).default(4000),
+      PORT: Joi.number().integer().min(1).max(65535).default(3011),
       DATABASE_URL: Joi.string()
         .uri({ scheme: ['postgresql', 'postgres'] })
         .required(),
@@ -74,7 +74,7 @@ export class AppConfigurationService {
   }
 
   get port(): number {
-    const value = this.configService.get<string>('PORT') ?? '4000';
+    const value = this.configService.get<string>('PORT') ?? '3011';
     return parseInt(value, 10);
   }
 
