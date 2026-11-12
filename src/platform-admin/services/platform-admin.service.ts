@@ -17,6 +17,7 @@ import {
   normalizePhone,
   isValidPakistaniMobile,
   slugify,
+  isReservedPhoneNumber,
 } from '../../common/utils/phone.js';
 import { seedRestaurantDefaults } from '../../common/utils/restaurant-defaults.js';
 import { UpdateRestaurantStatusDto } from '../dto/update-status.dto.js';
@@ -114,12 +115,20 @@ export class PlatformAdminService {
         'Invalid Pakistani mobile number for owner',
       );
     }
+    if (isReservedPhoneNumber(normalizedOwnerPhone)) {
+      throw new ConflictException(
+        'A user with this phone number already exists',
+      );
+    }
 
     const normalizedContact = normalizePhone(dto.contactPhone);
     if (!isValidPakistaniMobile(normalizedContact)) {
       throw new BadRequestException(
         'Invalid Pakistani mobile number for contactPhone',
       );
+    }
+    if (isReservedPhoneNumber(normalizedContact)) {
+      throw new ConflictException('This phone number is already in use');
     }
 
     let normalizedWa: string | undefined = undefined;
@@ -129,6 +138,9 @@ export class PlatformAdminService {
         throw new BadRequestException(
           'Invalid Pakistani mobile number for whatsappNumber',
         );
+      }
+      if (isReservedPhoneNumber(normalizedWa)) {
+        throw new ConflictException('This phone number is already in use');
       }
     }
 
@@ -360,6 +372,9 @@ export class PlatformAdminService {
           'Invalid Pakistani mobile number for contactPhone',
         );
       }
+      if (isReservedPhoneNumber(normalizedContact)) {
+        throw new ConflictException('This phone number is already in use');
+      }
     }
 
     let normalizedWa = restaurant.whatsappNumber;
@@ -372,6 +387,9 @@ export class PlatformAdminService {
           throw new BadRequestException(
             'Invalid Pakistani mobile number for whatsappNumber',
           );
+        }
+        if (isReservedPhoneNumber(normalizedWa)) {
+          throw new ConflictException('This phone number is already in use');
         }
       }
     }

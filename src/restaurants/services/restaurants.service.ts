@@ -10,7 +10,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { RestaurantStatus } from '../../generated/prisma/enums.js';
-import { normalizePhone } from '../../common/utils/phone.js';
+import { normalizePhone, isReservedPhoneNumber } from '../../common/utils/phone.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
 import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
 import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
@@ -86,9 +86,13 @@ export class RestaurantsService {
     if (dto.addressText !== undefined)
       data.addressText = dto.addressText.trim() || null;
     if (dto.contactPhone !== undefined) {
-      data.contactPhone = dto.contactPhone
+      const normalizedContact = dto.contactPhone
         ? normalizePhone(dto.contactPhone)
         : null;
+      if (normalizedContact && isReservedPhoneNumber(normalizedContact)) {
+        throw new ConflictException('This phone number is already in use');
+      }
+      data.contactPhone = normalizedContact;
     }
     if (dto.minOrderAmount !== undefined) {
       data.minOrderAmount =
@@ -116,6 +120,9 @@ export class RestaurantsService {
       const normalizedWhatsapp = dto.whatsappNumber
         ? normalizePhone(dto.whatsappNumber)
         : null;
+      if (normalizedWhatsapp && isReservedPhoneNumber(normalizedWhatsapp)) {
+        throw new ConflictException('This phone number is already in use');
+      }
       if (normalizedWhatsapp !== existing.whatsappNumber) {
         whatsappChanged = true;
         oldWhatsapp = existing.whatsappNumber;

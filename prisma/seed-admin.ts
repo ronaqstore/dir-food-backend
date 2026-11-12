@@ -40,19 +40,31 @@ async function seed() {
     process.env.SEED_ADMIN_PASSWORD || process.env.SEED_OWNER_PASSWORD || 'admin@123';
   const passwordHash = await bcrypt.hash(sharedPassword, 12);
 
-  const adminPhone = normalizePhone(process.env.SEED_ADMIN_PHONE || '03029825213');
-  const adminName = process.env.SEED_ADMIN_NAME || 'Super Admin';
-  const legacyAdminPhone = normalizePhone('03000000000');
+  const adminAccounts = [
+    {
+      phone: normalizePhone(process.env.ADMIN_PRIVATE_PHONE_1 || '03115514151'),
+      name: 'Super Admin 1',
+    },
+    {
+      phone: normalizePhone(process.env.ADMIN_PRIVATE_PHONE_2 || '03059596704'),
+      name: 'Super Admin 2',
+    },
+  ];
+
+  for (const adm of adminAccounts) {
+    if (!isValidPakistaniMobile(adm.phone)) {
+      console.error(`Invalid admin mobile phone number: ${adm.phone}`);
+      process.exit(1);
+    }
+  }
+
+  const legacyAdminPhones = [normalizePhone('03000000000')];
 
   const ownerPhone = normalizePhone(process.env.SEED_OWNER_PHONE || '03111111111');
   const ownerName = process.env.SEED_OWNER_NAME || 'Shop Owner';
   const shopName =
     process.env.SEED_SHOP_NAME || 'Zaiqa Mahal & River View Restaurant';
 
-  if (!isValidPakistaniMobile(adminPhone)) {
-    console.error(`Invalid admin mobile phone number: ${adminPhone}`);
-    process.exit(1);
-  }
   if (!isValidPakistaniMobile(ownerPhone)) {
     console.error(`Invalid owner mobile phone number: ${ownerPhone}`);
     process.exit(1);
@@ -89,11 +101,11 @@ async function seed() {
   console.log(`✔ Base Area: ${area.name} (${area.slug})`);
 
   // ---------------------------------------------------------------------------
-  // 3. Platform Admin User
+  // 3. Platform Admin Users (Private numbers: 03115514151 & 03059596704)
   // ---------------------------------------------------------------------------
-  if (legacyAdminPhone !== adminPhone) {
+  for (const legacyPhone of legacyAdminPhones) {
     const disabled = await prisma.user.updateMany({
-      where: { phone: legacyAdminPhone, role: UserRole.PLATFORM_ADMIN },
+      where: { phone: legacyPhone, role: UserRole.PLATFORM_ADMIN },
       data: {
         status: UserStatus.DISABLED,
         failedLoginCount: 0,
@@ -101,31 +113,33 @@ async function seed() {
       },
     });
     if (disabled.count > 0) {
-      console.log(`✔ Disabled legacy platform admin phone ${legacyAdminPhone}`);
+      console.log(`✔ Disabled legacy platform admin phone ${legacyPhone}`);
     }
   }
 
-  const admin = await prisma.user.upsert({
-    where: { phone: adminPhone },
-    update: {
-      name: adminName,
-      passwordHash,
-      role: UserRole.PLATFORM_ADMIN,
-      status: UserStatus.ACTIVE,
-      restaurantId: null,
-      failedLoginCount: 0,
-      lockedUntil: null,
-    },
-    create: {
-      name: adminName,
-      phone: adminPhone,
-      passwordHash,
-      role: UserRole.PLATFORM_ADMIN,
-      status: UserStatus.ACTIVE,
-      restaurantId: null,
-    },
-  });
-  console.log(`✔ Platform Admin: ${admin.name} | Phone: ${admin.phone}`);
+  for (const adm of adminAccounts) {
+    const admin = await prisma.user.upsert({
+      where: { phone: adm.phone },
+      update: {
+        name: adm.name,
+        passwordHash,
+        role: UserRole.PLATFORM_ADMIN,
+        status: UserStatus.ACTIVE,
+        restaurantId: null,
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+      create: {
+        name: adm.name,
+        phone: adm.phone,
+        passwordHash,
+        role: UserRole.PLATFORM_ADMIN,
+        status: UserStatus.ACTIVE,
+        restaurantId: null,
+      },
+    });
+    console.log(`✔ Platform Admin: ${admin.name} | Phone: ${admin.phone}`);
+  }
 
   // ---------------------------------------------------------------------------
   // 4. Restaurant for Owner
@@ -270,10 +284,13 @@ async function seed() {
 
   console.log('\n======================================================');
   console.log('Seeding completed successfully!');
-  console.log('Super Admin Credentials:');
-  console.log(`  - Mobile:   03029825213 (or +${adminPhone})`);
-  console.log(`  - Password: ${sharedPassword}`);
+  console.log('Super Admin Credentials (Private Login Numbers):');
+  console.log(`  - Admin 1:  03115514151 (or +923115514151) | Password: ${sharedPassword}`);
+  console.log(`  - Admin 2:  03059596704 (or +923059596704) | Password: ${sharedPassword}`);
   console.log(`  - Role:     PLATFORM_ADMIN`);
+  console.log('Public Support Numbers (Public Site Contacts):');
+  console.log(`  - Support 1: 0302 9825213 (03029825213)`);
+  console.log(`  - Support 2: 0348 4894115 (03484894115)`);
   console.log('Restaurant Owner Credentials:');
   console.log(`  - Mobile:   03111111111 (or +923111111111)`);
   console.log(`  - Password: ${sharedPassword}`);

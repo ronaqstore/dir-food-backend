@@ -27,6 +27,7 @@ import {
   normalizePhone,
   isValidPakistaniMobile,
   slugify,
+  isReservedPhoneNumber,
 } from '../../common/utils/phone.js';
 import { seedRestaurantDefaults } from '../../common/utils/restaurant-defaults.js';
 import {
@@ -74,6 +75,11 @@ export class AuthService {
         'Invalid Pakistani mobile number for owner',
       );
     }
+    if (isReservedPhoneNumber(normalizedPhone)) {
+      throw new ConflictException(
+        'A user with this phone number already exists',
+      );
+    }
 
     let normalizedWa: string | undefined = undefined;
     if (dto.whatsappNumber) {
@@ -82,6 +88,9 @@ export class AuthService {
         throw new BadRequestException(
           'Invalid Pakistani mobile number for WhatsApp',
         );
+      }
+      if (isReservedPhoneNumber(normalizedWa)) {
+        throw new ConflictException('This phone number is already in use');
       }
     }
 

@@ -12,7 +12,7 @@ import {
   DeliveryFeeStatus,
 } from '../../generated/prisma/enums.js';
 import { isRestaurantOpenNow } from '../../restaurant-hours/utils/opening-hours.util.js';
-import { isValidPakistaniMobile } from '../../common/utils/phone.js';
+import { isValidPakistaniMobile, isReservedPhoneNumber } from '../../common/utils/phone.js';
 import { generateReferenceCode } from '../utils/reference-code.util.js';
 import { WhatsappMessageService } from './whatsapp-message.service.js';
 import { OrderIntentRateLimiterService } from './rate-limiter.service.js';
@@ -109,6 +109,9 @@ export class OrderIntentsService {
         throw new UnprocessableEntityException(
           'Please enter a valid Pakistani mobile number',
         );
+      }
+      if (isReservedPhoneNumber(dto.customer.phone)) {
+        throw new ConflictException('This phone number is already in use');
       }
     }
 

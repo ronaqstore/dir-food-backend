@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { normalizePhone, isValidPakistaniMobile, slugify } from './phone.js';
+import {
+  normalizePhone,
+  isValidPakistaniMobile,
+  slugify,
+  isReservedPhoneNumber,
+  RESERVED_PHONE_NUMBERS,
+} from './phone.js';
 
 describe('Phone & Slug Utils (unit)', () => {
   describe('normalizePhone', () => {
@@ -43,6 +49,23 @@ describe('Phone & Slug Utils (unit)', () => {
     it('generates URL-friendly lowercase slugs', () => {
       expect(slugify('Al Madina Hotel & Tikka')).toBe('al-madina-hotel-tikka');
       expect(slugify('  Timergara-Food ! 123  ')).toBe('timergara-food-123');
+    });
+  });
+
+  describe('isReservedPhoneNumber', () => {
+    it('returns true for reserved admin and support numbers in any format', () => {
+      expect(isReservedPhoneNumber('03115514151')).toBe(true);
+      expect(isReservedPhoneNumber('+923115514151')).toBe(true);
+      expect(isReservedPhoneNumber('03059596704')).toBe(true);
+      expect(isReservedPhoneNumber('0302 9825213')).toBe(true);
+      expect(isReservedPhoneNumber('0348 4894115')).toBe(true);
+      expect(isReservedPhoneNumber('923484894115')).toBe(true);
+    });
+
+    it('returns false for non-reserved numbers', () => {
+      expect(isReservedPhoneNumber('03111111111')).toBe(false);
+      expect(isReservedPhoneNumber('03001234567')).toBe(false);
+      expect(isReservedPhoneNumber('')).toBe(false);
     });
   });
 });
