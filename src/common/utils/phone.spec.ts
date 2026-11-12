@@ -62,6 +62,10 @@ describe('Phone & Slug Utils (unit)', () => {
       expect(isReservedPhoneNumber('923484894115')).toBe(true);
     });
 
+    it('has all 4 designated admin and support numbers in RESERVED_PHONE_NUMBERS', () => {
+      expect(RESERVED_PHONE_NUMBERS.length).toBe(4);
+    });
+
     it('returns false for non-reserved numbers', () => {
       expect(isReservedPhoneNumber('03111111111')).toBe(false);
       expect(isReservedPhoneNumber('03001234567')).toBe(false);

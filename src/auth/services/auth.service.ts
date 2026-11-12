@@ -372,8 +372,6 @@ export class AuthService {
       },
     });
 
-    const now = new Date();
-
     if (!admin || !admin.passwordHash) {
       await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
       throw new UnauthorizedException('Invalid credentials');
