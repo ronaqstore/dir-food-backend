@@ -13,19 +13,66 @@ export async function handleGetOwnerOrderIntents(
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const where: Prisma.OrderIntentWhereInput = {
-    restaurantId,
-    createdAt: { gte: thirtyDaysAgo },
-  };
+  const andConditions: Prisma.OrderIntentWhereInput[] = [
+    { restaurantId },
+    { createdAt: { gte: thirtyDaysAgo } },
+  ];
 
   if (query.q && query.q.trim()) {
-    where.publicRef = {
-      contains: query.q.trim().toUpperCase(),
-    };
+    const q = query.q.trim();
+    andConditions.push({
+      OR: [
+        { publicRef: { contains: q.toUpperCase() } },
+        { customerName: { contains: q, mode: 'insensitive' } },
+        { customerPhone: { contains: q } },
+        { deliveryAreaNameSnapshot: { contains: q, mode: 'insensitive' } },
+      ],
+    });
   }
 
   if (query.status) {
-    where.status = query.status;
+    andConditions.push({ status: query.status });
+  }
+
+  const where: Prisma.OrderIntentWhereInput = { AND: andConditions };
+
+  let sortField = query.sortBy;
+  let sortDirection: 'asc' | 'desc' =
+    query.sortOrder?.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+  if (query.sort) {
+    const parts = query.sort.split('.');
+    if (parts[0]) {
+      sortField = parts[0];
+    }
+    if (
+      parts[1]?.toLowerCase() === 'asc' ||
+      parts[1]?.toLowerCase() === 'desc'
+    ) {
+      sortDirection = parts[1].toLowerCase() as 'asc' | 'desc';
+    }
+  }
+
+  let orderBy: Prisma.OrderIntentOrderByWithRelationInput = {
+    createdAt: 'desc',
+  };
+  if (sortField) {
+    switch (sortField) {
+      case 'createdAt':
+        orderBy = { createdAt: sortDirection };
+        break;
+      case 'subtotal':
+        orderBy = { subtotal: sortDirection };
+        break;
+      case 'status':
+        orderBy = { status: sortDirection };
+        break;
+      case 'customerName':
+        orderBy = { customerName: sortDirection };
+        break;
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
   }
 
   const [total, items] = await Promise.all([
@@ -34,7 +81,7 @@ export async function handleGetOwnerOrderIntents(
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       include: {
         items: {
           orderBy: { lineNo: 'asc' },

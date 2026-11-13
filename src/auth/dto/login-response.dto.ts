@@ -17,6 +17,7 @@ export class OwnerLoginResponseDto {
     slug: string;
     status: string;
     subscriptionStatus: string;
+    subscriptionEndsAt?: Date | string | null;
   };
 }
 

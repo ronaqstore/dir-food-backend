@@ -45,6 +45,7 @@ describe('MenuItemsController (unit)', () => {
       10,
       undefined,
       undefined,
+      undefined,
     );
     expect(res.meta.page).toBe(1);
   });
@@ -72,6 +73,7 @@ describe('MenuItemsController (unit)', () => {
       20,
       undefined,
       true,
+      undefined,
     );
   });
 

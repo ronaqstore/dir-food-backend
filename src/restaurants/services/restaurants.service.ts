@@ -10,7 +10,10 @@ import {
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { RestaurantStatus } from '../../generated/prisma/enums.js';
-import { normalizePhone, isReservedPhoneNumber } from '../../common/utils/phone.js';
+import {
+  normalizePhone,
+  isReservedPhoneNumber,
+} from '../../common/utils/phone.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
 import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
 import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';

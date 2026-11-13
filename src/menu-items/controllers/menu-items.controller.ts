@@ -55,6 +55,11 @@ export class MenuItemsController {
     required: false,
     description: 'Filter by deal flag (true/false)',
   })
+  @ApiQuery({
+    name: 'isAvailable',
+    required: false,
+    description: 'Filter by availability (true/false)',
+  })
   async getItems(
     @CurrentUser() user: AuthenticatedRestaurantUser,
     @Query('categoryId') categoryId?: string,
@@ -62,11 +67,18 @@ export class MenuItemsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('isDeal') isDeal?: string,
+    @Query('isAvailable') isAvailable?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
     const isDealBool =
       isDeal === 'true' ? true : isDeal === 'false' ? false : undefined;
+    const isAvailableBool =
+      isAvailable === 'true'
+        ? true
+        : isAvailable === 'false'
+          ? false
+          : undefined;
     return this.itemsService.getItems(
       user.restaurantId,
       categoryId,
@@ -74,6 +86,7 @@ export class MenuItemsController {
       limitNum,
       search,
       isDealBool,
+      isAvailableBool,
     );
   }
 

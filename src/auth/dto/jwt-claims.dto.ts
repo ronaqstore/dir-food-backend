@@ -7,4 +7,3 @@ export interface AuthTokenClaims {
   restaurantId?: string | null;
   role?: string;
 }
-

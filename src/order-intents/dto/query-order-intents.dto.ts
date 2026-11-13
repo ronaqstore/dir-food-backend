@@ -33,6 +33,24 @@ export class QueryOrderIntentsDto {
   @IsOptional()
   @IsEnum(OrderIntentStatus)
   status?: OrderIntentStatus;
+
+  @ApiPropertyOptional({
+    description: 'Sort column (e.g. createdAt, subtotal, status)',
+  })
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({ enum: ['asc', 'desc'], default: 'desc' })
+  @IsOptional()
+  sortOrder?: 'asc' | 'desc';
+
+  @ApiPropertyOptional({
+    description: 'Combined sort string (e.g. createdAt.desc)',
+  })
+  @IsOptional()
+  @IsString()
+  sort?: string;
 }
 
 export class QueryStatsDto {

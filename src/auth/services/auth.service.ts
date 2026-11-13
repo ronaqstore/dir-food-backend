@@ -348,6 +348,7 @@ export class AuthService {
             slug: user.restaurant.slug,
             status: user.restaurant.status,
             subscriptionStatus,
+            subscriptionEndsAt: user.restaurant.subscriptionEndsAt,
           }
         : {
             id: '',
@@ -355,6 +356,7 @@ export class AuthService {
             slug: '',
             status: RestaurantStatus.PENDING,
             subscriptionStatus: 'EXPIRED',
+            subscriptionEndsAt: null,
           },
     };
   }

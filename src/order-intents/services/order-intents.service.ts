@@ -12,7 +12,10 @@ import {
   DeliveryFeeStatus,
 } from '../../generated/prisma/enums.js';
 import { isRestaurantOpenNow } from '../../restaurant-hours/utils/opening-hours.util.js';
-import { isValidPakistaniMobile, isReservedPhoneNumber } from '../../common/utils/phone.js';
+import {
+  isValidPakistaniMobile,
+  isReservedPhoneNumber,
+} from '../../common/utils/phone.js';
 import { generateReferenceCode } from '../utils/reference-code.util.js';
 import { WhatsappMessageService } from './whatsapp-message.service.js';
 import { OrderIntentRateLimiterService } from './rate-limiter.service.js';

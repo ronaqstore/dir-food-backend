@@ -63,4 +63,3 @@ describe('platform-admin-slug.helper', () => {
     ).rejects.toThrow(ConflictException);
   });
 });
-

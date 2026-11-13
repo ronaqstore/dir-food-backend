@@ -1,9 +1,4 @@
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -21,6 +16,7 @@ import { CreateAreaDto } from '../dto/create-area.dto.js';
 import { UpdateAreaDto } from '../dto/update-area.dto.js';
 import { ApproveAreaDto } from '../dto/approve-area.dto.js';
 import { MergeAreaDto } from '../dto/merge-area.dto.js';
+import { QueryAreasDto } from '../dto/query-areas.dto.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
 import { UserRole } from '../../generated/prisma/enums.js';
@@ -37,15 +33,11 @@ export class PlatformAdminAreasController {
 
   @Get()
   @ApiOperation({
-    summary: 'List all delivery areas with active restaurant counts',
+    summary:
+      'List all delivery areas with active restaurant counts, filtering, sorting and pagination',
   })
-  @ApiQuery({
-    name: 'cityId',
-    required: false,
-    description: 'Filter areas by City UUID',
-  })
-  async listAreas(@Query('cityId') cityId?: string) {
-    return this.areasService.listAreas(cityId);
+  async listAreas(@Query() query: QueryAreasDto) {
+    return this.areasService.listAreas(query);
   }
 
   @Post()

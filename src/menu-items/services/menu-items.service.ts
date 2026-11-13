@@ -32,6 +32,7 @@ export class MenuItemsService {
     limit = 20,
     search?: string,
     isDeal?: boolean,
+    isAvailable?: boolean,
   ) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -52,6 +53,9 @@ export class MenuItemsService {
     }
     if (typeof isDeal === 'boolean') {
       where.isDeal = isDeal;
+    }
+    if (typeof isAvailable === 'boolean') {
+      where.isAvailable = isAvailable;
     }
     if (search && search.trim()) {
       where.OR = [

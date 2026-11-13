@@ -11,6 +11,8 @@ import { slugify } from '../../common/utils/phone.js';
 import { CreateAreaDto } from '../dto/create-area.dto.js';
 import { UpdateAreaDto } from '../dto/update-area.dto.js';
 import { ApproveAreaDto } from '../dto/approve-area.dto.js';
+import { QueryAreasDto } from '../dto/query-areas.dto.js';
+import { handleListAreas } from '../helpers/platform-admin-areas-list.helper.js';
 
 @Injectable()
 export class PlatformAdminAreasService {
@@ -19,45 +21,8 @@ export class PlatformAdminAreasService {
     private readonly auditService: AuditService,
   ) {}
 
-  async listAreas(cityId?: string) {
-    const areas = await this.prisma.area.findMany({
-      where: cityId ? { cityId } : undefined,
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: {
-        city: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        _count: {
-          select: {
-            restaurantAreas: {
-              where: {
-                isActive: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return areas.map((area) => ({
-      id: area.id,
-      cityId: area.cityId,
-      cityName: area.city.name,
-      citySlug: area.city.slug,
-      name: area.name,
-      slug: area.slug,
-      sortOrder: area.sortOrder,
-      isActive: area.isActive,
-      isVerified: area.isVerified,
-      isCustomCreated: area.isCustomCreated,
-      activeRestaurantsCount: area._count.restaurantAreas,
-      createdAt: area.createdAt,
-      updatedAt: area.updatedAt,
-    }));
+  async listAreas(query?: QueryAreasDto | string) {
+    return handleListAreas(this.prisma, query);
   }
 
   async createArea(

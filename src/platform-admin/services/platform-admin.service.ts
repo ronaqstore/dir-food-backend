@@ -36,6 +36,7 @@ import {
   handleIssueSetupLink,
 } from '../helpers/platform-admin-status.helper.js';
 import { handleChangeSlug } from '../helpers/platform-admin-slug.helper.js';
+import { handleListRestaurants } from '../helpers/platform-admin-list.helper.js';
 
 @Injectable()
 export class PlatformAdminService {
@@ -46,62 +47,7 @@ export class PlatformAdminService {
   ) {}
 
   async listRestaurants(query: QueryRestaurantsDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.RestaurantWhereInput = {};
-    if (query.status) {
-      where.status = query.status;
-    }
-    if (query.q?.trim()) {
-      const q = query.q.trim();
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { slug: { contains: q, mode: 'insensitive' } },
-        { contactPhone: { contains: q, mode: 'insensitive' } },
-        { whatsappNumber: { contains: q, mode: 'insensitive' } },
-      ];
-    }
-
-    const [total, items] = await Promise.all([
-      this.prisma.restaurant.count({ where }),
-      this.prisma.restaurant.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          users: {
-            where: { role: UserRole.RESTAURANT_OWNER },
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              role: true,
-              status: true,
-            },
-          },
-          _count: {
-            select: {
-              items: { where: { isActive: true } },
-              deliveryAreas: { where: { isActive: true } },
-              hours: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    return {
-      data: items,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return handleListRestaurants(this.prisma, query);
   }
 
   async createRestaurant(
