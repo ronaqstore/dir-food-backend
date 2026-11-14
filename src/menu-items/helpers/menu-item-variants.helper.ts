@@ -80,4 +80,3 @@ export async function handleReplaceVariants(
     orderBy: { sortOrder: 'asc' },
   });
 }
-

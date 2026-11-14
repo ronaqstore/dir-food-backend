@@ -53,4 +53,3 @@ export class ReplaceAddonsDto {
   @Type(() => AddonItemDto)
   addons!: AddonItemDto[];
 }
-

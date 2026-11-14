@@ -1,14 +1,14 @@
 -- DropIndex
-DROP INDEX "areas_city_id_is_active_idx";
+DROP INDEX IF EXISTS "areas_city_id_is_active_idx";
 
 -- DropIndex
-DROP INDEX "order_intents_expires_idx";
+DROP INDEX IF EXISTS "order_intents_expires_idx";
 
 -- DropIndex
-DROP INDEX "restaurant_hours_day_idx";
+DROP INDEX IF EXISTS "restaurant_hours_day_idx";
 
 -- DropIndex
-DROP INDEX "restaurants_cuisines_gin_idx";
+DROP INDEX IF EXISTS "restaurants_cuisines_gin_idx";
 
 -- AlterTable
 ALTER TABLE "order_intent_items" ADD COLUMN     "addons_snapshot" JSONB;
