@@ -34,6 +34,7 @@ model Restaurant {
   categories       MenuCategory[]
   items            MenuItem[]
   variants         MenuItemVariant[]
+  addons           MenuItemAddon[]
   orderIntents     OrderIntent[]
   orderIntentItems OrderIntentItem[]
   auditLogs        AuditLog[]

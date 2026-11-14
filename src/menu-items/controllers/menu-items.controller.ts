@@ -33,6 +33,7 @@ import { CreateMenuItemDto } from '../dto/create-item.dto.js';
 import { UpdateMenuItemDto } from '../dto/update-item.dto.js';
 import { ReorderMenuItemsDto } from '../dto/reorder-items.dto.js';
 import { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
+import { ReplaceAddonsDto } from '../dto/replace-addons.dto.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
 
@@ -137,6 +138,19 @@ export class MenuItemsController {
     @Body() dto: ReplaceVariantsDto,
   ) {
     return this.itemsService.replaceVariants(user.restaurantId, id, dto);
+  }
+
+  @Put(':id/addons')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Replace optional add-ons / extras for a menu item',
+  })
+  async replaceAddons(
+    @CurrentUser() user: AuthenticatedRestaurantUser,
+    @Param('id') id: string,
+    @Body() dto: ReplaceAddonsDto,
+  ) {
+    return this.itemsService.replaceAddons(user.restaurantId, id, dto);
   }
 
   @Post(':id/image')

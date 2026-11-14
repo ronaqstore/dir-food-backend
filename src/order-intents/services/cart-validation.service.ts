@@ -12,6 +12,7 @@ export interface ValidatedCartLine {
   variantId?: string | null;
   name: string;
   variantName?: string | null;
+  addons?: Array<{ id: string; name: string; price: bigint }> | null;
   unitPrice: bigint;
   quantity: number;
   lineTotal: bigint;
@@ -89,6 +90,9 @@ export class CartValidationService {
         variants: {
           where: { isActive: true },
         },
+        addons: {
+          where: { isActive: true },
+        },
       },
     });
 
@@ -145,6 +149,22 @@ export class CartValidationService {
         unitPrice = dbItem.basePrice;
       }
 
+      const selectedAddons: Array<{ id: string; name: string; price: bigint }> =
+        [];
+      if (reqItem.addonIds && reqItem.addonIds.length > 0) {
+        for (const addonId of reqItem.addonIds) {
+          const addon = dbItem.addons?.find((a) => a.id === addonId);
+          if (addon) {
+            selectedAddons.push({
+              id: addon.id,
+              name: addon.name,
+              price: addon.price,
+            });
+            unitPrice += addon.price;
+          }
+        }
+      }
+
       const lineTotal = unitPrice * BigInt(reqItem.quantity);
       subtotal += lineTotal;
 
@@ -153,6 +173,7 @@ export class CartValidationService {
         variantId: reqItem.variantId ?? null,
         name: dbItem.name,
         variantName,
+        addons: selectedAddons.length > 0 ? selectedAddons : null,
         unitPrice,
         quantity: reqItem.quantity,
         lineTotal,

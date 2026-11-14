@@ -312,6 +312,7 @@ describe('PublicRestaurantsService', () => {
                     price: 120000n,
                   },
                 ],
+                addons: [],
               },
               {
                 id: 'item-2',
@@ -321,6 +322,7 @@ describe('PublicRestaurantsService', () => {
                 basePrice: 3000n,
                 isAvailable: false,
                 variants: [],
+                addons: [],
               },
             ],
           },

@@ -4,7 +4,7 @@ import {
   ConflictException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import {
   RestaurantStatus,
@@ -29,6 +29,7 @@ import {
 export interface IntentFormattedItem {
   itemNameSnapshot: string;
   variantNameSnapshot?: string | null;
+  addonsSnapshot?: unknown;
   unitPrice: bigint;
   quantity: number;
   lineTotal: bigint;
@@ -63,11 +64,7 @@ export class OrderIntentsService {
   async createOrderIntent(dto: CreateOrderIntentDto, ipAddress: string) {
     const existing = await this.prisma.orderIntent.findUnique({
       where: { clientRequestId: dto.clientRequestId },
-      include: {
-        items: {
-          orderBy: { lineNo: 'asc' },
-        },
-      },
+      include: { items: { orderBy: { lineNo: 'asc' } } },
     });
 
     if (existing) {
@@ -78,9 +75,7 @@ export class OrderIntentsService {
 
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { slug: dto.restaurantSlug },
-      include: {
-        hours: true,
-      },
+      include: { hours: true },
     });
 
     if (
@@ -163,37 +158,34 @@ export class OrderIntentsService {
         isActive: true,
       },
       include: {
-        variants: {
-          where: { isActive: true },
-        },
+        variants: { where: { isActive: true } },
+        addons: { where: { isActive: true } },
       },
     });
 
-    const itemMap = new Map<string, (typeof dbItems)[0]>();
-    for (const item of dbItems) {
-      itemMap.set(item.id, item);
-    }
+    const itemMap = new Map(dbItems.map((item) => [item.id, item]));
 
     let calculatedSubtotal = 0n;
-    const validatedLines: {
+    const validatedLines: Array<{
       menuItemId: string;
       variantId: string | null;
       itemNameSnapshot: string;
       variantNameSnapshot: string | null;
+      addonsSnapshot: Array<{ id: string; name: string; price: number }> | null;
       unitPrice: bigint;
       quantity: number;
       lineTotal: bigint;
       lineNo: number;
-    }[] = [];
+    }> = [];
 
-    const priceChangeDetails: {
+    const priceChangeDetails: Array<{
       menuItemId: string;
       variantId: string | null;
       name: string;
       unitPrice: bigint;
       quantity: number;
       lineTotal: bigint;
-    }[] = [];
+    }> = [];
 
     let lineCounter = 1;
 
@@ -246,6 +238,22 @@ export class OrderIntentsService {
         unitPrice = dbItem.basePrice;
       }
 
+      const selectedAddons: Array<{ id: string; name: string; price: number }> =
+        [];
+      if (reqItem.addonIds && reqItem.addonIds.length > 0) {
+        for (const addonId of reqItem.addonIds) {
+          const addon = dbItem.addons?.find((a) => a.id === addonId);
+          if (addon) {
+            selectedAddons.push({
+              id: addon.id,
+              name: addon.name,
+              price: Number(addon.price),
+            });
+            unitPrice += addon.price;
+          }
+        }
+      }
+
       const lineTotal = unitPrice * BigInt(reqItem.quantity);
       calculatedSubtotal += lineTotal;
 
@@ -254,6 +262,7 @@ export class OrderIntentsService {
         variantId: reqItem.variantId ?? null,
         itemNameSnapshot: dbItem.name,
         variantNameSnapshot: variantName,
+        addonsSnapshot: selectedAddons.length > 0 ? selectedAddons : null,
         unitPrice,
         quantity: reqItem.quantity,
         lineTotal,
@@ -344,6 +353,9 @@ export class OrderIntentsService {
           variantId: line.variantId,
           itemNameSnapshot: line.itemNameSnapshot,
           variantNameSnapshot: line.variantNameSnapshot,
+          addonsSnapshot: line.addonsSnapshot
+            ? JSON.parse(JSON.stringify(line.addonsSnapshot))
+            : Prisma.JsonNull,
           unitPrice: line.unitPrice,
           quantity: line.quantity,
           lineTotal: line.lineTotal,
@@ -480,11 +492,13 @@ export class OrderIntentsService {
     const messageLines = items.map((i) => ({
       name: i.itemNameSnapshot,
       variant: i.variantNameSnapshot,
+      addons: Array.isArray(i.addonsSnapshot)
+        ? (i.addonsSnapshot as Array<{ name: string; price: number }>)
+        : null,
       unitPrice: i.unitPrice,
       quantity: i.quantity,
       lineTotal: i.lineTotal,
     }));
-
     const message = this.whatsappMessageService.buildMessage({
       restaurantName: intent.restaurantNameSnapshot,
       restaurantWhatsapp: intent.restaurantWhatsappSnapshot,
@@ -500,7 +514,6 @@ export class OrderIntentsService {
       mapLat: intent.mapLat ? Number(intent.mapLat) : null,
       mapLng: intent.mapLng ? Number(intent.mapLng) : null,
     });
-
     const whatsappUrl = this.whatsappMessageService.buildWhatsAppUrl(
       intent.restaurantWhatsappSnapshot,
       message,

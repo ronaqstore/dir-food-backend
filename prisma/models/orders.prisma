@@ -46,6 +46,7 @@ model OrderIntentItem {
   variantId           String? @map("variant_id") @db.Uuid
   itemNameSnapshot    String  @map("item_name_snapshot")
   variantNameSnapshot String? @map("variant_name_snapshot")
+  addonsSnapshot      Json?   @map("addons_snapshot")
   unitPrice           BigInt  @map("unit_price")
   quantity            Int
   lineTotal           BigInt  @map("line_total")

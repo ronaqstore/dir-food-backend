@@ -61,6 +61,11 @@ export interface PublicMenuItem {
     name: string;
     price: bigint;
   }>;
+  addons: Array<{
+    id: string;
+    name: string;
+    price: bigint;
+  }>;
 }
 
 export interface PublicMenuCategory {
@@ -347,6 +352,19 @@ export class PublicRestaurantsService {
                     price: true,
                   },
                 },
+                addons: {
+                  where: {
+                    isActive: true,
+                  },
+                  orderBy: {
+                    sortOrder: 'asc',
+                  },
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                  },
+                },
               },
             },
           },
@@ -389,6 +407,11 @@ export class PublicRestaurantsService {
           id: v.id,
           name: v.name,
           price: v.price,
+        })),
+        addons: i.addons.map((a) => ({
+          id: a.id,
+          name: a.name,
+          price: a.price,
         })),
       })),
     }));

@@ -12,10 +12,13 @@ import type { RawUploadFile } from '../../uploads/services/image-processor.servi
 import type { CreateMenuItemDto } from '../dto/create-item.dto.js';
 import type { UpdateMenuItemDto } from '../dto/update-item.dto.js';
 import type { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
+import type { ReplaceAddonsDto } from '../dto/replace-addons.dto.js';
 import {
   handleUploadItemImage,
   handleDeleteItemImage,
 } from '../helpers/menu-item-images.helper.js';
+import { handleReplaceVariants } from '../helpers/menu-item-variants.helper.js';
+import { handleReplaceAddons } from '../helpers/menu-item-addons.helper.js';
 
 @Injectable()
 export class MenuItemsService {
@@ -79,6 +82,10 @@ export class MenuItemsService {
             },
           },
           variants: {
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+          },
+          addons: {
             where: { isActive: true },
             orderBy: { sortOrder: 'asc' },
           },
@@ -242,10 +249,29 @@ export class MenuItemsService {
           }
         }
 
+        if (dto.addons && dto.addons.length > 0) {
+          for (let index = 0; index < dto.addons.length; index++) {
+            const a = dto.addons[index];
+            await tx.menuItemAddon.create({
+              data: {
+                restaurantId,
+                menuItemId: item.id,
+                name: a.name.trim(),
+                price: BigInt(a.price),
+                sortOrder: index,
+              },
+            });
+          }
+        }
+
         return tx.menuItem.findUnique({
           where: { id: item.id },
           include: {
             variants: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+            addons: {
               where: { isActive: true },
               orderBy: { sortOrder: 'asc' },
             },
@@ -368,6 +394,10 @@ export class MenuItemsService {
             where: { isActive: true },
             orderBy: { sortOrder: 'asc' },
           },
+          addons: {
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+          },
           category: {
             select: { id: true, name: true },
           },
@@ -440,77 +470,15 @@ export class MenuItemsService {
     itemId: string,
     dto: ReplaceVariantsDto,
   ) {
-    const item = await this.prisma.menuItem.findUnique({
-      where: {
-        id_restaurantId: {
-          id: itemId,
-          restaurantId,
-        },
-      },
-    });
+    return handleReplaceVariants(this.prisma, restaurantId, itemId, dto);
+  }
 
-    if (!item) {
-      throw new NotFoundException('Menu item not found for this restaurant');
-    }
-
-    const providedIds = dto.variants
-      .map((v) => v.id)
-      .filter((id): id is string => Boolean(id));
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.menuItemVariant.updateMany({
-        where: {
-          restaurantId,
-          menuItemId: itemId,
-          id: { notIn: providedIds },
-          isActive: true,
-        },
-        data: {
-          isActive: false,
-        },
-      });
-
-      for (let i = 0; i < dto.variants.length; i++) {
-        const v = dto.variants[i];
-        if (v.id) {
-          await tx.menuItemVariant.update({
-            where: {
-              id_restaurantId_menuItemId: {
-                id: v.id,
-                restaurantId,
-                menuItemId: itemId,
-              },
-            },
-            data: {
-              name: v.name.trim(),
-              price: BigInt(v.price),
-              isActive: v.isActive ?? true,
-              sortOrder: i,
-            },
-          });
-        } else {
-          await tx.menuItemVariant.create({
-            data: {
-              restaurantId,
-              menuItemId: itemId,
-              name: v.name.trim(),
-              price: BigInt(v.price),
-              isActive: v.isActive ?? true,
-              sortOrder: i,
-            },
-          });
-        }
-      }
-    });
-
-    return this.prisma.menuItemVariant.findMany({
-      where: {
-        restaurantId,
-        menuItemId: itemId,
-        isActive: true,
-      },
-      orderBy: { sortOrder: 'asc' },
-    });
+  async replaceAddons(
+    restaurantId: string,
+    itemId: string,
+    dto: ReplaceAddonsDto,
+  ) {
+    return handleReplaceAddons(this.prisma, restaurantId, itemId, dto);
   }
 
   async uploadItemImage(

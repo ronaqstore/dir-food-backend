@@ -29,6 +29,16 @@ export class CartItemDto {
   @IsUUID()
   variantId?: string;
 
+  @ApiPropertyOptional({
+    description: 'Selected add-on / extra UUIDs',
+    example: ['0192e4ab-1234-7000-8000-000000000005'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('all', { each: true })
+  addonIds?: string[];
+
   @ApiProperty({ description: 'Quantity (1-50)', example: 2 })
   @IsInt()
   @Min(1)

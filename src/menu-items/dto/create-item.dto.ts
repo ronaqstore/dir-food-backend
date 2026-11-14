@@ -35,6 +35,26 @@ export class CreateItemVariantDto {
   price!: number;
 }
 
+export class CreateItemAddonDto {
+  @ApiProperty({
+    example: 'Extra Cheese',
+    description: 'Add-on name (e.g. Extra Cheese, Dip Sauce, Drink)',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(1)
+  @MaxLength(40)
+  name!: string;
+
+  @ApiProperty({
+    example: 5000,
+    description: 'Addon price in paisa (Rs 50 = 5000)',
+  })
+  @IsInt()
+  @Min(0, { message: 'Addon price must be greater than or equal to 0' })
+  price!: number;
+}
+
 export class CreateMenuItemDto {
   @ApiPropertyOptional({
     example: '0192a000-0000-7000-8000-000000000001',
@@ -98,4 +118,15 @@ export class CreateMenuItemDto {
   @ValidateNested({ each: true })
   @Type(() => CreateItemVariantDto)
   variants?: CreateItemVariantDto[];
+
+  @ApiPropertyOptional({
+    type: [CreateItemAddonDto],
+    description: 'Optional add-ons or extras',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => CreateItemAddonDto)
+  addons?: CreateItemAddonDto[];
 }

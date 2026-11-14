@@ -5,6 +5,7 @@ import { normalizePhone } from '../../common/utils/phone.js';
 export interface WhatsAppMessageLine {
   name: string;
   variant?: string | null;
+  addons?: Array<{ name: string; price: number | bigint }> | null;
   unitPrice: bigint;
   quantity: number;
   lineTotal: bigint;
@@ -51,6 +52,13 @@ export class WhatsappMessageService {
       lines.push(
         `${index + 1}) ${item.name.trim()}${variantText} x ${item.quantity} — ${unitPriceText} = ${lineTotalText}`,
       );
+      if (item.addons && item.addons.length > 0) {
+        item.addons.forEach((a) => {
+          lines.push(
+            `   + ${a.name.trim()} (${formatPaisaToRupees(BigInt(a.price))})`,
+          );
+        });
+      }
     });
 
     lines.push('');
