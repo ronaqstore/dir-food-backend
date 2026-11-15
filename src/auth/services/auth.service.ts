@@ -61,11 +61,25 @@ export class AuthService {
     private readonly auditService: AuditService,
   ) {}
 
-  private async signToken(claims: AuthTokenClaims): Promise<string> {
+  private async signToken(
+    claims: AuthTokenClaims,
+    expiresIn = '7d',
+  ): Promise<string> {
     return this.jwtService.signAsync(claims, {
       secret: this.configService.jwtSecret,
-      expiresIn: '12h',
+      expiresIn: expiresIn as
+        `${number}d` | `${number}h` | `${number}m` | `${number}s`,
     });
+  }
+
+  private computeBaseSlug(name: string): string {
+    let slug = slugify(name?.trim() || '');
+    if (!slug || slug.length < 3) {
+      slug = `rest-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+    return ['admin', 'api', 'dashboard', 'login', 'r', 'www'].includes(slug)
+      ? `${slug}-food`
+      : slug;
   }
 
   async registerRestaurant(dto: RegisterRestaurantDto, ipAddress?: string) {
@@ -103,14 +117,7 @@ export class AuthService {
       );
     }
 
-    let baseSlug = slugify(dto.restaurantName);
-    if (!baseSlug || baseSlug.length < 3) {
-      baseSlug = `rest-${Math.floor(1000 + Math.random() * 9000)}`;
-    }
-    const reserved = ['admin', 'api', 'dashboard', 'login', 'r', 'www'];
-    if (reserved.includes(baseSlug)) {
-      baseSlug = `${baseSlug}-food`;
-    }
+    const baseSlug = this.computeBaseSlug(dto.restaurantName);
 
     let slug = baseSlug;
     let counter = 1;
@@ -228,15 +235,12 @@ export class AuthService {
 
     const now = new Date();
 
-    if (!user) {
-      await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
-      throw new UnauthorizedException('Invalid phone or password');
-    }
-
-    if (!user.passwordHash) {
+    if (!user || !user.passwordHash) {
       await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
       throw new UnauthorizedException(
-        'Password not set. Please use your setup link.',
+        !user
+          ? 'Invalid phone or password'
+          : 'Password not set. Please use your setup link.',
       );
     }
 
@@ -322,18 +326,22 @@ export class AuthService {
       }
     }
 
-    const accessToken = await this.signToken({
-      sub: user.id,
-      userId: user.id,
-      typ: AuthTokenType.RESTAURANT_OWNER,
-      restaurantId: user.restaurantId ?? null,
-      role: user.role,
-    });
+    const tokenExpiresIn = dto.rememberMe ? '30d' : '7d';
+    const accessToken = await this.signToken(
+      {
+        sub: user.id,
+        userId: user.id,
+        typ: AuthTokenType.RESTAURANT_OWNER,
+        restaurantId: user.restaurantId ?? null,
+        role: user.role,
+      },
+      tokenExpiresIn,
+    );
 
     return {
       accessToken,
       tokenType: 'Bearer',
-      expiresIn: '12h',
+      expiresIn: tokenExpiresIn,
       user: {
         id: user.id,
         name: user.name,
@@ -401,24 +409,25 @@ export class AuthService {
     if (admin.failedLoginCount > 0 || admin.lockedUntil !== null) {
       await this.prisma.user.update({
         where: { id: admin.id },
-        data: {
-          failedLoginCount: 0,
-          lockedUntil: null,
-        },
+        data: { failedLoginCount: 0, lockedUntil: null },
       });
     }
 
-    const accessToken = await this.signToken({
-      sub: admin.id,
-      userId: admin.id,
-      typ: AuthTokenType.PLATFORM_ADMIN,
-      role: admin.role,
-    });
+    const tokenExpiresIn = dto.rememberMe ? '30d' : '7d';
+    const accessToken = await this.signToken(
+      {
+        sub: admin.id,
+        userId: admin.id,
+        typ: AuthTokenType.PLATFORM_ADMIN,
+        role: admin.role,
+      },
+      tokenExpiresIn,
+    );
 
     return {
       accessToken,
       tokenType: 'Bearer',
-      expiresIn: '12h',
+      expiresIn: tokenExpiresIn,
       admin: {
         id: admin.id,
         name: admin.name,
@@ -497,15 +506,7 @@ export class AuthService {
   async checkRestaurantName(
     name: string,
   ): Promise<CheckRestaurantNameResponse> {
-    const trimmed = name?.trim() || '';
-    let baseSlug = slugify(trimmed);
-    if (!baseSlug || baseSlug.length < 3) {
-      baseSlug = `rest-${Math.floor(1000 + Math.random() * 9000)}`;
-    }
-    const reserved = ['admin', 'api', 'dashboard', 'login', 'r', 'www'];
-    if (reserved.includes(baseSlug)) {
-      baseSlug = `${baseSlug}-food`;
-    }
+    const baseSlug = this.computeBaseSlug(name);
 
     const existing = await this.prisma.restaurant.findUnique({
       where: { slug: baseSlug },

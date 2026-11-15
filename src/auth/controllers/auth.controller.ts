@@ -59,12 +59,13 @@ export class AuthController {
     @Ip() ipAddress: string,
   ) {
     const result = await this.authService.restaurantOwnerLogin(dto, ipAddress);
+    const maxAge = (dto.rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
 
     res.cookie('dir_food_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 12 * 60 * 60 * 1000,
+      maxAge,
     });
 
     return {
@@ -88,12 +89,13 @@ export class AuthController {
     @Ip() ipAddress: string,
   ) {
     const result = await this.authService.platformAdminLogin(dto, ipAddress);
+    const maxAge = (dto.rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
 
     res.cookie('dir_food_token', result.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 12 * 60 * 60 * 1000,
+      maxAge,
     });
 
     return {

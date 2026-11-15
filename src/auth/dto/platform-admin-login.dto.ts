@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Matches,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 
 export class PlatformAdminLoginDto {
   @ApiProperty({
@@ -20,4 +26,13 @@ export class PlatformAdminLoginDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether to remember user session (30 days vs 7 days)',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  rememberMe?: boolean;
 }

@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Matches,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
 
 export class LoginDto {
   @IsString()
@@ -12,4 +18,8 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   password!: string;
+
+  @IsBoolean()
+  @IsOptional()
+  rememberMe?: boolean;
 }
