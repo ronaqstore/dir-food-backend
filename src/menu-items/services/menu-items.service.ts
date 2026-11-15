@@ -36,6 +36,8 @@ export class MenuItemsService {
     search?: string,
     isDeal?: boolean,
     isAvailable?: boolean,
+    sortBy?: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
   ) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -67,13 +69,29 @@ export class MenuItemsService {
       ];
     }
 
+    const orderDirection = sortOrder === 'desc' ? 'desc' : 'asc';
+    let orderByClause: Record<string, 'asc' | 'desc'>[] = [
+      { categoryId: 'asc' },
+      { sortOrder: 'asc' },
+    ];
+
+    if (sortBy === 'name') {
+      orderByClause = [{ name: orderDirection }];
+    } else if (sortBy === 'price') {
+      orderByClause = [{ basePrice: orderDirection }];
+    } else if (sortBy === 'createdAt') {
+      orderByClause = [{ createdAt: orderDirection }];
+    } else if (sortBy === 'sortOrder') {
+      orderByClause = [{ sortOrder: orderDirection }];
+    }
+
     const [total, items] = await Promise.all([
       this.prisma.menuItem.count({ where }),
       this.prisma.menuItem.findMany({
         where,
         skip,
         take: safeLimit,
-        orderBy: [{ categoryId: 'asc' }, { sortOrder: 'asc' }],
+        orderBy: orderByClause,
         include: {
           category: {
             select: {
@@ -99,6 +117,7 @@ export class MenuItemsService {
         page: safePage,
         limit: safeLimit,
         total,
+        totalPages: Math.max(1, Math.ceil(total / safeLimit)),
       },
     };
   }

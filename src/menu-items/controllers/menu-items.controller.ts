@@ -61,6 +61,16 @@ export class MenuItemsController {
     required: false,
     description: 'Filter by availability (true/false)',
   })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    description: 'Sort field (name, price, createdAt, sortOrder)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    description: 'Sort order (asc, desc)',
+  })
   async getItems(
     @CurrentUser() user: AuthenticatedRestaurantUser,
     @Query('categoryId') categoryId?: string,
@@ -69,6 +79,8 @@ export class MenuItemsController {
     @Query('limit') limit?: string,
     @Query('isDeal') isDeal?: string,
     @Query('isAvailable') isAvailable?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
@@ -80,6 +92,17 @@ export class MenuItemsController {
         : isAvailable === 'false'
           ? false
           : undefined;
+    if (sortBy === undefined && sortOrder === undefined) {
+      return this.itemsService.getItems(
+        user.restaurantId,
+        categoryId,
+        pageNum,
+        limitNum,
+        search,
+        isDealBool,
+        isAvailableBool,
+      );
+    }
     return this.itemsService.getItems(
       user.restaurantId,
       categoryId,
@@ -88,6 +111,8 @@ export class MenuItemsController {
       search,
       isDealBool,
       isAvailableBool,
+      sortBy,
+      sortOrder,
     );
   }
 

@@ -6,11 +6,17 @@ import {
   Put,
   Param,
   Body,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedRestaurantUser } from '../../common/decorators/current-user.decorator.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
@@ -34,8 +40,44 @@ export class MenuCategoriesController {
   @ApiOperation({
     summary: 'List all menu categories for the current restaurant',
   })
-  async getCategories(@CurrentUser() user: AuthenticatedRestaurantUser) {
-    return this.categoriesService.getCategories(user.restaurantId);
+  @ApiQuery({ name: 'search', required: false })
+  @ApiQuery({ name: 'isActive', required: false })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'sortBy', required: false })
+  @ApiQuery({ name: 'sortOrder', required: false })
+  async getCategories(
+    @CurrentUser() user: AuthenticatedRestaurantUser,
+    @Query('search') search?: string,
+    @Query('isActive') isActive?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ) {
+    if (
+      search === undefined &&
+      isActive === undefined &&
+      page === undefined &&
+      limit === undefined &&
+      sortBy === undefined &&
+      sortOrder === undefined
+    ) {
+      return this.categoriesService.getCategories(user.restaurantId);
+    }
+    const pageNum = page ? parseInt(page, 10) : undefined;
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    const isActiveBool =
+      isActive === 'true' ? true : isActive === 'false' ? false : undefined;
+    return this.categoriesService.getCategories(
+      user.restaurantId,
+      search,
+      isActiveBool,
+      pageNum,
+      limitNum,
+      sortBy,
+      sortOrder,
+    );
   }
 
   @Post()

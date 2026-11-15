@@ -11,7 +11,15 @@ import type { UpdateCategoryDto } from '../dto/update-category.dto.js';
 export class MenuCategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getCategories(restaurantId: string) {
+  async getCategories(
+    restaurantId: string,
+    search?: string,
+    isActive?: boolean,
+    page?: number,
+    limit?: number,
+    sortBy?: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
       select: { id: true },
@@ -21,17 +29,72 @@ export class MenuCategoriesService {
       throw new NotFoundException('Restaurant not found');
     }
 
-    return this.prisma.menuCategory.findMany({
-      where: { restaurantId },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        _count: {
-          select: {
-            items: { where: { isActive: true } },
+    const isPaginated = page !== undefined || limit !== undefined;
+
+    if (!isPaginated && !search && typeof isActive !== 'boolean' && !sortBy) {
+      return this.prisma.menuCategory.findMany({
+        where: { restaurantId },
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          _count: {
+            select: {
+              items: { where: { isActive: true } },
+            },
           },
         },
+      });
+    }
+
+    const where: Record<string, unknown> = { restaurantId };
+    if (typeof isActive === 'boolean') {
+      where.isActive = isActive;
+    }
+    if (search && search.trim()) {
+      where.name = { contains: search.trim(), mode: 'insensitive' };
+    }
+
+    const orderDirection = sortOrder === 'desc' ? 'desc' : 'asc';
+    let orderByClause: Record<string, 'asc' | 'desc'>[] = [
+      { sortOrder: 'asc' },
+    ];
+    if (sortBy === 'name') {
+      orderByClause = [{ name: orderDirection }];
+    } else if (sortBy === 'createdAt') {
+      orderByClause = [{ createdAt: orderDirection }];
+    } else if (sortBy === 'sortOrder') {
+      orderByClause = [{ sortOrder: orderDirection }];
+    }
+
+    const safePage = Math.max(1, page ?? 1);
+    const safeLimit = Math.min(200, Math.max(1, limit ?? 20));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [total, items] = await Promise.all([
+      this.prisma.menuCategory.count({ where }),
+      this.prisma.menuCategory.findMany({
+        where,
+        skip,
+        take: safeLimit,
+        orderBy: orderByClause,
+        include: {
+          _count: {
+            select: {
+              items: { where: { isActive: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      data: items,
+      meta: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / safeLimit)),
       },
-    });
+    };
   }
 
   async createCategory(restaurantId: string, dto: CreateCategoryDto) {

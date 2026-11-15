@@ -124,4 +124,3 @@ describe('public-catalog.helper', () => {
     expect(transformed[0].items[0].price).toBe(50000n);
   });
 });
-
