@@ -9,6 +9,12 @@ import {
   parseTimeToMinutes,
 } from '../../restaurant-hours/utils/opening-hours.util.js';
 import type { QueryPublicRestaurantsDto } from '../dto/query-public-restaurants.dto.js';
+import {
+  filterRestaurantsByCuisine,
+  buildRestaurantCard,
+  sortRestaurantCards,
+  transformPublicMenuCategories,
+} from '../helpers/public-catalog.helper.js';
 
 export interface PublicRestaurantCard {
   slug: string;
@@ -104,10 +110,27 @@ export class PublicRestaurantsService {
     }
 
     if (query.q) {
-      where.name = {
-        contains: query.q.trim(),
-        mode: 'insensitive',
-      };
+      const trimmedQ = query.q.trim();
+      where.OR = [
+        { name: { contains: trimmedQ, mode: 'insensitive' } },
+        { description: { contains: trimmedQ, mode: 'insensitive' } },
+        {
+          categories: {
+            some: {
+              isActive: true,
+              name: { contains: trimmedQ, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          items: {
+            some: {
+              isActive: true,
+              name: { contains: trimmedQ, mode: 'insensitive' },
+            },
+          },
+        },
+      ];
     }
 
     const restaurants = await this.prisma.restaurant.findMany({
@@ -128,51 +151,37 @@ export class PublicRestaurantsService {
             closeTime: true,
           },
         },
+        categories: {
+          where: { isActive: true },
+          select: { name: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+        items: {
+          where: { isActive: true },
+          select: { name: true },
+        },
       },
       orderBy: {
         name: 'asc',
       },
     });
 
-    let filteredList = restaurants;
-    if (query.cuisine) {
-      const targetCuisine = query.cuisine.trim().toLowerCase();
-      filteredList = filteredList.filter((r) =>
-        r.cuisines.some((c) => c.toLowerCase() === targetCuisine),
-      );
-    }
+    const filteredList = filterRestaurantsByCuisine(restaurants, query.cuisine);
 
-    const evaluated: PublicRestaurantCard[] = filteredList.map((r) => {
-      const openStatus = isRestaurantOpenNow(
-        r.hours,
-        r.manualStatus,
-        r.unavailableNote,
-        now,
-      );
-      return {
-        slug: r.slug,
-        name: r.name,
-        cuisines: r.cuisines,
-        logoUrl: r.logoUrl,
-        minOrderAmount: r.minOrderAmount,
-        isOpenNow: openStatus.isOpenNow,
-        availabilityText: openStatus.availabilityText,
-        nextOpenAt: openStatus.nextOpenAt,
-      };
-    });
+    const evaluated: PublicRestaurantCard[] = filteredList.map((r) =>
+      buildRestaurantCard(r, now),
+    );
 
-    const finalFiltered = query.openNow
+    const openFiltered = query.openNow
       ? evaluated.filter((r) => r.isOpenNow)
       : evaluated;
 
-    finalFiltered.sort((a, b) => {
-      if (a.isOpenNow === b.isOpenNow) return 0;
-      return a.isOpenNow ? -1 : 1;
-    });
+    const finalFiltered = sortRestaurantCards(openFiltered, query.sortBy);
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const total = finalFiltered.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
     const startIndex = (page - 1) * limit;
     const paginated = finalFiltered.slice(startIndex, startIndex + limit);
 
@@ -182,6 +191,9 @@ export class PublicRestaurantsService {
         page,
         limit,
         total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
       },
     };
   }
@@ -227,6 +239,7 @@ export class PublicRestaurantsService {
               select: {
                 id: true,
                 name: true,
+                slug: true,
                 sortOrder: true,
               },
             },
@@ -390,32 +403,8 @@ export class PublicRestaurantsService {
       });
     }
 
-    const categories: PublicMenuCategory[] = restaurant.categories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      items: c.items.map((i) => ({
-        id: i.id,
-        name: i.name,
-        description: i.description,
-        imageUrl: i.imageUrl,
-        price: i.basePrice,
-        basePrice: i.basePrice,
-        originalPrice: i.originalPrice,
-        isDeal: i.isDeal,
-        isAvailable: i.isAvailable,
-        variants: i.variants.map((v) => ({
-          id: v.id,
-          name: v.name,
-          price: v.price,
-        })),
-        addons: i.addons.map((a) => ({
-          id: a.id,
-          name: a.name,
-          price: a.price,
-        })),
-      })),
-    }));
-
-    return { categories };
+    return {
+      categories: transformPublicMenuCategories(restaurant.categories),
+    };
   }
 }

@@ -39,14 +39,23 @@ export class QueryPublicRestaurantsDto {
   cuisine?: string;
 
   @ApiPropertyOptional({
-    description: 'Search restaurant by name (2 to 50 characters)',
+    description: 'Search restaurant by name or food items (1 to 50 characters)',
     example: 'Al-Noor',
   })
   @IsOptional()
   @IsString()
-  @MinLength(2, { message: 'Search query must be at least 2 characters' })
+  @MinLength(1, { message: 'Search query must be at least 1 character' })
   @MaxLength(50, { message: 'Search query must not exceed 50 characters' })
   q?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Sort order: default, name_asc, name_desc, min_order_asc, min_order_desc',
+    example: 'default',
+  })
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
 
   @ApiPropertyOptional({
     description: 'Filter only restaurants currently open',

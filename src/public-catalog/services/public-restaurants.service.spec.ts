@@ -68,7 +68,7 @@ describe('PublicRestaurantsService', () => {
       });
       // Ensure private fields like id are not exposed
       expect((res.data[0] as unknown as { id?: string }).id).toBeUndefined();
-      expect(res.meta).toEqual({
+      expect(res.meta).toMatchObject({
         page: 1,
         limit: 20,
         total: 1,
@@ -184,7 +184,7 @@ describe('PublicRestaurantsService', () => {
 
       const res = await service.getRestaurants({ page: 2, limit: 1 });
       expect(res.data).toHaveLength(1);
-      expect(res.meta).toEqual({
+      expect(res.meta).toMatchObject({
         page: 2,
         limit: 1,
         total: 2,
