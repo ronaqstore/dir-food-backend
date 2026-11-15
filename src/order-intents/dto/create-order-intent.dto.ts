@@ -11,6 +11,7 @@ import {
   IsOptional,
   Length,
   IsNumber,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -27,11 +28,16 @@ export class CustomerDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Customer Pakistani mobile number',
+    description:
+      'Customer Pakistani mobile number (11 digits, e.g. 03001234567)',
     example: '03001234567',
   })
   @IsOptional()
   @IsString()
+  @Matches(/^03\d{9}$/, {
+    message:
+      'Customer phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567)',
+  })
   phone?: string;
 }
 

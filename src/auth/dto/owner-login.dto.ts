@@ -8,8 +8,9 @@ export class OwnerLoginDto {
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
-    message: 'Phone must be a valid Pakistani mobile number',
+  @Matches(/^03\d{9}$/, {
+    message:
+      'Phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567)',
   })
   phone!: string;
 

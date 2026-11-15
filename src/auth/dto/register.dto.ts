@@ -33,14 +33,13 @@ export class RegisterRestaurantDto {
 
   @ApiProperty({
     example: '03001234567',
-    description:
-      'Owner Pakistani mobile phone number (03XXXXXXXXX or 923XXXXXXXXX)',
+    description: 'Owner Pakistani mobile phone number (03XXXXXXXXX)',
   })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
+  @Matches(/^03\d{9}$/, {
     message:
-      'Owner phone must be a valid Pakistani mobile number (e.g. 03001234567 or 923001234567)',
+      'Owner phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567)',
   })
   phone!: string;
 
@@ -59,8 +58,9 @@ export class RegisterRestaurantDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
-    message: 'WhatsApp number must be a valid Pakistani mobile number',
+  @Matches(/^03\d{9}$/, {
+    message:
+      'WhatsApp number must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03007654321)',
   })
   whatsappNumber?: string;
 

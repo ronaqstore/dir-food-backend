@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -19,6 +20,10 @@ export class RestaurantOwnerAdminInputDto {
   @ApiProperty({ example: '03001234567' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^03\d{9}$/, {
+    message:
+      'Owner phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567)',
+  })
   phone!: string;
 }
 
@@ -31,11 +36,19 @@ export class CreateRestaurantAdminDto {
   @ApiProperty({ example: '03001234567' })
   @IsString()
   @IsNotEmpty()
+  @Matches(/^03\d{9}$/, {
+    message:
+      'Contact phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567)',
+  })
   contactPhone!: string;
 
   @ApiPropertyOptional({ example: '03007654321' })
   @IsOptional()
   @IsString()
+  @Matches(/^03\d{9}$/, {
+    message:
+      'WhatsApp number must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03007654321)',
+  })
   whatsappNumber?: string;
 
   @ApiPropertyOptional({ example: 'College Chowk, Timergara' })

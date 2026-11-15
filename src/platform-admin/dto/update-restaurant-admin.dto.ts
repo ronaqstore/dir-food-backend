@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Matches,
+  Min,
+} from 'class-validator';
 
 export class UpdateRestaurantAdminDto {
   @ApiPropertyOptional()
@@ -23,14 +30,22 @@ export class UpdateRestaurantAdminDto {
   @IsString()
   addressText?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '03001234567' })
   @IsOptional()
   @IsString()
+  @Matches(/^03\d{9}$/, {
+    message:
+      'Contact phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03001234567)',
+  })
   contactPhone?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: '03007654321' })
   @IsOptional()
   @IsString()
+  @Matches(/^03\d{9}$/, {
+    message:
+      'WhatsApp number must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03007654321)',
+  })
   whatsappNumber?: string;
 
   @ApiPropertyOptional()

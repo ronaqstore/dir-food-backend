@@ -51,8 +51,9 @@ export class UpdateRestaurantProfileDto {
   @ApiPropertyOptional({ example: '03001234567' })
   @IsOptional()
   @IsString()
-  @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
-    message: 'Contact phone must be a valid Pakistani mobile number',
+  @Matches(/^03\d{9}$/, {
+    message:
+      'Contact phone must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03029825213)',
   })
   contactPhone?: string;
 
@@ -62,8 +63,9 @@ export class UpdateRestaurantProfileDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^(?:\+92|0092|92|0)?3\d{9}$/, {
-    message: 'WhatsApp number must be a valid Pakistani mobile number',
+  @Matches(/^03\d{9}$/, {
+    message:
+      'WhatsApp number must be an 11-digit Pakistani mobile number starting with 03 (e.g. 03029825213)',
   })
   whatsappNumber?: string;
 
