@@ -2,14 +2,25 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { ensureDefaultCategories } from '../../common/utils/category-defaults.js';
 import type { CreateCategoryDto } from '../dto/create-category.dto.js';
 import type { UpdateCategoryDto } from '../dto/update-category.dto.js';
 
 @Injectable()
-export class MenuCategoriesService {
+export class MenuCategoriesService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit(): Promise<void> {
+    const restaurants = await this.prisma.restaurant.findMany({
+      select: { id: true },
+    });
+    for (const restaurant of restaurants) {
+      await ensureDefaultCategories(this.prisma, restaurant.id);
+    }
+  }
 
   async getCategories(
     restaurantId: string,
@@ -28,6 +39,8 @@ export class MenuCategoriesService {
     if (!restaurant) {
       throw new NotFoundException('Restaurant not found');
     }
+
+    await ensureDefaultCategories(this.prisma, restaurantId);
 
     const isPaginated = page !== undefined || limit !== undefined;
 

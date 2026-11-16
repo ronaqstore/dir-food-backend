@@ -10,12 +10,14 @@ describe('MenuCategoriesService (unit)', () => {
     mockPrisma = {
       restaurant: {
         findUnique: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
       },
       menuCategory: {
-        findMany: vi.fn(),
+        findMany: vi.fn().mockResolvedValue([]),
         findFirst: vi.fn(),
         findUnique: vi.fn(),
         create: vi.fn(),
+        createMany: vi.fn().mockResolvedValue({ count: 16 }),
         update: vi.fn(),
         count: vi.fn(),
       },
