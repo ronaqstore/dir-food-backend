@@ -14,6 +14,7 @@ const PUBLIC_ALLOW = [
   'src/auth/controllers/platform-admin-auth.controller.ts',
   'src/public-catalog/controllers/public-areas.controller.ts',
   'src/public-catalog/controllers/public-cities.controller.ts',
+  'src/public-catalog/controllers/public-cuisines.controller.ts',
   'src/public-catalog/controllers/public-restaurants.controller.ts',
   'src/order-intents/controllers/public-cart.controller.ts',
   'src/order-intents/controllers/public-order-intents.controller.ts',
