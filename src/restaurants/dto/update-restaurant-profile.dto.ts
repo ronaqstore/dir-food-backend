@@ -36,7 +36,7 @@ export class UpdateRestaurantProfileDto {
   })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(5)
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   cuisines?: string[];
 

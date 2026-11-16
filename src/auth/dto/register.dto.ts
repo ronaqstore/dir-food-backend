@@ -78,7 +78,7 @@ export class RegisterRestaurantDto {
   })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(5)
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   cuisines?: string[];
 
