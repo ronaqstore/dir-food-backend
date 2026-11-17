@@ -14,7 +14,7 @@ describe('PlatformAdminCuisinesService (unit)', () => {
         findUnique: vi.fn(),
         count: vi.fn(),
         create: vi.fn(),
-        createMany: vi.fn().mockResolvedValue({ count: 18 }),
+        createMany: vi.fn().mockResolvedValue({ count: 30 }),
         update: vi.fn(),
         delete: vi.fn(),
       },
@@ -52,14 +52,14 @@ describe('PlatformAdminCuisinesService (unit)', () => {
       mockPrisma.cuisine.count
         .mockResolvedValueOnce(0)
         .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(18);
+        .mockResolvedValueOnce(30);
       mockPrisma.cuisine.findMany
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([
           {
             id: 'c1',
-            name: 'Fast Food',
-            slug: 'fast-food',
+            name: 'Pakistani',
+            slug: 'pakistani',
             icon: null,
             sortOrder: 1,
             isActive: true,
@@ -68,7 +68,7 @@ describe('PlatformAdminCuisinesService (unit)', () => {
 
       const res = await service.listCuisines({});
       expect(mockPrisma.cuisine.createMany).toHaveBeenCalled();
-      expect(res.meta.total).toBe(18);
+      expect(res.meta.total).toBe(30);
     });
   });
 

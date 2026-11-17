@@ -73,7 +73,7 @@ describe('PublicCuisinesService (unit)', () => {
 
     const result = await service.getCuisines();
 
-    expect(result.length).toBeGreaterThanOrEqual(18);
-    expect(result[0].name).toBe('Fast Food');
+    expect(result.length).toBeGreaterThanOrEqual(30);
+    expect(result[0].name).toBe('Pakistani');
   });
 });

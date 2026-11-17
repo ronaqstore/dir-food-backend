@@ -6,19 +6,19 @@ import {
 
 describe('cuisine-defaults utility (unit)', () => {
   it('exports comprehensive default master cuisines', () => {
-    expect(DEFAULT_MASTER_CUISINES.length).toBeGreaterThanOrEqual(18);
-    const fastFood = DEFAULT_MASTER_CUISINES.find(
-      (c) => c.slug === 'fast-food',
+    expect(DEFAULT_MASTER_CUISINES.length).toBeGreaterThanOrEqual(30);
+    const pakistani = DEFAULT_MASTER_CUISINES.find(
+      (c) => c.slug === 'pakistani',
     );
-    expect(fastFood).toBeDefined();
-    expect(fastFood?.name).toBe('Fast Food');
+    expect(pakistani).toBeDefined();
+    expect(pakistani?.name).toBe('Pakistani');
   });
 
   it('inserts default cuisines when database count is less than defaults', async () => {
     const mockPrisma: any = {
       cuisine: {
         count: vi.fn().mockResolvedValue(0),
-        createMany: vi.fn().mockResolvedValue({ count: 18 }),
+        createMany: vi.fn().mockResolvedValue({ count: 30 }),
       },
     };
 
@@ -27,7 +27,7 @@ describe('cuisine-defaults utility (unit)', () => {
     expect(mockPrisma.cuisine.count).toHaveBeenCalledTimes(1);
     expect(mockPrisma.cuisine.createMany).toHaveBeenCalledWith({
       data: expect.arrayContaining([
-        expect.objectContaining({ name: 'Fast Food', slug: 'fast-food' }),
+        expect.objectContaining({ name: 'Pakistani', slug: 'pakistani' }),
       ]),
       skipDuplicates: true,
     });
@@ -36,7 +36,7 @@ describe('cuisine-defaults utility (unit)', () => {
   it('skips insertion when database count is already sufficient', async () => {
     const mockPrisma: any = {
       cuisine: {
-        count: vi.fn().mockResolvedValue(18),
+        count: vi.fn().mockResolvedValue(30),
         createMany: vi.fn(),
       },
     };
