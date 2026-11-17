@@ -1,5 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateCustomDeliveryAreaDto {
   @ApiProperty({
@@ -8,6 +18,11 @@ export class CreateCustomDeliveryAreaDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MinLength(2)
+  @MaxLength(60)
+  @Matches(/^[a-zA-Z0-9\s/.,'()&-]+$/, {
+    message: 'Area name contains invalid characters',
+  })
   name!: string;
 
   @ApiPropertyOptional({
@@ -18,6 +33,7 @@ export class CreateCustomDeliveryAreaDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(5000000)
   deliveryFee?: number | null;
 
   @ApiPropertyOptional({
@@ -28,5 +44,6 @@ export class CreateCustomDeliveryAreaDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  @Max(50000000)
   minOrderAmount?: number | null;
 }

@@ -1,11 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsUUID,
+  Max,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -15,7 +17,7 @@ export class DeliveryAreaItemDto {
     example: '0192a000-0000-7000-8000-000000000001',
     description: 'Master platform Area ID',
   })
-  @IsUUID('7', { message: 'areaId must be a valid UUID v7' })
+  @IsUUID('all', { message: 'areaId must be a valid UUID' })
   @IsNotEmpty()
   areaId!: string;
 
@@ -28,6 +30,7 @@ export class DeliveryAreaItemDto {
   @IsOptional()
   @IsInt()
   @Min(0, { message: 'deliveryFee must be greater than or equal to 0' })
+  @Max(5000000, { message: 'deliveryFee cannot exceed 50,000 PKR' })
   deliveryFee?: number | null;
 
   @ApiPropertyOptional({
@@ -39,6 +42,7 @@ export class DeliveryAreaItemDto {
   @IsOptional()
   @IsInt()
   @Min(0, { message: 'minOrderAmount must be greater than or equal to 0' })
+  @Max(50000000, { message: 'minOrderAmount cannot exceed 500,000 PKR' })
   minOrderAmount?: number | null;
 }
 
@@ -49,6 +53,7 @@ export class UpdateDeliveryAreasDto {
       'List of served delivery areas and their respective delivery fees',
   })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => DeliveryAreaItemDto)
   areas!: DeliveryAreaItemDto[];
