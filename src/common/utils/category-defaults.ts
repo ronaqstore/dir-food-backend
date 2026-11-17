@@ -6,7 +6,7 @@ export interface DefaultCategoryItem {
 }
 
 export const DEFAULT_MENU_CATEGORIES: readonly DefaultCategoryItem[] = [
-   { name: 'Fast Food', sortOrder: 1 },
+  { name: 'Fast Food', sortOrder: 1 },
   { name: 'BBQ & Grills', sortOrder: 2 },
   { name: 'Karahi & Handi', sortOrder: 3 },
   { name: 'Shinwari', sortOrder: 4 },
