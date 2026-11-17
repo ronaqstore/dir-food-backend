@@ -3,7 +3,8 @@ import { timeStringToDate } from '../../restaurant-hours/utils/opening-hours.uti
 
 export const DEFAULT_OPEN_TIME = '10:00';
 export const DEFAULT_CLOSE_TIME = '23:00';
-export const DEFAULT_DELIVERY_FEE_PAISA = 5000n;
+export const DEFAULT_DELIVERY_FEE_PAISA = 0n;
+export const DEFAULT_MIN_ORDER_AMOUNT_PAISA = 0n;
 
 export async function seedRestaurantDefaults(
   tx: Prisma.TransactionClient,
@@ -39,7 +40,8 @@ export async function seedRestaurantDefaults(
         restaurantId,
         areaId: area.id,
         deliveryFee: DEFAULT_DELIVERY_FEE_PAISA,
-        isActive: true,
+        minOrderAmount: DEFAULT_MIN_ORDER_AMOUNT_PAISA,
+        isActive: false,
       })),
       skipDuplicates: true,
     });

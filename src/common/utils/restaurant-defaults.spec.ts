@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   seedRestaurantDefaults,
   DEFAULT_DELIVERY_FEE_PAISA,
+  DEFAULT_MIN_ORDER_AMOUNT_PAISA,
 } from './restaurant-defaults.js';
 
 describe('restaurant-defaults utility (unit)', () => {
@@ -41,13 +42,15 @@ describe('restaurant-defaults utility (unit)', () => {
           restaurantId: 'rest-123',
           areaId: 'area-1',
           deliveryFee: DEFAULT_DELIVERY_FEE_PAISA,
-          isActive: true,
+          minOrderAmount: DEFAULT_MIN_ORDER_AMOUNT_PAISA,
+          isActive: false,
         },
         {
           restaurantId: 'rest-123',
           areaId: 'area-2',
           deliveryFee: DEFAULT_DELIVERY_FEE_PAISA,
-          isActive: true,
+          minOrderAmount: DEFAULT_MIN_ORDER_AMOUNT_PAISA,
+          isActive: false,
         },
       ],
       skipDuplicates: true,

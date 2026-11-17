@@ -61,9 +61,9 @@ model RestaurantDeliveryArea {
   id             String   @id @default(uuid(7)) @db.Uuid
   restaurantId   String   @map("restaurant_id") @db.Uuid
   areaId         String   @map("area_id") @db.Uuid
-  deliveryFee    BigInt?  @map("delivery_fee") // null = restaurant confirms; 0 = free
-  minOrderAmount BigInt?  @map("min_order_amount") // null = fallback to restaurant default min_order_amount
-  isActive       Boolean  @default(true) @map("is_active")
+  deliveryFee    BigInt?  @default(0) @map("delivery_fee") // null = restaurant confirms; 0 = free
+  minOrderAmount BigInt?  @default(0) @map("min_order_amount") // null = fallback to restaurant default min_order_amount
+  isActive       Boolean  @default(false) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
