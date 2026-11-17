@@ -5,15 +5,23 @@ import type { PrismaService } from '../../prisma/prisma.service.js';
 describe('PublicAreasService', () => {
   let service: PublicAreasService;
   let mockPrisma: {
+    city: {
+      findMany: ReturnType<typeof vi.fn>;
+    };
     area: {
       findMany: ReturnType<typeof vi.fn>;
+      createMany: ReturnType<typeof vi.fn>;
     };
   };
 
   beforeEach(() => {
     mockPrisma = {
+      city: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
       area: {
         findMany: vi.fn(),
+        createMany: vi.fn().mockResolvedValue({ count: 10 }),
       },
     };
     service = new PublicAreasService(mockPrisma as unknown as PrismaService);
@@ -48,5 +56,10 @@ describe('PublicAreasService', () => {
       },
     });
     expect(result).toEqual(mockAreas);
+  });
+
+  it('runs onModuleInit to ensure default areas', async () => {
+    await service.onModuleInit();
+    expect(mockPrisma.city.findMany).toHaveBeenCalled();
   });
 });
