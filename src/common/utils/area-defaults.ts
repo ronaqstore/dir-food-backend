@@ -20,7 +20,25 @@ function slugify(text: string): string {
     .replace(/-+$/, '');
 }
 
-export function loadGazetteerLowerDirSettlements(): DefaultAreaItem[] {
+function getGazetteerDistrictSlug(districtName?: string): string {
+  if (!districtName) return '';
+  const lower = districtName.toLowerCase().trim();
+  if (lower.includes('lower dir')) return 'lower-dir';
+  if (lower.includes('upper dir')) return 'upper-dir';
+  if (lower.includes('central dir')) return 'central-dir';
+  if (lower.includes('swat')) return 'swat';
+  return slugify(lower);
+}
+
+type RawGazetteer = {
+  mouzas: readonly Record<string, unknown>[];
+  localities: readonly Record<string, unknown>[];
+};
+
+let cachedGazetteer: RawGazetteer | null = null;
+
+function loadRawGazetteer(): RawGazetteer | null {
+  if (cachedGazetteer) return cachedGazetteer;
   try {
     const candidates = [
       path.resolve(process.cwd(), 'dir-food-backend/content/area.json'),
@@ -28,84 +46,93 @@ export function loadGazetteerLowerDirSettlements(): DefaultAreaItem[] {
       path.resolve(process.cwd(), '../content/area.json'),
       'D:/Products/dir foods/content/area.json',
     ];
-    let filePath: string | null = null;
-    for (const c of candidates) {
-      if (fs.existsSync(c)) {
-        filePath = c;
-        break;
-      }
-    }
-    if (!filePath) return [];
+    const filePath = candidates.find((c) => fs.existsSync(c));
+    if (!filePath) return null;
     const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    cachedGazetteer = {
+      mouzas: Array.isArray(raw.mouzas) ? raw.mouzas : [],
+      localities: Array.isArray(raw.localities) ? raw.localities : [],
+    };
+    return cachedGazetteer;
+  } catch {
+    return null;
+  }
+}
 
-    const keyHubs = [
-      'Timergara',
-      'Balambat',
-      'Talash',
-      'Chakdara',
-      'Samarbagh',
-      'Munda',
-      'Lal Qila (Maidan)',
-      'Khall',
-      'Koto',
-      'Odigram',
-      'Mayar',
-      'Asbanr',
-      'Rabat',
-      'Gulabad',
-      'Badwan',
-      'Shahi',
-      'Kumbar',
-    ];
+export function loadGazetteerSettlementsForDistrict(
+  districtSlug: string,
+): DefaultAreaItem[] {
+  const data = loadRawGazetteer();
+  if (!data) return [];
 
-    const map = new Map<string, { name: string; sortOrder: number }>();
-    keyHubs.forEach((h, i) => {
-      map.set(h.toLowerCase(), { name: h, sortOrder: i + 1 });
+  const defaultHubs = DEFAULT_AREAS_BY_CITY_SLUG[districtSlug] ?? [];
+  const map = new Map<
+    string,
+    { name: string; slug?: string; sortOrder: number }
+  >();
+
+  defaultHubs.forEach((h, i) => {
+    map.set(h.name.toLowerCase(), {
+      name: h.name,
+      slug: h.slug,
+      sortOrder: i + 1,
     });
+  });
 
-    let nextSort = keyHubs.length + 1;
+  let nextSort = defaultHubs.length + 1;
+  let addedCount = 0;
 
-    if (Array.isArray(raw.lowerDirMouzas)) {
-      for (const m of raw.lowerDirMouzas) {
-        const name = m.mouzaName?.trim();
-        if (!name) continue;
-        const key = name.toLowerCase();
-        if (!map.has(key)) {
-          map.set(key, { name, sortOrder: nextSort++ });
-        }
-      }
+  const addEntry = (rawName?: string) => {
+    const name = rawName?.trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (!map.has(key)) {
+      map.set(key, { name, sortOrder: nextSort++ });
+      addedCount++;
     }
+  };
 
-    if (Array.isArray(raw.lowerDirLocalities)) {
-      for (const l of raw.lowerDirLocalities) {
-        const name = l.localityName?.trim();
-        if (!name) continue;
-        const key = name.toLowerCase();
-        if (!map.has(key)) {
-          map.set(key, { name, sortOrder: nextSort++ });
-        }
-      }
+  for (const l of data.localities) {
+    const d = (l.district || l.districtName) as string | undefined;
+    if (getGazetteerDistrictSlug(d) === districtSlug) {
+      addEntry((l.localityName || l.name) as string | undefined);
     }
+  }
 
-    const result: DefaultAreaItem[] = [];
-    const usedSlugs = new Set<string>();
+  for (const m of data.mouzas) {
+    const d = (m.district || m.districtName) as string | undefined;
+    if (getGazetteerDistrictSlug(d) !== districtSlug) continue;
+    addEntry((m.mouzaName || m.mouza) as string | undefined);
+    if (typeof m.villageNamesRaw === 'string') {
+      m.villageNamesRaw.split(',').forEach((p) => addEntry(p));
+    }
+  }
 
-    for (const item of map.values()) {
-      let baseSlug = slugify(item.name) || 'area';
-      let slug = baseSlug;
+  if (addedCount === 0) return [];
+
+  const result: DefaultAreaItem[] = [];
+  const usedSlugs = new Set<string>();
+
+  for (const item of map.values()) {
+    let slug = item.slug;
+    if (!slug) {
+      const baseSlug = slugify(item.name) || 'area';
+      slug = baseSlug;
       let count = 2;
       while (usedSlugs.has(slug)) {
         slug = `${baseSlug}-${count}`;
         count++;
       }
-      usedSlugs.add(slug);
-      result.push({ name: item.name, slug, sortOrder: item.sortOrder });
     }
-
-    return result;
-  } catch {
-    return [];
+    usedSlugs.add(slug);
+    result.push({ name: item.name, slug, sortOrder: item.sortOrder });
   }
+
+  return result;
+}
+
+export function loadGazetteerLowerDirSettlements(): DefaultAreaItem[] {
+  return loadGazetteerSettlementsForDistrict('lower-dir');
 }
 
 export const DEFAULT_AREAS_BY_CITY_SLUG: Readonly<
@@ -311,10 +338,8 @@ export const DEFAULT_AREAS_BY_CITY_SLUG: Readonly<
 export function getDefaultAreasForCitySlug(
   slug: string,
 ): readonly DefaultAreaItem[] {
-  if (slug === 'lower-dir') {
-    const gazetteer = loadGazetteerLowerDirSettlements();
-    if (gazetteer.length > 0) return gazetteer;
-  }
+  const gazetteer = loadGazetteerSettlementsForDistrict(slug);
+  if (gazetteer.length > 0) return gazetteer;
   return DEFAULT_AREAS_BY_CITY_SLUG[slug] ?? [];
 }
 

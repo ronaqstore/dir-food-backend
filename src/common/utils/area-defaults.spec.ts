@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   DEFAULT_AREAS_BY_CITY_SLUG,
   ensureDefaultAreas,
+  getDefaultAreasForCitySlug,
   loadGazetteerLowerDirSettlements,
+  loadGazetteerSettlementsForDistrict,
 } from './area-defaults.js';
 
 describe('area-defaults utility (unit)', () => {
@@ -83,5 +85,16 @@ describe('area-defaults utility (unit)', () => {
     expect(settlements.length).toBeGreaterThan(100);
     expect(settlements.some((s) => s.slug === 'timergara')).toBe(true);
     expect(settlements.some((s) => s.slug === 'balambat')).toBe(true);
+
+    const upperDir = loadGazetteerSettlementsForDistrict('upper-dir');
+    expect(upperDir.length).toBeGreaterThan(100);
+    expect(upperDir.some((s) => s.slug === 'dir-city')).toBe(true);
+
+    const swat = loadGazetteerSettlementsForDistrict('swat');
+    expect(swat.length).toBeGreaterThanOrEqual(15);
+    expect(swat.some((s) => s.slug === 'mingora')).toBe(true);
+
+    const defaultUpper = getDefaultAreasForCitySlug('upper-dir');
+    expect(defaultUpper.length).toBeGreaterThan(100);
   });
 });
