@@ -1,9 +1,111 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 
 export interface DefaultAreaItem {
   name: string;
   slug: string;
   sortOrder: number;
+}
+
+function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '')
+    .replace(/--+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
+export function loadGazetteerLowerDirSettlements(): DefaultAreaItem[] {
+  try {
+    const candidates = [
+      path.resolve(process.cwd(), 'dir-food-backend/content/area.json'),
+      path.resolve(process.cwd(), 'content/area.json'),
+      path.resolve(process.cwd(), '../content/area.json'),
+      'D:/Products/dir foods/content/area.json',
+    ];
+    let filePath: string | null = null;
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        filePath = c;
+        break;
+      }
+    }
+    if (!filePath) return [];
+    const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+    const keyHubs = [
+      'Timergara',
+      'Balambat',
+      'Talash',
+      'Chakdara',
+      'Samarbagh',
+      'Munda',
+      'Lal Qila (Maidan)',
+      'Khall',
+      'Koto',
+      'Odigram',
+      'Mayar',
+      'Asbanr',
+      'Rabat',
+      'Gulabad',
+      'Badwan',
+      'Shahi',
+      'Kumbar',
+    ];
+
+    const map = new Map<string, { name: string; sortOrder: number }>();
+    keyHubs.forEach((h, i) => {
+      map.set(h.toLowerCase(), { name: h, sortOrder: i + 1 });
+    });
+
+    let nextSort = keyHubs.length + 1;
+
+    if (Array.isArray(raw.lowerDirMouzas)) {
+      for (const m of raw.lowerDirMouzas) {
+        const name = m.mouzaName?.trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { name, sortOrder: nextSort++ });
+        }
+      }
+    }
+
+    if (Array.isArray(raw.lowerDirLocalities)) {
+      for (const l of raw.lowerDirLocalities) {
+        const name = l.localityName?.trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, { name, sortOrder: nextSort++ });
+        }
+      }
+    }
+
+    const result: DefaultAreaItem[] = [];
+    const usedSlugs = new Set<string>();
+
+    for (const item of map.values()) {
+      let baseSlug = slugify(item.name) || 'area';
+      let slug = baseSlug;
+      let count = 2;
+      while (usedSlugs.has(slug)) {
+        slug = `${baseSlug}-${count}`;
+        count++;
+      }
+      usedSlugs.add(slug);
+      result.push({ name: item.name, slug, sortOrder: item.sortOrder });
+    }
+
+    return result;
+  } catch {
+    return [];
+  }
 }
 
 export const DEFAULT_AREAS_BY_CITY_SLUG: Readonly<
@@ -206,6 +308,16 @@ export const DEFAULT_AREAS_BY_CITY_SLUG: Readonly<
   ],
 };
 
+export function getDefaultAreasForCitySlug(
+  slug: string,
+): readonly DefaultAreaItem[] {
+  if (slug === 'lower-dir') {
+    const gazetteer = loadGazetteerLowerDirSettlements();
+    if (gazetteer.length > 0) return gazetteer;
+  }
+  return DEFAULT_AREAS_BY_CITY_SLUG[slug] ?? [];
+}
+
 export async function ensureDefaultAreas(
   prisma: PrismaService,
   cityId?: string,
@@ -216,30 +328,33 @@ export async function ensureDefaultAreas(
   });
 
   for (const city of cities) {
-    const defaults = DEFAULT_AREAS_BY_CITY_SLUG[city.slug];
+    const defaults = getDefaultAreasForCitySlug(city.slug);
     if (!defaults || defaults.length === 0) continue;
 
     const existing = await prisma.area.findMany({
       where: { cityId: city.id },
-      select: { slug: true, name: true },
+      select: { slug: true },
     });
 
     const existingSlugs = new Set(existing.map((a) => a.slug));
     const missing = defaults.filter((d) => !existingSlugs.has(d.slug));
 
     if (missing.length > 0) {
-      await prisma.area.createMany({
-        data: missing.map((a) => ({
-          cityId: city.id,
-          name: a.name,
-          slug: a.slug,
-          sortOrder: a.sortOrder,
-          isActive: true,
-          isVerified: true,
-          isCustomCreated: false,
-        })),
-        skipDuplicates: true,
-      });
+      for (let i = 0; i < missing.length; i += 500) {
+        const chunk = missing.slice(i, i + 500);
+        await prisma.area.createMany({
+          data: chunk.map((a) => ({
+            cityId: city.id,
+            name: a.name,
+            slug: a.slug,
+            sortOrder: a.sortOrder,
+            isActive: true,
+            isVerified: true,
+            isCustomCreated: false,
+          })),
+          skipDuplicates: true,
+        });
+      }
     }
   }
 }

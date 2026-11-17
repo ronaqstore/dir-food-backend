@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
   DEFAULT_AREAS_BY_CITY_SLUG,
   ensureDefaultAreas,
+  loadGazetteerLowerDirSettlements,
 } from './area-defaults.js';
 
 describe('area-defaults utility (unit)', () => {
@@ -75,5 +76,12 @@ describe('area-defaults utility (unit)', () => {
     await ensureDefaultAreas(mockPrisma, 'city-central-dir');
 
     expect(mockPrisma.area.createMany).not.toHaveBeenCalled();
+  });
+
+  it('loads settlements from area.json correctly', () => {
+    const settlements = loadGazetteerLowerDirSettlements();
+    expect(settlements.length).toBeGreaterThan(100);
+    expect(settlements.some((s) => s.slug === 'timergara')).toBe(true);
+    expect(settlements.some((s) => s.slug === 'balambat')).toBe(true);
   });
 });
