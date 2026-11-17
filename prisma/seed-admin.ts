@@ -10,6 +10,7 @@ import {
   UserStatus,
 } from '../src/generated/prisma/enums.js';
 import { normalizePhone, isValidPakistaniMobile } from '../src/common/utils/phone.js';
+import { ensureDefaultCities } from '../src/common/utils/city-defaults.js';
 
 async function seed() {
   const dbUrl = process.env.DATABASE_URL;
@@ -89,7 +90,8 @@ async function seed() {
       isCustomCreated: false,
     },
   });
-  console.log(`✔ Base Area: ${area.name} (${area.slug})`);
+  await ensureDefaultCities(prisma as any);
+  console.log(`✔ 41 KP Districts & Cities seeded/verified`);
 
   // ---------------------------------------------------------------------------
   // 3. Platform Admin Users (Private numbers: 03115514151 & 03059596704)

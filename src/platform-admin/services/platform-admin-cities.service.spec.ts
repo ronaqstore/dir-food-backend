@@ -10,7 +10,24 @@ describe('PlatformAdminCitiesService (unit)', () => {
   beforeEach(() => {
     mockPrisma = {
       city: {
-        findMany: vi.fn(),
+        findMany: vi.fn().mockImplementation((args?: any) => {
+          if (args?.select?.slug) {
+            return [{ slug: 'lower-dir' }];
+          }
+          return [
+            {
+              id: 'c1',
+              name: 'Lower Dir',
+              slug: 'lower-dir',
+              sortOrder: 1,
+              isActive: true,
+              _count: { areas: 15, restaurants: 8 },
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ];
+        }),
+        createMany: vi.fn().mockResolvedValue({ count: 40 }),
         findUnique: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
@@ -23,21 +40,15 @@ describe('PlatformAdminCitiesService (unit)', () => {
     service = new PlatformAdminCitiesService(mockPrisma, mockAudit);
   });
 
+  describe('onModuleInit', () => {
+    it('seeds default cities on startup', async () => {
+      await service.onModuleInit();
+      expect(mockPrisma.city.findMany).toHaveBeenCalled();
+    });
+  });
+
   describe('listCities', () => {
     it('returns all cities with counts', async () => {
-      mockPrisma.city.findMany.mockResolvedValue([
-        {
-          id: 'c1',
-          name: 'Lower Dir',
-          slug: 'lower-dir',
-          sortOrder: 1,
-          isActive: true,
-          _count: { areas: 15, restaurants: 8 },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ]);
-
       const res = await service.listCities();
       expect(res).toHaveLength(1);
       expect(res[0].areasCount).toBe(15);
@@ -100,10 +111,10 @@ describe('PlatformAdminCitiesService (unit)', () => {
       );
     });
 
-    it('throws 404 if city not found', async () => {
+    it('throws when city not found', async () => {
       mockPrisma.city.findUnique.mockResolvedValue(null);
       await expect(
-        service.updateCity('unknown', { name: 'Test' }, 'admin-1'),
+        service.updateCity('c999', { name: 'Nonexistent' }, 'admin-1'),
       ).rejects.toThrow(NotFoundException);
     });
   });

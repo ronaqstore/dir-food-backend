@@ -3,22 +3,29 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { slugify } from '../../common/utils/phone.js';
+import { ensureDefaultCities } from '../../common/utils/city-defaults.js';
 import { CreateCityDto } from '../dto/create-city.dto.js';
 import { UpdateCityDto } from '../dto/update-city.dto.js';
 
 @Injectable()
-export class PlatformAdminCitiesService {
+export class PlatformAdminCitiesService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {}
 
+  async onModuleInit(): Promise<void> {
+    await ensureDefaultCities(this.prisma);
+  }
+
   async listCities() {
+    await ensureDefaultCities(this.prisma);
     const cities = await this.prisma.city.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
