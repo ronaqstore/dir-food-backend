@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
   IsArray,
   IsNumber,
   IsOptional,
@@ -22,6 +23,7 @@ export class UpdateRestaurantAdminDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   cuisines?: string[];
 
