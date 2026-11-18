@@ -36,7 +36,7 @@ describe('cuisine-defaults utility (unit)', () => {
   it('skips insertion when database count is already sufficient', async () => {
     const mockPrisma: any = {
       cuisine: {
-        count: vi.fn().mockResolvedValue(30),
+        count: vi.fn().mockResolvedValue(DEFAULT_MASTER_CUISINES.length),
         createMany: vi.fn(),
       },
     };
