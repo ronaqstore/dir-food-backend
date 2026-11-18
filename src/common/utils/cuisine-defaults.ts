@@ -55,6 +55,8 @@ export const DEFAULT_MASTER_CUISINES: readonly DefaultCuisineItem[] = [
   { name: 'Asian Fusion', slug: 'asian-fusion', icon: null, sortOrder: 30 },
   { name: 'Fast Food', slug: 'fast-food', icon: null, sortOrder: 31 },
   { name: 'Shinwari', slug: 'shinwari', icon: null, sortOrder: 32 },
+  { name: 'Fish & Seafood', slug: 'fish-seafood', icon: null, sortOrder: 33 },
+  { name: 'BBQ & Grills', slug: 'bbq-grills', icon: null, sortOrder: 34 },
 ] as const;
 
 export async function ensureDefaultCuisines(
