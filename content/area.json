@@ -5,11 +5,12 @@
     "status": "PROVINCE-WIDE OFFICIAL CENSUS & LOCAL GOVERNMENT SEED",
     "province": "Khyber Pakhtunkhwa",
     "district_master_count": 40,
-    "total_verified_localities": 11360,
+    "total_verified_localities": 11492,
     "pbs_2023_rural_localities_extracted": 9319,
     "lgkp_councils_extracted": 3005,
     "revenue_mouza_count": 344,
-    "source_hierarchy": "PBS Census 2023 Table 31 rural locality census baseline; LGKP Annex-D Local Councils; SLR Mouza and child locality registers."
+    "source_hierarchy": "PBS Census 2023 Table 31 rural locality census baseline; LGKP Annex-D Local Councils; SLR Mouza and child locality registers.",
+    "urban_delivery_hubs_count": 132
   },
   "districts": [
     {
@@ -145011,6 +145012,1326 @@
       "locality_id": "lower-dir-usr-008",
       "normalized_name": "masarkhani",
       "source": "Field Verified Community / Local Government Register"
+    },
+    {
+      "locality_id": "lower-dir-hub-0001",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Shaheed Chowk",
+      "normalized_name": "shaheed chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0002",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Bypass Chowk",
+      "normalized_name": "bypass chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0003",
+      "district": "Lower Dir",
+      "tehsil": "Balambat",
+      "parent_mouza": "Balambat",
+      "locality_name": "Balambat Bridge / Pul Area",
+      "normalized_name": "balambat bridge / pul area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0004",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Timergara Main Bazaar",
+      "normalized_name": "timergara main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0005",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "College Colony",
+      "normalized_name": "college colony",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0006",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Hospital Road / DHQ",
+      "normalized_name": "hospital road / dhq",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0007",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Gorgorai Chowk",
+      "normalized_name": "gorgorai chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0008",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Talash Main Bazaar",
+      "normalized_name": "talash main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0009",
+      "district": "Lower Dir",
+      "tehsil": "Timergara",
+      "parent_mouza": "Timergara",
+      "locality_name": "Ziarat Talash Chowk",
+      "normalized_name": "ziarat talash chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0010",
+      "district": "Lower Dir",
+      "tehsil": "Adenzai",
+      "parent_mouza": "Adenzai",
+      "locality_name": "Chakdara Main Bazaar",
+      "normalized_name": "chakdara main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0011",
+      "district": "Lower Dir",
+      "tehsil": "Adenzai",
+      "parent_mouza": "Adenzai",
+      "locality_name": "University of Malakand Campus Area",
+      "normalized_name": "university of malakand campus area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0012",
+      "district": "Lower Dir",
+      "tehsil": "Balambat",
+      "parent_mouza": "Balambat",
+      "locality_name": "Balambat Main Bazaar",
+      "normalized_name": "balambat main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0013",
+      "district": "Lower Dir",
+      "tehsil": "Khall",
+      "parent_mouza": "Khall",
+      "locality_name": "Khall Main Bazaar",
+      "normalized_name": "khall main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0014",
+      "district": "Lower Dir",
+      "tehsil": "Munda",
+      "parent_mouza": "Munda",
+      "locality_name": "Munda Main Bazaar",
+      "normalized_name": "munda main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0015",
+      "district": "Lower Dir",
+      "tehsil": "Samarbagh",
+      "parent_mouza": "Samarbagh",
+      "locality_name": "Samarbagh Main Bazaar",
+      "normalized_name": "samarbagh main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0016",
+      "district": "Lower Dir",
+      "tehsil": "Lal Qila",
+      "parent_mouza": "Lal Qila",
+      "locality_name": "Lal Qila Main Bazaar",
+      "normalized_name": "lal qila main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0017",
+      "district": "Lower Dir",
+      "tehsil": "Samarbagh",
+      "parent_mouza": "Samarbagh",
+      "locality_name": "Kumbar Bazaar",
+      "normalized_name": "kumbar bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "lower-dir-hub-0018",
+      "district": "Lower Dir",
+      "tehsil": "Balambat",
+      "parent_mouza": "Balambat",
+      "locality_name": "Rabat Bazaar",
+      "normalized_name": "rabat bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0019",
+      "district": "Upper Dir",
+      "tehsil": "Dir",
+      "parent_mouza": "Dir",
+      "locality_name": "Dir City Main Bazaar",
+      "normalized_name": "dir city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0020",
+      "district": "Upper Dir",
+      "tehsil": "Wari",
+      "parent_mouza": "Wari",
+      "locality_name": "Wari Main Bazaar",
+      "normalized_name": "wari main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0021",
+      "district": "Upper Dir",
+      "tehsil": "Dir",
+      "parent_mouza": "Dir",
+      "locality_name": "Chukiatan Chowk",
+      "normalized_name": "chukiatan chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0022",
+      "district": "Upper Dir",
+      "tehsil": "Sheringal",
+      "parent_mouza": "Sheringal",
+      "locality_name": "Sheringal Main Bazaar",
+      "normalized_name": "sheringal main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0023",
+      "district": "Upper Dir",
+      "tehsil": "Sheringal",
+      "parent_mouza": "Sheringal",
+      "locality_name": "Shaheed Benazir Bhutto University Campus",
+      "normalized_name": "shaheed benazir bhutto university campus",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0024",
+      "district": "Upper Dir",
+      "tehsil": "Darora",
+      "parent_mouza": "Darora",
+      "locality_name": "Darora Bazaar",
+      "normalized_name": "darora bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "upper-dir-hub-0025",
+      "district": "Upper Dir",
+      "tehsil": "Kumrat",
+      "parent_mouza": "Kumrat",
+      "locality_name": "Kumrat Valley Tourist Hub",
+      "normalized_name": "kumrat valley tourist hub",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "tourist_hub"
+    },
+    {
+      "locality_id": "swat-hub-0026",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Mingora Main Bazaar",
+      "normalized_name": "mingora main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0027",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "New Road Mingora",
+      "normalized_name": "new road mingora",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0028",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Nishat Chowk",
+      "normalized_name": "nishat chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0029",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Green Chowk",
+      "normalized_name": "green chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0030",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Sohrab Khan Chowk",
+      "normalized_name": "sohrab khan chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0031",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Makanbagh",
+      "normalized_name": "makanbagh",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0032",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Haji Baba Chowk",
+      "normalized_name": "haji baba chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0033",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "College Colony Mingora",
+      "normalized_name": "college colony mingora",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "swat-hub-0034",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Saidu Sharif Main Road",
+      "normalized_name": "saidu sharif main road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0035",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Saidu Teaching Hospital Area",
+      "normalized_name": "saidu teaching hospital area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0036",
+      "district": "Swat",
+      "tehsil": "Babuzai",
+      "parent_mouza": "Babuzai",
+      "locality_name": "Fizagat Tourist Road",
+      "normalized_name": "fizagat tourist road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "tourist_hub"
+    },
+    {
+      "locality_id": "swat-hub-0037",
+      "district": "Swat",
+      "tehsil": "Kabal",
+      "parent_mouza": "Kabal",
+      "locality_name": "Kanju Township / Airport Road",
+      "normalized_name": "kanju township / airport road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "swat-hub-0038",
+      "district": "Swat",
+      "tehsil": "Barikot",
+      "parent_mouza": "Barikot",
+      "locality_name": "Barikot Main Bazaar",
+      "normalized_name": "barikot main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swat-hub-0039",
+      "district": "Swat",
+      "tehsil": "Kabal",
+      "parent_mouza": "Kabal",
+      "locality_name": "Kabal Main Bazaar",
+      "normalized_name": "kabal main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bar-swat-hub-0040",
+      "district": "Bar Swat",
+      "tehsil": "Matta",
+      "parent_mouza": "Matta",
+      "locality_name": "Matta Main Bazaar",
+      "normalized_name": "matta main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bar-swat-hub-0041",
+      "district": "Bar Swat",
+      "tehsil": "Khwazakhela",
+      "parent_mouza": "Khwazakhela",
+      "locality_name": "Khwazakhela Main Bazaar",
+      "normalized_name": "khwazakhela main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bar-swat-hub-0042",
+      "district": "Bar Swat",
+      "tehsil": "Bahrain",
+      "parent_mouza": "Bahrain",
+      "locality_name": "Madyan Main Bazaar",
+      "normalized_name": "madyan main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bar-swat-hub-0043",
+      "district": "Bar Swat",
+      "tehsil": "Bahrain",
+      "parent_mouza": "Bahrain",
+      "locality_name": "Bahrain Main Bazaar",
+      "normalized_name": "bahrain main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bar-swat-hub-0044",
+      "district": "Bar Swat",
+      "tehsil": "Bahrain",
+      "parent_mouza": "Bahrain",
+      "locality_name": "Kalam Main Bazaar",
+      "normalized_name": "kalam main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "tourist_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0045",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 1",
+      "normalized_name": "hayatabad phase 1",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0046",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 2",
+      "normalized_name": "hayatabad phase 2",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0047",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 3",
+      "normalized_name": "hayatabad phase 3",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0048",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 4",
+      "normalized_name": "hayatabad phase 4",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0049",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 5",
+      "normalized_name": "hayatabad phase 5",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0050",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 6",
+      "normalized_name": "hayatabad phase 6",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0051",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Phase 7",
+      "normalized_name": "hayatabad phase 7",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0052",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "University Town",
+      "normalized_name": "university town",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0053",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "University of Peshawar Campus",
+      "normalized_name": "university of peshawar campus",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0054",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Saddar / Peshawar Cantt",
+      "normalized_name": "saddar / peshawar cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0055",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Mall Road Cantt",
+      "normalized_name": "mall road cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0056",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Board Bazaar",
+      "normalized_name": "board bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0057",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Karkhano Market",
+      "normalized_name": "karkhano market",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0058",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Warsak Road",
+      "normalized_name": "warsak road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0059",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Ring Road Peshawar",
+      "normalized_name": "ring road peshawar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0060",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Dalazak Road",
+      "normalized_name": "dalazak road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0061",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Charsadda Road Peshawar",
+      "normalized_name": "charsadda road peshawar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0062",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Kohat Road Peshawar",
+      "normalized_name": "kohat road peshawar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0063",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Gulbahar",
+      "normalized_name": "gulbahar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0064",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Gulberg Peshawar",
+      "normalized_name": "gulberg peshawar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0065",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Regi Model Town (RMT)",
+      "normalized_name": "regi model town (rmt)",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0066",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "DHA Peshawar",
+      "normalized_name": "dha peshawar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0067",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Hayatabad Medical Complex (HMC) Environs",
+      "normalized_name": "hayatabad medical complex (hmc) environs",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0068",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Khyber Teaching Hospital (KTH) Environs",
+      "normalized_name": "khyber teaching hospital (kth) environs",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0069",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Lady Reading Hospital (LRH) Environs",
+      "normalized_name": "lady reading hospital (lrh) environs",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "peshawar-hub-0070",
+      "district": "Peshawar",
+      "tehsil": "Peshawar",
+      "parent_mouza": "Peshawar",
+      "locality_name": "Deans Trade Center / Islamia Road",
+      "normalized_name": "deans trade center / islamia road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0071",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector A",
+      "normalized_name": "sheikh maltoon town sector a",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0072",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector B",
+      "normalized_name": "sheikh maltoon town sector b",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0073",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector C",
+      "normalized_name": "sheikh maltoon town sector c",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0074",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector D",
+      "normalized_name": "sheikh maltoon town sector d",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0075",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector E",
+      "normalized_name": "sheikh maltoon town sector e",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0076",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector F",
+      "normalized_name": "sheikh maltoon town sector f",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0077",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Sheikh Maltoon Town Sector G",
+      "normalized_name": "sheikh maltoon town sector g",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0078",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Mardan Cantt",
+      "normalized_name": "mardan cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0079",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Bank Road Mardan",
+      "normalized_name": "bank road mardan",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0080",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Baghdada Chowk",
+      "normalized_name": "baghdada chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0081",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Nowshera Road Mardan",
+      "normalized_name": "nowshera road mardan",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0082",
+      "district": "Mardan",
+      "tehsil": "Takht Bhai",
+      "parent_mouza": "Takht Bhai",
+      "locality_name": "Takht Bhai Main Bazaar",
+      "normalized_name": "takht bhai main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0083",
+      "district": "Mardan",
+      "tehsil": "Katlang",
+      "parent_mouza": "Katlang",
+      "locality_name": "Katlang Main Bazaar",
+      "normalized_name": "katlang main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0084",
+      "district": "Mardan",
+      "tehsil": "Rustam",
+      "parent_mouza": "Rustam",
+      "locality_name": "Rustam Main Bazaar",
+      "normalized_name": "rustam main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "mardan-hub-0085",
+      "district": "Mardan",
+      "tehsil": "Mardan",
+      "parent_mouza": "Mardan",
+      "locality_name": "Abdul Wali Khan University Campus Area",
+      "normalized_name": "abdul wali khan university campus area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0086",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Mandian",
+      "normalized_name": "mandian",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0087",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Ayub Medical Complex (AMC) Area",
+      "normalized_name": "ayub medical complex (amc) area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0088",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Jinnahabad",
+      "normalized_name": "jinnahabad",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0089",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Supply Bazaar",
+      "normalized_name": "supply bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0090",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Abbottabad Cantt",
+      "normalized_name": "abbottabad cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0091",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Murree Road Abbottabad",
+      "normalized_name": "murree road abbottabad",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0092",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "PMA Kakul Road",
+      "normalized_name": "pma kakul road",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0093",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "Bilal Town",
+      "normalized_name": "bilal town",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0094",
+      "district": "Abbottabad",
+      "tehsil": "Havelian",
+      "parent_mouza": "Havelian",
+      "locality_name": "Havelian Main Bazaar",
+      "normalized_name": "havelian main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "abbottabad-hub-0095",
+      "district": "Abbottabad",
+      "tehsil": "Abbottabad",
+      "parent_mouza": "Abbottabad",
+      "locality_name": "COMSATS Abbottabad Campus Area",
+      "normalized_name": "comsats abbottabad campus area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "malakand-hub-0096",
+      "district": "Malakand",
+      "tehsil": "Batkhela",
+      "parent_mouza": "Batkhela",
+      "locality_name": "Batkhela Main Bazaar",
+      "normalized_name": "batkhela main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "malakand-hub-0097",
+      "district": "Malakand",
+      "tehsil": "Batkhela",
+      "parent_mouza": "Batkhela",
+      "locality_name": "Batkhela Bypass Chowk",
+      "normalized_name": "batkhela bypass chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "malakand-hub-0098",
+      "district": "Malakand",
+      "tehsil": "Dargai",
+      "parent_mouza": "Dargai",
+      "locality_name": "Dargai Main Bazaar",
+      "normalized_name": "dargai main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "malakand-hub-0099",
+      "district": "Malakand",
+      "tehsil": "Thana",
+      "parent_mouza": "Thana",
+      "locality_name": "Thana Main Bazaar",
+      "normalized_name": "thana main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "malakand-hub-0100",
+      "district": "Malakand",
+      "tehsil": "Malakand Khas",
+      "parent_mouza": "Malakand Khas",
+      "locality_name": "Malakand Khas",
+      "normalized_name": "malakand khas",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bajaur-hub-0101",
+      "district": "Bajaur",
+      "tehsil": "Khar",
+      "parent_mouza": "Khar",
+      "locality_name": "Khar Main Bazaar",
+      "normalized_name": "khar main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bajaur-hub-0102",
+      "district": "Bajaur",
+      "tehsil": "Khar",
+      "parent_mouza": "Khar",
+      "locality_name": "Civil Colony Khar",
+      "normalized_name": "civil colony khar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "bajaur-hub-0103",
+      "district": "Bajaur",
+      "tehsil": "Khar",
+      "parent_mouza": "Khar",
+      "locality_name": "Inayat Killa Bazaar",
+      "normalized_name": "inayat killa bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bajaur-hub-0104",
+      "district": "Bajaur",
+      "tehsil": "Nawagai",
+      "parent_mouza": "Nawagai",
+      "locality_name": "Nawagai Main Bazaar",
+      "normalized_name": "nawagai main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bannu-hub-0105",
+      "district": "Bannu",
+      "tehsil": "Bannu",
+      "parent_mouza": "Bannu",
+      "locality_name": "Bannu City Main Bazaar",
+      "normalized_name": "bannu city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bannu-hub-0106",
+      "district": "Bannu",
+      "tehsil": "Bannu",
+      "parent_mouza": "Bannu",
+      "locality_name": "Bannu Cantt",
+      "normalized_name": "bannu cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bannu-hub-0107",
+      "district": "Bannu",
+      "tehsil": "Bannu",
+      "parent_mouza": "Bannu",
+      "locality_name": "Preedy Gate Chowk",
+      "normalized_name": "preedy gate chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "bannu-hub-0108",
+      "district": "Bannu",
+      "tehsil": "Bannu",
+      "parent_mouza": "Bannu",
+      "locality_name": "Lucky Gate Chowk",
+      "normalized_name": "lucky gate chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "charsadda-hub-0109",
+      "district": "Charsadda",
+      "tehsil": "Charsadda",
+      "parent_mouza": "Charsadda",
+      "locality_name": "Charsadda City Main Bazaar",
+      "normalized_name": "charsadda city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "charsadda-hub-0110",
+      "district": "Charsadda",
+      "tehsil": "Charsadda",
+      "parent_mouza": "Charsadda",
+      "locality_name": "Pari Chowk Charsadda",
+      "normalized_name": "pari chowk charsadda",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "charsadda-hub-0111",
+      "district": "Charsadda",
+      "tehsil": "Shabqadar",
+      "parent_mouza": "Shabqadar",
+      "locality_name": "Shabqadar Main Bazaar",
+      "normalized_name": "shabqadar main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "charsadda-hub-0112",
+      "district": "Charsadda",
+      "tehsil": "Tangi",
+      "parent_mouza": "Tangi",
+      "locality_name": "Tangi Main Bazaar",
+      "normalized_name": "tangi main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "charsadda-hub-0113",
+      "district": "Charsadda",
+      "tehsil": "Charsadda",
+      "parent_mouza": "Charsadda",
+      "locality_name": "Bacha Khan University Campus Area",
+      "normalized_name": "bacha khan university campus area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "nowshera-hub-0114",
+      "district": "Nowshera",
+      "tehsil": "Nowshera",
+      "parent_mouza": "Nowshera",
+      "locality_name": "Nowshera Cantt",
+      "normalized_name": "nowshera cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "nowshera-hub-0115",
+      "district": "Nowshera",
+      "tehsil": "Nowshera",
+      "parent_mouza": "Nowshera",
+      "locality_name": "Shobra Hotel Chowk",
+      "normalized_name": "shobra hotel chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "nowshera-hub-0116",
+      "district": "Nowshera",
+      "tehsil": "Pabbi",
+      "parent_mouza": "Pabbi",
+      "locality_name": "Pabbi Main Bazaar",
+      "normalized_name": "pabbi main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "nowshera-hub-0117",
+      "district": "Nowshera",
+      "tehsil": "Risalpur",
+      "parent_mouza": "Risalpur",
+      "locality_name": "Risalpur Cantt",
+      "normalized_name": "risalpur cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swabi-hub-0118",
+      "district": "Swabi",
+      "tehsil": "Swabi",
+      "parent_mouza": "Swabi",
+      "locality_name": "Swabi City Main Bazaar",
+      "normalized_name": "swabi city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swabi-hub-0119",
+      "district": "Swabi",
+      "tehsil": "Topi",
+      "parent_mouza": "Topi",
+      "locality_name": "Topi Main Bazaar",
+      "normalized_name": "topi main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "swabi-hub-0120",
+      "district": "Swabi",
+      "tehsil": "Topi",
+      "parent_mouza": "Topi",
+      "locality_name": "GIKI University Campus Area",
+      "normalized_name": "giki university campus area",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_educational_hub"
+    },
+    {
+      "locality_id": "swabi-hub-0121",
+      "district": "Swabi",
+      "tehsil": "Chota Lahor",
+      "parent_mouza": "Chota Lahor",
+      "locality_name": "Chota Lahor Main Bazaar",
+      "normalized_name": "chota lahor main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "haripur-hub-0122",
+      "district": "Haripur",
+      "tehsil": "Haripur",
+      "parent_mouza": "Haripur",
+      "locality_name": "Haripur City Main Bazaar",
+      "normalized_name": "haripur city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "haripur-hub-0123",
+      "district": "Haripur",
+      "tehsil": "Haripur",
+      "parent_mouza": "Haripur",
+      "locality_name": "Siddique-e-Akbar Chowk",
+      "normalized_name": "siddique-e-akbar chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "haripur-hub-0124",
+      "district": "Haripur",
+      "tehsil": "Haripur",
+      "parent_mouza": "Haripur",
+      "locality_name": "Sector 1 / Sector 2 Haripur",
+      "normalized_name": "sector 1 / sector 2 haripur",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "haripur-hub-0125",
+      "district": "Haripur",
+      "tehsil": "Khanpur",
+      "parent_mouza": "Khanpur",
+      "locality_name": "Khanpur Main Bazaar",
+      "normalized_name": "khanpur main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "kohat-hub-0126",
+      "district": "Kohat",
+      "tehsil": "Kohat",
+      "parent_mouza": "Kohat",
+      "locality_name": "Kohat City Main Bazaar",
+      "normalized_name": "kohat city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "kohat-hub-0127",
+      "district": "Kohat",
+      "tehsil": "Kohat",
+      "parent_mouza": "Kohat",
+      "locality_name": "Kohat Cantt",
+      "normalized_name": "kohat cantt",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "kohat-hub-0128",
+      "district": "Kohat",
+      "tehsil": "Kohat",
+      "parent_mouza": "Kohat",
+      "locality_name": "KDA Kohat Sectors",
+      "normalized_name": "kda kohat sectors",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_residential_hub"
+    },
+    {
+      "locality_id": "dera-ismail-khan-hub-0129",
+      "district": "Dera Ismail Khan",
+      "tehsil": "D.I. Khan",
+      "parent_mouza": "D.I. Khan",
+      "locality_name": "D.I. Khan City Main Bazaar",
+      "normalized_name": "d.i. khan city main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "dera-ismail-khan-hub-0130",
+      "district": "Dera Ismail Khan",
+      "tehsil": "D.I. Khan",
+      "parent_mouza": "D.I. Khan",
+      "locality_name": "Topanwala Chowk",
+      "normalized_name": "topanwala chowk",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "dera-ismail-khan-hub-0131",
+      "district": "Dera Ismail Khan",
+      "tehsil": "D.I. Khan",
+      "parent_mouza": "D.I. Khan",
+      "locality_name": "Cantt D.I. Khan",
+      "normalized_name": "cantt d.i. khan",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
+    },
+    {
+      "locality_id": "paharpur-hub-0132",
+      "district": "Paharpur",
+      "tehsil": "Paharpur",
+      "parent_mouza": "Paharpur",
+      "locality_name": "Paharpur Main Bazaar",
+      "normalized_name": "paharpur main bazaar",
+      "source": "Official Urban Planning & Food Delivery Geographic Registry",
+      "location_type": "urban_commercial_hub"
     }
   ],
   "mouzaRegister": [
