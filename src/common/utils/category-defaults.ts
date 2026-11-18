@@ -143,6 +143,9 @@ export function isCategoryCovered(
     if (normExist.includes('cake') && normDef.includes('cake')) return true;
     if (normExist.includes('wing') && normDef.includes('wing')) return true;
     if (normExist.includes('trout') && normDef.includes('trout')) return true;
+    if (normExist.includes('steak') && normDef.includes('steak')) return true;
+    if (normExist.includes('pasta') && normDef.includes('pasta')) return true;
+    if (normExist.includes('panini') && normDef.includes('panini')) return true;
     return false;
   });
 }
