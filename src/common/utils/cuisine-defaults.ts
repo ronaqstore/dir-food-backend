@@ -58,6 +58,36 @@ export const DEFAULT_MASTER_CUISINES: readonly DefaultCuisineItem[] = [
   { name: 'Fish & Seafood', slug: 'fish-seafood', icon: null, sortOrder: 33 },
   { name: 'BBQ & Grills', slug: 'bbq-grills', icon: null, sortOrder: 34 },
   { name: 'Cafe & Bakery', slug: 'cafe-bakery', icon: null, sortOrder: 35 },
+  {
+    name: 'Bannu & Southern KP',
+    slug: 'bannu-southern-kp',
+    icon: null,
+    sortOrder: 36,
+  },
+  {
+    name: 'Street Food & Chaat',
+    slug: 'street-food-chaat',
+    icon: null,
+    sortOrder: 37,
+  },
+  {
+    name: 'Desserts & Sweets',
+    slug: 'desserts-sweets',
+    icon: null,
+    sortOrder: 38,
+  },
+  {
+    name: 'Beverages & Juices',
+    slug: 'beverages-juices',
+    icon: null,
+    sortOrder: 39,
+  },
+  {
+    name: 'Middle Eastern & Mandi',
+    slug: 'middle-eastern-mandi',
+    icon: null,
+    sortOrder: 40,
+  },
 ] as const;
 
 export async function ensureDefaultCuisines(
