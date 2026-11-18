@@ -137,6 +137,12 @@ export function isCategoryCovered(
     if (normExist.includes('shake') && normDef.includes('shake')) return true;
     if (normExist.includes('sandwich') && normDef.includes('sandwich')) return true;
     if (normExist.includes('paratha') && normDef.includes('paratha')) return true;
+    if (normExist.includes('coffee') && normDef.includes('coffee')) return true;
+    if (normExist.includes('cafe') && normDef.includes('cafe')) return true;
+    if (normExist.includes('bakery') && normDef.includes('bakery')) return true;
+    if (normExist.includes('cake') && normDef.includes('cake')) return true;
+    if (normExist.includes('wing') && normDef.includes('wing')) return true;
+    if (normExist.includes('trout') && normDef.includes('trout')) return true;
     return false;
   });
 }
