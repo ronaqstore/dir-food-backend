@@ -121,6 +121,22 @@ export function isCategoryCovered(
     if (normExist.includes('chinese') && normDef.includes('chinese')) return true;
     if (normExist.includes('seafood') && normDef.includes('seafood')) return true;
     if (normExist.includes('fish') && normDef.includes('fish')) return true;
+    if (normExist.includes('sobat') && normDef.includes('sobat')) return true;
+    if (normExist.includes('painda') && normDef.includes('painda')) return true;
+    if (normExist.includes('mandi') && normDef.includes('mandi')) return true;
+    if (normExist.includes('kabsa') && normDef.includes('kabsa')) return true;
+    if (normExist.includes('sajji') && normDef.includes('sajji')) return true;
+    if (normExist.includes('chargha') && normDef.includes('chargha')) return true;
+    if (normExist.includes('broast') && normDef.includes('broast')) return true;
+    if (normExist.includes('kabab') && normDef.includes('kabab')) return true;
+    if (normExist.includes('kebab') && normDef.includes('kebab')) return true;
+    if (normExist.includes('tikka') && normDef.includes('tikka')) return true;
+    if (normExist.includes('boti') && normDef.includes('boti')) return true;
+    if (normExist.includes('icecream') && normDef.includes('icecream')) return true;
+    if (normExist.includes('falooda') && normDef.includes('falooda')) return true;
+    if (normExist.includes('shake') && normDef.includes('shake')) return true;
+    if (normExist.includes('sandwich') && normDef.includes('sandwich')) return true;
+    if (normExist.includes('paratha') && normDef.includes('paratha')) return true;
     return false;
   });
 }
