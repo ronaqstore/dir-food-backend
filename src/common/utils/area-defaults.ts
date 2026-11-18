@@ -49,9 +49,11 @@ function loadRawGazetteer(): RawGazetteer | null {
     const filePath = candidates.find((c) => fs.existsSync(c));
     if (!filePath) return null;
     const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const rawMouzas = raw.mouzaRegister ?? raw.mouzas;
+    const rawLocs = raw.localitySeed ?? raw.localities;
     cachedGazetteer = {
-      mouzas: Array.isArray(raw.mouzas) ? raw.mouzas : [],
-      localities: Array.isArray(raw.localities) ? raw.localities : [],
+      mouzas: Array.isArray(rawMouzas) ? rawMouzas : [],
+      localities: Array.isArray(rawLocs) ? rawLocs : [],
     };
     return cachedGazetteer;
   } catch {
@@ -95,16 +97,20 @@ export function loadGazetteerSettlementsForDistrict(
   for (const l of data.localities) {
     const d = (l.district || l.districtName) as string | undefined;
     if (getGazetteerDistrictSlug(d) === districtSlug) {
-      addEntry((l.localityName || l.name) as string | undefined);
+      addEntry(
+        (l.locality_name || l.localityName || l.name) as string | undefined,
+      );
     }
   }
 
   for (const m of data.mouzas) {
     const d = (m.district || m.districtName) as string | undefined;
     if (getGazetteerDistrictSlug(d) !== districtSlug) continue;
-    addEntry((m.mouzaName || m.mouza) as string | undefined);
-    if (typeof m.villageNamesRaw === 'string') {
-      m.villageNamesRaw.split(',').forEach((p) => addEntry(p));
+    addEntry((m.mouza_name || m.mouzaName || m.mouza) as string | undefined);
+    const rawChildren = (m.raw_child_localities ||
+      m.villageNamesRaw) as string | undefined;
+    if (typeof rawChildren === 'string') {
+      rawChildren.split(',').forEach((p) => addEntry(p));
     }
   }
 
