@@ -20,7 +20,7 @@ export interface RawRestaurantForCard {
     closeTime: Date;
   }>;
   categories?: Array<{ name: string }>;
-  items?: Array<{ name: string }>;
+  items?: Array<{ name: string; isDeal?: boolean }>;
 }
 
 export function filterRestaurantsByCuisine<T extends RawRestaurantForCard>(
@@ -58,6 +58,13 @@ export function filterRestaurantsByCuisine<T extends RawRestaurantForCard>(
     if (inCategories) return true;
 
     const itemsList = r.items ?? [];
+    if (targetCuisine === 'deals' || targetCuisine === 'deal') {
+      const hasDealItem = itemsList.some(
+        (item) => item.isDeal || item.name.toLowerCase().includes('deal'),
+      );
+      if (hasDealItem) return true;
+    }
+
     if (singleTarget.length >= 3) {
       const inItems = itemsList.some((item) =>
         item.name.toLowerCase().includes(singleTarget),
@@ -85,6 +92,12 @@ export function buildRestaurantCard(
     cuisinesList.length > 0 ? cuisinesList : activeCategoryNames
   ).slice(0, 5);
 
+  const hasDeals =
+    (r.items ?? []).some(
+      (item) => item.isDeal || item.name.toLowerCase().includes('deal'),
+    ) ||
+    (r.categories ?? []).some((c) => c.name.toLowerCase().includes('deal'));
+
   return {
     slug: r.slug,
     name: r.name,
@@ -94,6 +107,7 @@ export function buildRestaurantCard(
     isOpenNow: openStatus.isOpenNow,
     availabilityText: openStatus.availabilityText,
     nextOpenAt: openStatus.nextOpenAt,
+    hasDeals,
   };
 }
 

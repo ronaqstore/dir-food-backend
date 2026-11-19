@@ -73,6 +73,21 @@ export class QueryPublicRestaurantsDto {
   openNow?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Filter only restaurants offering promotional deals',
+    example: true,
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === true || value === 1 || value === '1')
+      return true;
+    if (value === 'false' || value === false || value === 0 || value === '0')
+      return false;
+    return value;
+  })
+  @IsBoolean({ message: 'hasDeals must be a boolean' })
+  hasDeals?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Page number for pagination',
     default: 1,
     minimum: 1,

@@ -25,6 +25,7 @@ export interface PublicRestaurantCard {
   isOpenNow: boolean;
   availabilityText: string;
   nextOpenAt: string | null;
+  hasDeals?: boolean;
 }
 
 export interface PublicRestaurantProfile {
@@ -158,7 +159,7 @@ export class PublicRestaurantsService {
         },
         items: {
           where: { isActive: true },
-          select: { name: true },
+          select: { name: true, isDeal: true },
         },
       },
       orderBy: {
@@ -172,9 +173,13 @@ export class PublicRestaurantsService {
       buildRestaurantCard(r, now),
     );
 
-    const openFiltered = query.openNow
-      ? evaluated.filter((r) => r.isOpenNow)
+    const dealsFiltered = query.hasDeals
+      ? evaluated.filter((r) => r.hasDeals)
       : evaluated;
+
+    const openFiltered = query.openNow
+      ? dealsFiltered.filter((r) => r.isOpenNow)
+      : dealsFiltered;
 
     const finalFiltered = sortRestaurantCards(openFiltered, query.sortBy);
 
