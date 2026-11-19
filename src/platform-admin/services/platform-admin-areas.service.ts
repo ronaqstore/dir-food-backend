@@ -262,22 +262,28 @@ export class PlatformAdminAreasService {
 
     const data: Prisma.AreaUpdateInput = { isVerified: true, isActive: true };
 
-    if (dto?.name && dto.name.trim() !== area.name) {
-      const cleanName = dto.name.trim();
-      const slug = slugify(cleanName);
-      if (!slug) throw new BadRequestException('Invalid area name');
+    const targetName = dto?.name?.trim() || area.name;
+    const targetSlug = dto?.slug?.trim()
+      ? slugify(dto.slug.trim())
+      : (dto?.name && dto.name.trim() !== area.name ? slugify(targetName) : area.slug);
+
+    if (targetName !== area.name) {
+      data.name = targetName;
+    }
+
+    if (targetSlug !== area.slug) {
+      if (!targetSlug) throw new BadRequestException('Invalid area slug');
 
       const existingSlug = await this.prisma.area.findUnique({
-        where: { cityId_slug: { cityId: area.cityId, slug } },
+        where: { cityId_slug: { cityId: area.cityId, slug: targetSlug } },
       });
       if (existingSlug && existingSlug.id !== id) {
         throw new ConflictException(
-          `An area with name "${cleanName}" already exists in this city`,
+          `An area with slug "${targetSlug}" already exists in this city`,
         );
       }
 
-      data.name = cleanName;
-      data.slug = slug;
+      data.slug = targetSlug;
     }
 
     const updated = await this.prisma.area.update({

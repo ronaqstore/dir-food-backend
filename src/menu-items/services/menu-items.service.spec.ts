@@ -174,11 +174,11 @@ describe('MenuItemsService (unit)', () => {
       expect(res?.isDeal).toBe(true);
     });
 
-    it('automatically assigns deals to Deals & Combos category when categoryId is omitted', async () => {
+    it('automatically assigns deals to Deals category when categoryId is omitted', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
       mockPrisma.menuCategory.findFirst.mockResolvedValue({
         id: 'deals-cat-id',
-        name: 'Deals & Combos',
+        name: 'Deals',
       });
       mockPrisma.menuItem.findFirst.mockResolvedValue(null);
       mockPrisma.menuItem.create.mockResolvedValue({ id: 'deal-2' });

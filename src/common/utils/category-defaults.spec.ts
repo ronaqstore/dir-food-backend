@@ -17,7 +17,7 @@ describe('category-defaults utility (unit)', () => {
   it('correctly matches covered categories', () => {
     expect(isCategoryCovered('Fast Food & Burgers', ['Fast Food'])).toBe(true);
     expect(isCategoryCovered('Karahi & Handi', ['Karahi'])).toBe(true);
-    expect(isCategoryCovered('Deals & Combos', ['Special Deals'])).toBe(true);
+    expect(isCategoryCovered('Deals', ['Special Deals'])).toBe(true);
     expect(isCategoryCovered('Pizza', ['Burgers'])).toBe(false);
   });
 
@@ -52,7 +52,7 @@ describe('category-defaults utility (unit)', () => {
         findMany: vi.fn().mockResolvedValue([
           { name: 'Fast Food', sortOrder: 1 },
           { name: 'Karahi', sortOrder: 2 },
-          { name: 'Deals & Combos', sortOrder: 3 },
+          { name: 'Deals', sortOrder: 3 },
         ]),
         createMany: vi.fn().mockResolvedValue({ count: 13 }),
       },
@@ -65,7 +65,7 @@ describe('category-defaults utility (unit)', () => {
     const createdNames = createCallArgs.data.map((d: any) => d.name);
     expect(createdNames).not.toContain('Fast Food & Burgers');
     expect(createdNames).not.toContain('Karahi & Handi');
-    expect(createdNames).not.toContain('Deals & Combos');
+    expect(createdNames).not.toContain('Deals');
     expect(createdNames).toContain('Pizza');
     expect(createdNames).toContain('BBQ & Grills');
   });

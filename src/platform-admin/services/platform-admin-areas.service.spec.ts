@@ -215,6 +215,40 @@ describe('PlatformAdminAreasService (unit)', () => {
         expect.objectContaining({ action: 'AREA_APPROVED' }),
       );
     });
+
+    it('approves area with custom name and custom slug', async () => {
+      mockPrisma.area.findUnique
+        .mockResolvedValueOnce({
+          id: 'a1',
+          name: 'test area',
+          slug: 'test-area-pending',
+          cityId: 'city-1',
+        })
+        .mockResolvedValueOnce(null);
+      mockPrisma.area.update.mockResolvedValue({
+        id: 'a1',
+        name: 'Test Area Verified',
+        slug: 'test-area',
+        cityId: 'city-1',
+        isVerified: true,
+      });
+
+      const res = await service.approveArea(
+        'a1',
+        { name: 'Test Area Verified', slug: 'test-area' },
+        'admin-1',
+      );
+      expect(res.isVerified).toBe(true);
+      expect(mockPrisma.area.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: 'Test Area Verified',
+            slug: 'test-area',
+            isVerified: true,
+          }),
+        }),
+      );
+    });
   });
 
   describe('mergeArea', () => {

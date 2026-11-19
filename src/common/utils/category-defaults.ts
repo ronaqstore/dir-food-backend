@@ -6,7 +6,7 @@ export interface DefaultCategoryItem {
 }
 
 export const DEFAULT_MENU_CATEGORIES: readonly DefaultCategoryItem[] = [
-  { name: 'Deals & Combos', sortOrder: 1 },
+  { name: 'Deals', sortOrder: 1 },
   { name: 'Platters & Family Taals', sortOrder: 2 },
   { name: 'Soups & Starters', sortOrder: 3 },
   { name: 'Salads & Raita', sortOrder: 4 },

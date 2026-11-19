@@ -10,4 +10,13 @@ export class ApproveAreaDto {
   @MinLength(2)
   @MaxLength(80)
   name?: string;
+
+  @ApiPropertyOptional({
+    description: 'Optional cleaned up / corrected slug for the area',
+    example: 'timergara',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  slug?: string;
 }

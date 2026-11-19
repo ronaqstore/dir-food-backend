@@ -197,7 +197,7 @@ export class MenuItemsService {
           dealsCategory = await this.prisma.menuCategory.create({
             data: {
               restaurantId,
-              name: 'Deals & Combos',
+              name: 'Deals',
               sortOrder: nextOrder,
               isActive: true,
             },

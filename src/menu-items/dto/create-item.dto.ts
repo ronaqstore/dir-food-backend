@@ -59,7 +59,7 @@ export class CreateMenuItemDto {
   @ApiPropertyOptional({
     example: '0192a000-0000-7000-8000-000000000001',
     description:
-      'Category UUID v7. Optional for deals (auto-assigned to Deals & Combos).',
+      'Category UUID v7. Optional for deals (auto-assigned to Deals).',
   })
   @IsOptional()
   @IsUUID('7', { message: 'categoryId must be a valid UUID v7' })
