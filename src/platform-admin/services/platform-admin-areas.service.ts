@@ -265,7 +265,9 @@ export class PlatformAdminAreasService {
     const targetName = dto?.name?.trim() || area.name;
     const targetSlug = dto?.slug?.trim()
       ? slugify(dto.slug.trim())
-      : (dto?.name && dto.name.trim() !== area.name ? slugify(targetName) : area.slug);
+      : dto?.name && dto.name.trim() !== area.name
+        ? slugify(targetName)
+        : area.slug;
 
     if (targetName !== area.name) {
       data.name = targetName;

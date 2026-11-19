@@ -107,8 +107,8 @@ export function loadGazetteerSettlementsForDistrict(
     const d = (m.district || m.districtName) as string | undefined;
     if (getGazetteerDistrictSlug(d) !== districtSlug) continue;
     addEntry((m.mouza_name || m.mouzaName || m.mouza) as string | undefined);
-    const rawChildren = (m.raw_child_localities ||
-      m.villageNamesRaw) as string | undefined;
+    const rawChildren = (m.raw_child_localities || m.villageNamesRaw) as
+      string | undefined;
     if (typeof rawChildren === 'string') {
       rawChildren.split(',').forEach((p) => addEntry(p));
     }
