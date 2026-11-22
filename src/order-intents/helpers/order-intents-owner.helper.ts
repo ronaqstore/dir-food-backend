@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { QueryOrderIntentsDto } from '../dto/query-order-intents.dto.js';
@@ -174,5 +175,58 @@ export async function handleGetOwnerStats(
     whatsappOpened,
     whatsappOpenRate,
     topItems,
+  };
+}
+
+export async function handleGetOwnerOrderIntentDetail(
+  prisma: PrismaService,
+  restaurantId: string,
+  id: string,
+) {
+  const item = await prisma.orderIntent.findUnique({
+    where: {
+      id_restaurantId: {
+        id,
+        restaurantId,
+      },
+    },
+    include: {
+      items: {
+        orderBy: { lineNo: 'asc' },
+      },
+    },
+  });
+
+  if (!item) {
+    throw new NotFoundException('Order intent not found');
+  }
+
+  return {
+    id: item.id,
+    reference: item.publicRef,
+    status: item.status,
+    customerName: item.customerName,
+    customerPhone: item.customerPhone,
+    deliveryArea: item.deliveryAreaNameSnapshot,
+    landmark: item.landmark,
+    directions: item.directions,
+    mapLat: item.mapLat,
+    mapLng: item.mapLng,
+    subtotal: item.subtotal,
+    deliveryFee: item.deliveryFee,
+    deliveryFeeStatus: item.deliveryFeeStatus,
+    items: item.items.map((i) => ({
+      name: i.itemNameSnapshot,
+      variant: i.variantNameSnapshot,
+      addons: Array.isArray(i.addonsSnapshot) ? i.addonsSnapshot : null,
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+      lineTotal: i.lineTotal,
+    })),
+    createdAt: item.createdAt,
+    expiresAt: item.expiresAt,
+    isExpired: item.expiresAt.getTime() <= Date.now(),
+    whatsappOpenedAt: item.whatsappOpenedAt,
+    notConfirmed: true,
   };
 }

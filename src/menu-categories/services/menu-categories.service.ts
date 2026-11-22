@@ -13,13 +13,10 @@ import type { UpdateCategoryDto } from '../dto/update-category.dto.js';
 export class MenuCategoriesService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
-  async onModuleInit(): Promise<void> {
-    const restaurants = await this.prisma.restaurant.findMany({
-      select: { id: true },
-    });
-    for (const restaurant of restaurants) {
-      await ensureDefaultCategories(this.prisma, restaurant.id);
-    }
+  async onModuleInit(): Promise<void> {}
+
+  async seedDefaultCategories(restaurantId: string): Promise<void> {
+    await ensureDefaultCategories(this.prisma, restaurantId);
   }
 
   async getCategories(
@@ -39,8 +36,6 @@ export class MenuCategoriesService implements OnModuleInit {
     if (!restaurant) {
       throw new NotFoundException('Restaurant not found');
     }
-
-    await ensureDefaultCategories(this.prisma, restaurantId);
 
     const isPaginated = page !== undefined || limit !== undefined;
 

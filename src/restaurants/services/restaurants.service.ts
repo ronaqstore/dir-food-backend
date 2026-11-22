@@ -101,6 +101,7 @@ export class RestaurantsService {
       data.minOrderAmount =
         dto.minOrderAmount !== null ? BigInt(dto.minOrderAmount) : null;
     }
+    let cityChanged = false;
     if (dto.cityId !== undefined) {
       if (dto.cityId) {
         const city = await this.prisma.city.findUnique({
@@ -112,6 +113,9 @@ export class RestaurantsService {
         data.cityId = dto.cityId;
       } else {
         data.cityId = null;
+      }
+      if (data.cityId !== existing.cityId) {
+        cityChanged = true;
       }
     }
 
@@ -138,6 +142,18 @@ export class RestaurantsService {
       where: { id: restaurantId },
       data,
     });
+
+    if (cityChanged) {
+      await this.prisma.restaurantDeliveryArea.updateMany({
+        where: {
+          restaurantId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+    }
 
     if (whatsappChanged) {
       await this.auditService.log({

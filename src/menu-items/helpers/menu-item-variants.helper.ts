@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
 
@@ -79,4 +79,56 @@ export async function handleReplaceVariants(
     },
     orderBy: { sortOrder: 'asc' },
   });
+}
+
+export async function handleReorderItems(
+  prisma: PrismaService,
+  restaurantId: string,
+  categoryId: string,
+  ids: string[],
+) {
+  const category = await prisma.menuCategory.findUnique({
+    where: {
+      id_restaurantId: {
+        id: categoryId,
+        restaurantId,
+      },
+    },
+  });
+
+  if (!category) {
+    throw new NotFoundException('Menu category not found for this restaurant');
+  }
+
+  const count = await prisma.menuItem.count({
+    where: {
+      id: { in: ids },
+      restaurantId,
+      categoryId,
+    },
+  });
+
+  if (count !== ids.length) {
+    throw new BadRequestException(
+      'One or more item IDs do not belong to this restaurant and category',
+    );
+  }
+
+  await prisma.$transaction(
+    ids.map((id, index) =>
+      prisma.menuItem.update({
+        where: {
+          id_restaurantId: {
+            id,
+            restaurantId,
+          },
+        },
+        data: {
+          sortOrder: index,
+        },
+      }),
+    ),
+  );
+
+  return { success: true };
 }

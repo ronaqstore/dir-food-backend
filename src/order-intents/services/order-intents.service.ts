@@ -24,6 +24,7 @@ import type { QueryOrderIntentsDto } from '../dto/query-order-intents.dto.js';
 import {
   handleGetOwnerOrderIntents,
   handleGetOwnerStats,
+  handleGetOwnerOrderIntentDetail,
 } from '../helpers/order-intents-owner.helper.js';
 
 export interface IntentFormattedItem {
@@ -51,6 +52,8 @@ export interface IntentFormattedPayload {
   mapLat?: number | Prisma.Decimal | null;
   mapLng?: number | Prisma.Decimal | null;
   expiresAt: Date;
+  restaurantCitySnapshot?: string | null;
+  restaurant?: { city?: { name?: string | null } | null } | null;
 }
 
 @Injectable()
@@ -64,7 +67,10 @@ export class OrderIntentsService {
   async createOrderIntent(dto: CreateOrderIntentDto, ipAddress: string) {
     const existing = await this.prisma.orderIntent.findUnique({
       where: { clientRequestId: dto.clientRequestId },
-      include: { items: { orderBy: { lineNo: 'asc' } } },
+      include: {
+        restaurant: { select: { city: { select: { name: true } } } },
+        items: { orderBy: { lineNo: 'asc' } },
+      },
     });
 
     if (existing) {
@@ -75,7 +81,7 @@ export class OrderIntentsService {
 
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { slug: dto.restaurantSlug },
-      include: { hours: true },
+      include: { hours: true, city: { select: { name: true } } },
     });
 
     if (
@@ -366,7 +372,13 @@ export class OrderIntentsService {
       return intent;
     });
 
-    return this.formatIntentResponse(created, validatedLines);
+    return this.formatIntentResponse(
+      {
+        ...created,
+        restaurantCitySnapshot: restaurant.city?.name ?? null,
+      },
+      validatedLines,
+    );
   }
 
   async recordWhatsAppOpened(ref: string) {
@@ -406,6 +418,7 @@ export class OrderIntentsService {
     const intent = await this.prisma.orderIntent.findUnique({
       where: { publicRef: normalizedRef },
       include: {
+        restaurant: { select: { city: { select: { name: true } } } },
         items: {
           orderBy: { lineNo: 'asc' },
         },
@@ -434,51 +447,7 @@ export class OrderIntentsService {
   }
 
   async getOwnerOrderIntentDetail(restaurantId: string, id: string) {
-    const item = await this.prisma.orderIntent.findUnique({
-      where: {
-        id_restaurantId: {
-          id,
-          restaurantId,
-        },
-      },
-      include: {
-        items: {
-          orderBy: { lineNo: 'asc' },
-        },
-      },
-    });
-
-    if (!item) {
-      throw new NotFoundException('Order intent not found');
-    }
-
-    return {
-      id: item.id,
-      reference: item.publicRef,
-      status: item.status,
-      customerName: item.customerName,
-      customerPhone: item.customerPhone,
-      deliveryArea: item.deliveryAreaNameSnapshot,
-      landmark: item.landmark,
-      directions: item.directions,
-      mapLat: item.mapLat,
-      mapLng: item.mapLng,
-      subtotal: item.subtotal,
-      deliveryFee: item.deliveryFee,
-      deliveryFeeStatus: item.deliveryFeeStatus,
-      items: item.items.map((i) => ({
-        name: i.itemNameSnapshot,
-        variant: i.variantNameSnapshot,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-        lineTotal: i.lineTotal,
-      })),
-      createdAt: item.createdAt,
-      expiresAt: item.expiresAt,
-      isExpired: item.expiresAt.getTime() <= Date.now(),
-      whatsappOpenedAt: item.whatsappOpenedAt,
-      notConfirmed: true,
-    };
+    return handleGetOwnerOrderIntentDetail(this.prisma, restaurantId, id);
   }
 
   async getOwnerStats(restaurantId: string, range = '7d') {
@@ -524,6 +493,10 @@ export class OrderIntentsService {
       status: intent.status,
       restaurant: {
         name: intent.restaurantNameSnapshot,
+        district:
+          intent.restaurant?.city?.name ??
+          intent.restaurantCitySnapshot ??
+          null,
       },
       items: messageLines,
       subtotal: intent.subtotal,

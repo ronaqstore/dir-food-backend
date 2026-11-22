@@ -17,7 +17,10 @@ import {
   handleUploadItemImage,
   handleDeleteItemImage,
 } from '../helpers/menu-item-images.helper.js';
-import { handleReplaceVariants } from '../helpers/menu-item-variants.helper.js';
+import {
+  handleReplaceVariants,
+  handleReorderItems,
+} from '../helpers/menu-item-variants.helper.js';
 import { handleReplaceAddons } from '../helpers/menu-item-addons.helper.js';
 
 @Injectable()
@@ -110,20 +113,12 @@ export class MenuItemsService {
         take: safeLimit,
         orderBy: orderByClause,
         include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+          category: { select: { id: true, name: true } },
           variants: {
             where: { isActive: true },
             orderBy: { sortOrder: 'asc' },
           },
-          addons: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-          },
+          addons: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
         },
       }),
     ]);
@@ -412,6 +407,18 @@ export class MenuItemsService {
     if (dto.categoryId !== undefined) data.categoryId = dto.categoryId;
     if (dto.basePrice !== undefined) {
       data.basePrice = dto.basePrice !== null ? BigInt(dto.basePrice) : null;
+      if (dto.basePrice !== null) {
+        await this.prisma.menuItemVariant.updateMany({
+          where: {
+            restaurantId,
+            menuItemId: id,
+            isActive: true,
+          },
+          data: {
+            isActive: false,
+          },
+        });
+      }
     }
     if (dto.originalPrice !== undefined) {
       data.originalPrice =
@@ -458,51 +465,7 @@ export class MenuItemsService {
   }
 
   async reorderItems(restaurantId: string, categoryId: string, ids: string[]) {
-    const category = await this.prisma.menuCategory.findUnique({
-      where: {
-        id_restaurantId: {
-          id: categoryId,
-          restaurantId,
-        },
-      },
-    });
-
-    if (!category) {
-      throw new NotFoundException(
-        'Menu category not found for this restaurant',
-      );
-    }
-
-    const count = await this.prisma.menuItem.count({
-      where: {
-        id: { in: ids },
-        restaurantId,
-        categoryId,
-      },
-    });
-
-    if (count !== ids.length) {
-      throw new BadRequestException(
-        'One or more item IDs do not belong to this restaurant and category',
-      );
-    }
-
-    await this.prisma.$transaction(
-      ids.map((id, index) =>
-        this.prisma.menuItem.update({
-          where: {
-            id_restaurantId: {
-              id,
-              restaurantId,
-            },
-          },
-          data: {
-            sortOrder: index,
-          },
-        }),
-      ),
-    );
-
+    await handleReorderItems(this.prisma, restaurantId, categoryId, ids);
     return this.getItems(restaurantId, categoryId);
   }
 
