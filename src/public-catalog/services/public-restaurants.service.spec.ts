@@ -16,8 +16,8 @@ describe('PublicRestaurantsService', () => {
     };
   };
 
-  const unexpiredDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10); // +10 days
-  const expiredDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 10); // -10 days
+  const unexpiredDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 10);
+  const expiredDate = new Date(Date.now() - 1000 * 60 * 60 * 24 * 10);
 
   beforeEach(() => {
     mockPrisma = {
@@ -66,7 +66,6 @@ describe('PublicRestaurantsService', () => {
         minOrderAmount: 50000n,
         isOpenNow: true,
       });
-      // Ensure private fields like id are not exposed
       expect((res.data[0] as unknown as { id?: string }).id).toBeUndefined();
       expect(res.meta).toMatchObject({
         page: 1,
@@ -142,13 +141,11 @@ describe('PublicRestaurantsService', () => {
 
       mockPrisma.restaurant.findMany.mockResolvedValue(mockRestaurants);
 
-      // Without openNow filter, open restaurants are sorted first
       const allRes = await service.getRestaurants({});
       expect(allRes.data).toHaveLength(2);
       expect(allRes.data[0].slug).toBe('open-spot');
       expect(allRes.data[1].slug).toBe('closed-spot');
 
-      // With openNow filter, closed restaurants are excluded
       const openRes = await service.getRestaurants({ openNow: true });
       expect(openRes.data).toHaveLength(1);
       expect(openRes.data[0].slug).toBe('open-spot');
@@ -189,6 +186,36 @@ describe('PublicRestaurantsService', () => {
         limit: 1,
         total: 2,
       });
+    });
+
+    it('filters by city matching restaurant or delivery areas', async () => {
+      mockPrisma.restaurant.findMany.mockResolvedValue([]);
+      await service.getRestaurants({ cityId: 'city-timergara' });
+
+      expect(mockPrisma.restaurant.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: [
+                  { cityId: 'city-timergara' },
+                  {
+                    deliveryAreas: {
+                      some: {
+                        isActive: true,
+                        area: {
+                          cityId: 'city-timergara',
+                          isActive: true,
+                        },
+                      },
+                    },
+                  },
+                ],
+              }),
+            ]),
+          },
+        }),
+      );
     });
   });
 

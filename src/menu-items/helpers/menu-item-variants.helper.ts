@@ -25,11 +25,25 @@ export async function handleReplaceVariants(
     throw new BadRequestException('Deals cannot have variants');
   }
 
+  const hasActiveVariants = dto.variants.some((v) => v.isActive ?? true);
+  if (!hasActiveVariants && item.basePrice === null) {
+    throw new BadRequestException(
+      'Cannot remove all variants from an item that has no base price',
+    );
+  }
+
   const providedIds = dto.variants
     .map((v) => v.id)
     .filter((id): id is string => Boolean(id));
 
   await prisma.$transaction(async (tx) => {
+    if (hasActiveVariants && item.basePrice !== null) {
+      await tx.menuItem.update({
+        where: { id: itemId },
+        data: { basePrice: null },
+      });
+    }
+
     await tx.menuItemVariant.updateMany({
       where: {
         restaurantId,

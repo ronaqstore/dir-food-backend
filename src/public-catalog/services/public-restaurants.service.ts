@@ -87,52 +87,75 @@ export class PublicRestaurantsService {
 
   async getRestaurants(query: QueryPublicRestaurantsDto) {
     const now = new Date();
-    const where: Prisma.RestaurantWhereInput = {
-      status: RestaurantStatus.ACTIVE,
-      subscriptionEndsAt: {
-        gt: now,
+    const andConditions: Prisma.RestaurantWhereInput[] = [
+      {
+        status: RestaurantStatus.ACTIVE,
+        subscriptionEndsAt: {
+          gt: now,
+        },
       },
-    };
-
-    if (query.cityId) {
-      where.cityId = query.cityId;
-    }
+    ];
 
     if (query.areaId) {
-      where.deliveryAreas = {
-        some: {
-          areaId: query.areaId,
-          isActive: true,
-          area: {
+      andConditions.push({
+        deliveryAreas: {
+          some: {
+            areaId: query.areaId,
             isActive: true,
+            area: {
+              isActive: true,
+            },
           },
         },
-      };
+      });
+    } else if (query.cityId) {
+      andConditions.push({
+        OR: [
+          { cityId: query.cityId },
+          {
+            deliveryAreas: {
+              some: {
+                isActive: true,
+                area: {
+                  cityId: query.cityId,
+                  isActive: true,
+                },
+              },
+            },
+          },
+        ],
+      });
     }
 
     if (query.q) {
       const trimmedQ = query.q.trim();
-      where.OR = [
-        { name: { contains: trimmedQ, mode: 'insensitive' } },
-        { description: { contains: trimmedQ, mode: 'insensitive' } },
-        {
-          categories: {
-            some: {
-              isActive: true,
-              name: { contains: trimmedQ, mode: 'insensitive' },
+      andConditions.push({
+        OR: [
+          { name: { contains: trimmedQ, mode: 'insensitive' } },
+          { description: { contains: trimmedQ, mode: 'insensitive' } },
+          {
+            categories: {
+              some: {
+                isActive: true,
+                name: { contains: trimmedQ, mode: 'insensitive' },
+              },
             },
           },
-        },
-        {
-          items: {
-            some: {
-              isActive: true,
-              name: { contains: trimmedQ, mode: 'insensitive' },
+          {
+            items: {
+              some: {
+                isActive: true,
+                name: { contains: trimmedQ, mode: 'insensitive' },
+              },
             },
           },
-        },
-      ];
+        ],
+      });
     }
+
+    const where: Prisma.RestaurantWhereInput = {
+      AND: andConditions,
+    };
 
     const restaurants = await this.prisma.restaurant.findMany({
       where,

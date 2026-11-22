@@ -247,7 +247,8 @@ export class OrderIntentsService {
       const selectedAddons: Array<{ id: string; name: string; price: number }> =
         [];
       if (reqItem.addonIds && reqItem.addonIds.length > 0) {
-        for (const addonId of reqItem.addonIds) {
+        const uniqueAddonIds = [...new Set(reqItem.addonIds)];
+        for (const addonId of uniqueAddonIds) {
           const addon = dbItem.addons?.find((a) => a.id === addonId);
           if (!addon) {
             throw new UnprocessableEntityException(

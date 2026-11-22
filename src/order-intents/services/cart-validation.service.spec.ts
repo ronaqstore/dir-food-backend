@@ -110,7 +110,7 @@ describe('CartValidationService', () => {
         restaurantId: 'rest-1',
         name: 'Cold Drink',
         basePrice: 10000n,
-        isAvailable: false, // out of stock
+        isAvailable: false,
         isActive: true,
         variants: [],
       },
@@ -129,12 +129,56 @@ describe('CartValidationService', () => {
 
     const result = await service.validateCart('al-noor', [
       { menuItemId: 'item-1', quantity: 1 },
-      { menuItemId: 'item-2', quantity: 1 }, // missing variantId!
+      { menuItemId: 'item-2', quantity: 1 },
     ]);
 
     expect(result.problems).toContain(
       "Item 'Cold Drink' is currently out of stock",
     );
     expect(result.problems).toContain("Variant is required for 'Pizza'");
+  });
+
+  it('deduplicates duplicate addonIds to prevent double billing', async () => {
+    const futureDate = new Date(Date.now() + 10 * 86400000);
+    prisma.restaurant.findUnique.mockResolvedValue({
+      id: 'rest-1',
+      name: 'Al Noor',
+      slug: 'al-noor',
+      status: RestaurantStatus.ACTIVE,
+      subscriptionEndsAt: futureDate,
+      manualStatus: ManualStatus.AUTO,
+      hours: [],
+    });
+
+    prisma.menuItem.findMany.mockResolvedValue([
+      {
+        id: 'item-1',
+        restaurantId: 'rest-1',
+        name: 'Burger',
+        basePrice: 50000n,
+        isAvailable: true,
+        isActive: true,
+        variants: [],
+        addons: [
+          {
+            id: 'addon-cheese',
+            name: 'Cheese',
+            price: 5000n,
+            isAvailable: true,
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.validateCart('al-noor', [
+      {
+        menuItemId: 'item-1',
+        quantity: 1,
+        addonIds: ['addon-cheese', 'addon-cheese', 'addon-cheese'],
+      },
+    ]);
+
+    expect(result.lines[0].addons).toHaveLength(1);
+    expect(result.subtotal).toBe(55000n);
   });
 });

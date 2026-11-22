@@ -18,6 +18,9 @@ describe('menu-item-variants.helper', () => {
 
   it('deactivates omitted variants and upserts submitted variants', async () => {
     const mockTx = {
+      menuItem: {
+        update: vi.fn().mockResolvedValue({ id: 'item-1' }),
+      },
       menuItemVariant: {
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         update: vi.fn().mockResolvedValue({ id: 'v-1' }),
@@ -59,5 +62,22 @@ describe('menu-item-variants.helper', () => {
       },
     });
     expect(res).toHaveLength(2);
+  });
+
+  it('rejects removing all variants when item has no base price', async () => {
+    const mockPrisma = {
+      menuItem: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'item-1',
+          restaurantId: 'res-1',
+          basePrice: null,
+          isDeal: false,
+        }),
+      },
+    } as unknown as PrismaService;
+
+    await expect(
+      handleReplaceVariants(mockPrisma, 'res-1', 'item-1', { variants: [] }),
+    ).rejects.toThrow();
   });
 });

@@ -106,6 +106,7 @@ export async function handleGetOwnerOrderIntents(
     items: item.items.map((i) => ({
       name: i.itemNameSnapshot,
       variant: i.variantNameSnapshot,
+      addons: Array.isArray(i.addonsSnapshot) ? i.addonsSnapshot : null,
       quantity: i.quantity,
       unitPrice: i.unitPrice,
       lineTotal: i.lineTotal,

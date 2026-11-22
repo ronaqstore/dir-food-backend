@@ -152,7 +152,8 @@ export class CartValidationService {
       const selectedAddons: Array<{ id: string; name: string; price: bigint }> =
         [];
       if (reqItem.addonIds && reqItem.addonIds.length > 0) {
-        for (const addonId of reqItem.addonIds) {
+        const uniqueAddonIds = [...new Set(reqItem.addonIds)];
+        for (const addonId of uniqueAddonIds) {
           const addon = dbItem.addons?.find((a) => a.id === addonId);
           if (addon) {
             selectedAddons.push({
