@@ -1,11 +1,4 @@
-import { config as loadEnv } from 'dotenv';
-loadEnv({ path: `.env.${process.env.NODE_ENV ?? 'development'}` });
-loadEnv({ path: '.env' });
-
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../src/generated/prisma/client.js';
-
-interface VariantDef {
+export interface VariantDef {
   name: string;
   priceInRs: number;
 }
@@ -22,7 +15,7 @@ interface CategoryDef {
   items: ItemDef[];
 }
 
-const CATALOG_DATA: CategoryDef[] = [
+export const CATALOG_DATA: CategoryDef[] = [
   // ---------------------------------------------------------------------------
   // 1. Specialities & Karahi
   // ---------------------------------------------------------------------------
@@ -920,7 +913,7 @@ const CATALOG_DATA: CategoryDef[] = [
   },
 ];
 
-function getDishImage(itemName: string, categoryName: string): string {
+export function getDishImage(itemName: string, categoryName: string): string {
   const lower = itemName.toLowerCase();
   const catLower = categoryName.toLowerCase();
 
@@ -1035,151 +1028,3 @@ function getDishImage(itemName: string, categoryName: string): string {
 
   return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=500&q=80';
 }
-
-async function seedMenu() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    console.error('DATABASE_URL is not set.');
-    process.exit(1);
-  }
-
-  const adapter = new PrismaPg({
-    connectionString: dbUrl,
-    connectionTimeoutMillis: 15_000,
-  });
-  const prisma = new PrismaClient({ adapter });
-
-  console.log('\n--- Seeding 100+ Menu Items into Zaiqa Mahal & River Restaurant ---');
-
-  // 1. Locate or Update Restaurant
-  // We check for existing restaurant (either slug dukan-pro or first restaurant)
-  let restaurant = await prisma.restaurant.findFirst({
-    where: {
-      OR: [{ slug: 'dukan-pro' }, { slug: 'zaiqa-mahal' }],
-    },
-  });
-
-  if (!restaurant) {
-    restaurant = await prisma.restaurant.findFirst();
-  }
-
-  if (!restaurant) {
-    console.error('No restaurant found in DB. Run npm run seed:admin first.');
-    process.exit(1);
-  }
-
-  // Update restaurant name and description to reflect rich culinary offerings
-  restaurant = await prisma.restaurant.update({
-    where: { id: restaurant.id },
-    data: {
-      name: 'Zaiqa Mahal & River View Restaurant | ذائقہ محل',
-      slug: 'zaiqa-mahal',
-      description: 'Timergara and Lower Dir’s premier dining destination. Specializing in Shinwari Karahi, Live Charcoal BBQ, Gourmet Pizzas, Fast Food, Continental Steaks, Fresh Desserts & Authentic Quetta Chai.',
-      cuisines: ['Shinwari', 'BBQ', 'Fast Food', 'Continental', 'Desi'],
-      addressText: 'River Road, Balambat Bridge, Timergara, Lower Dir',
-      logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&h=300&q=80',
-      coverUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&h=400&q=80',
-    },
-  });
-
-  console.log(`✔ Restaurant updated: ${restaurant.name} (ID: ${restaurant.id}, Slug: ${restaurant.slug})`);
-
-  // 2. Clear existing menu items and categories for a clean seed
-  console.log('Cleaning old menu items & categories for this restaurant...');
-  await prisma.menuItemVariant.deleteMany({
-    where: { restaurantId: restaurant.id },
-  });
-  await prisma.menuItem.deleteMany({
-    where: { restaurantId: restaurant.id },
-  });
-  await prisma.menuCategory.deleteMany({
-    where: { restaurantId: restaurant.id },
-  });
-
-  console.log('Inserting categories, items, and variants...');
-
-  let totalItemsCount = 0;
-  let totalVariantsCount = 0;
-
-  for (let catIdx = 0; catIdx < CATALOG_DATA.length; catIdx++) {
-    const catDef = CATALOG_DATA[catIdx];
-    const category = await prisma.menuCategory.create({
-      data: {
-        restaurantId: restaurant.id,
-        name: catDef.name,
-        sortOrder: catIdx + 1,
-        isActive: true,
-      },
-    });
-
-    for (let itemIdx = 0; itemIdx < catDef.items.length; itemIdx++) {
-      const itemDef = catDef.items[itemIdx];
-      const hasVariants = Boolean(itemDef.variants && itemDef.variants.length > 0);
-
-      const basePriceInPaisa =
-        !hasVariants && itemDef.basePriceInRs !== undefined
-          ? BigInt(itemDef.basePriceInRs) * 100n
-          : null;
-
-      const isDealItem =
-        catDef.name.toLowerCase().includes('deal') ||
-        catDef.name.toLowerCase().includes('combo') ||
-        itemDef.name.toLowerCase().includes('deal');
-
-      const originalPriceInPaisa =
-        isDealItem && basePriceInPaisa
-          ? (basePriceInPaisa * 125n) / 100n
-          : null;
-
-      const createdItem = await prisma.menuItem.create({
-        data: {
-          restaurantId: restaurant.id,
-          categoryId: category.id,
-          name: itemDef.name.slice(0, 95),
-          description: itemDef.description ? itemDef.description.slice(0, 280) : null,
-          imageUrl: getDishImage(itemDef.name, catDef.name),
-          basePrice: basePriceInPaisa,
-          originalPrice: originalPriceInPaisa,
-          isDeal: isDealItem,
-          isAvailable: true,
-          isActive: true,
-          sortOrder: itemIdx + 1,
-        },
-      });
-      totalItemsCount++;
-
-      if (hasVariants && itemDef.variants) {
-        for (let varIdx = 0; varIdx < itemDef.variants.length; varIdx++) {
-          const v = itemDef.variants[varIdx];
-          await prisma.menuItemVariant.create({
-            data: {
-              restaurantId: restaurant.id,
-              menuItemId: createdItem.id,
-              name: v.name,
-              price: BigInt(v.priceInRs) * 100n, // Convert PKR to Paisa
-              isActive: true,
-              sortOrder: varIdx + 1,
-            },
-          });
-          totalVariantsCount++;
-        }
-      }
-    }
-  }
-
-  console.log('\n======================================================');
-  console.log('🎉 Menu Seeding Completed Successfully!');
-  console.log(`  - Restaurant:      ${restaurant.name}`);
-  console.log(`  - Slug:            ${restaurant.slug}`);
-  console.log(`  - Categories:      ${CATALOG_DATA.length}`);
-  console.log(`  - Total Items:     ${totalItemsCount}`);
-  console.log(`  - Total Variants:  ${totalVariantsCount}`);
-  console.log('======================================================\n');
-
-  await prisma.$disconnect();
-}
-
-seedMenu().catch((err) => {
-  console.error('Failed to seed menu:', err);
-  process.exit(1);
-});

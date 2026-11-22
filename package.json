@@ -33,9 +33,7 @@
     "db:start": "/usr/lib/postgresql/16/bin/pg_ctl -D ../local_pg_dev -l ../local_pg_dev/logfile start",
     "db:stop": "/usr/lib/postgresql/16/bin/pg_ctl -D ../local_pg_dev stop",
     "db:status": "/usr/lib/postgresql/16/bin/pg_ctl -D ../local_pg_dev status",
-    "seed": "jiti prisma/seed-admin.ts",
-    "seed:admin": "jiti prisma/seed-admin.ts",
-    "seed:menu": "jiti prisma/seed-menu.ts",
+    "seed": "jiti prisma/seed.ts",
     "check": "node scripts/run-checks.mjs",
     "knip": "node scripts/run-knip.mjs",
     "duplicates": "jscpd --config .jscpd.json"
@@ -88,5 +86,8 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^4.1.2"
+  },
+  "prisma": {
+    "seed": "jiti prisma/seed.ts"
   }
 }

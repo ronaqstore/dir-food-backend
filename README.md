@@ -31,6 +31,27 @@
 $ npm install
 ```
 
+## Database Setup & Master Seeder
+
+The backend uses a single master seeder to populate platform data (41 KP districts, master delivery areas, 40 cuisines, super admin accounts) and the demo restaurant catalog.
+
+```bash
+# Seed all database tables (Master Seeder)
+$ npm run seed
+
+# Seed specific modules only
+$ npm run seed -- --only=cities
+$ npm run seed -- --only=areas
+$ npm run seed -- --only=cuisines
+$ npm run seed -- --only=admins
+$ npm run seed -- --only=demo
+
+# Seed platform data without demo restaurant
+$ npm run seed -- --skip-demo
+```
+
+> For details on seeder architecture and how to add a new seeder, see **[`prisma/seeds/README.md`](./prisma/seeds/README.md)**.
+
 ## Compile and run the project
 
 ```bash
