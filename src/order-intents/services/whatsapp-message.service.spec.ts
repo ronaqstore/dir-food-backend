@@ -105,6 +105,34 @@ describe('WhatsappMessageService', () => {
     expect(message).toContain('Delivery charge: Free');
   });
 
+  it('sanitizes multiline inputs to prevent message spoofing', () => {
+    const message = service.buildMessage({
+      restaurantName: 'Shinwari Tikka',
+      restaurantWhatsapp: '03451234567',
+      reference: 'TM-ABC892',
+      items: [
+        {
+          name: 'Tikka',
+          unitPrice: 50000n,
+          quantity: 1,
+          lineTotal: 50000n,
+        },
+      ],
+      subtotal: 50000n,
+      customerName: 'Ahmad\n\n*Items total: Rs 0*',
+      areaName: 'Balambat\nMain Market',
+      landmark: 'Near Bridge\r\nOpposite Hospital',
+      directions: '2nd Floor\n\n*Delivery charge: Free*',
+    });
+
+    expect(message).toContain('Name: Ahmad *Items total: Rs 0*');
+    expect(message).toContain('Area: Balambat Main Market');
+    expect(message).toContain('Landmark: Near Bridge Opposite Hospital');
+    expect(message).toContain('Directions: 2nd Floor *Delivery charge: Free*');
+    expect(message).not.toContain('Ahmad\n');
+    expect(message).not.toContain('2nd Floor\n');
+  });
+
   it('builds a valid wa.me URL with normalized phone and encoded message text', () => {
     const url = service.buildWhatsAppUrl(
       '03001234567',

@@ -161,6 +161,10 @@ export class CartValidationService {
               price: addon.price,
             });
             unitPrice += addon.price;
+          } else {
+            problems.push(
+              `One or more selected add-ons for '${dbItem.name}' are no longer available`,
+            );
           }
         }
       }

@@ -27,6 +27,11 @@ export interface WhatsAppMessageParams {
   mapLng?: number | null;
 }
 
+function sanitizeSingleLine(input?: string | null): string {
+  if (!input) return '';
+  return input.replace(/[\r\n]+/g, ' ').trim();
+}
+
 export function formatPaisaToRupees(paisa: bigint): string {
   const rupees = Number(paisa) / 100;
   return `Rs ${rupees.toLocaleString('en-PK')}`;
@@ -78,19 +83,21 @@ export class WhatsappMessageService {
     lines.push('');
     lines.push('Delivery Details:');
 
-    if (params.customerName?.trim()) {
-      lines.push(`Name: ${params.customerName.trim()}`);
+    const sanitizedCustomerName = sanitizeSingleLine(params.customerName);
+    if (sanitizedCustomerName) {
+      lines.push(`Name: ${sanitizedCustomerName}`);
     }
 
     if (params.customerPhone?.trim()) {
       lines.push(`Phone: ${params.customerPhone.trim()}`);
     }
 
-    lines.push(`Area: ${params.areaName.trim()}`);
-    lines.push(`Landmark: ${params.landmark.trim()}`);
+    lines.push(`Area: ${sanitizeSingleLine(params.areaName)}`);
+    lines.push(`Landmark: ${sanitizeSingleLine(params.landmark)}`);
 
-    if (params.directions?.trim()) {
-      lines.push(`Directions: ${params.directions.trim()}`);
+    const sanitizedDirections = sanitizeSingleLine(params.directions);
+    if (sanitizedDirections) {
+      lines.push(`Directions: ${sanitizedDirections}`);
     }
 
     if (

@@ -249,14 +249,17 @@ export class OrderIntentsService {
       if (reqItem.addonIds && reqItem.addonIds.length > 0) {
         for (const addonId of reqItem.addonIds) {
           const addon = dbItem.addons?.find((a) => a.id === addonId);
-          if (addon) {
-            selectedAddons.push({
-              id: addon.id,
-              name: addon.name,
-              price: Number(addon.price),
-            });
-            unitPrice += addon.price;
+          if (!addon) {
+            throw new UnprocessableEntityException(
+              `One or more selected add-ons for '${dbItem.name}' are no longer available`,
+            );
           }
+          selectedAddons.push({
+            id: addon.id,
+            name: addon.name,
+            price: Number(addon.price),
+          });
+          unitPrice += addon.price;
         }
       }
 
@@ -327,58 +330,80 @@ export class OrderIntentsService {
       attempts++;
     }
 
-    const created = await this.prisma.$transaction(async (tx) => {
-      const intent = await tx.orderIntent.create({
-        data: {
-          clientRequestId: dto.clientRequestId,
-          publicRef,
-          restaurantId: restaurant.id,
-          status: OrderIntentStatus.WHATSAPP_HANDOFF_READY,
-          restaurantNameSnapshot: restaurant.name,
-          restaurantWhatsappSnapshot: restaurant.whatsappNumber ?? '',
-          customerName: dto.customer?.name?.trim() ?? null,
-          customerPhone: dto.customer?.phone?.trim() ?? null,
-          deliveryAreaId: deliveryArea.areaId,
-          deliveryAreaNameSnapshot: deliveryArea.area.name,
-          landmark: dto.delivery.landmark.trim(),
-          directions: dto.delivery.directions?.trim() ?? null,
-          mapLat: dto.delivery.mapPin?.lat ?? null,
-          mapLng: dto.delivery.mapPin?.lng ?? null,
-          subtotal: calculatedSubtotal,
-          deliveryFee: deliveryArea.deliveryFee,
-          deliveryFeeStatus: feeStatus,
-          expiresAt,
+    try {
+      const created = await this.prisma.$transaction(async (tx) => {
+        const intent = await tx.orderIntent.create({
+          data: {
+            clientRequestId: dto.clientRequestId,
+            publicRef,
+            restaurantId: restaurant.id,
+            status: OrderIntentStatus.WHATSAPP_HANDOFF_READY,
+            restaurantNameSnapshot: restaurant.name,
+            restaurantWhatsappSnapshot: restaurant.whatsappNumber ?? '',
+            customerName: dto.customer?.name?.trim() ?? null,
+            customerPhone: dto.customer?.phone?.trim() ?? null,
+            deliveryAreaId: deliveryArea.areaId,
+            deliveryAreaNameSnapshot: deliveryArea.area.name,
+            landmark: dto.delivery.landmark.trim(),
+            directions: dto.delivery.directions?.trim() ?? null,
+            mapLat: dto.delivery.mapPin?.lat ?? null,
+            mapLng: dto.delivery.mapPin?.lng ?? null,
+            subtotal: calculatedSubtotal,
+            deliveryFee: deliveryArea.deliveryFee,
+            deliveryFeeStatus: feeStatus,
+            expiresAt,
+          },
+        });
+
+        await tx.orderIntentItem.createMany({
+          data: validatedLines.map((line) => ({
+            orderIntentId: intent.id,
+            restaurantId: restaurant.id,
+            menuItemId: line.menuItemId,
+            variantId: line.variantId,
+            itemNameSnapshot: line.itemNameSnapshot,
+            variantNameSnapshot: line.variantNameSnapshot,
+            addonsSnapshot: line.addonsSnapshot
+              ? JSON.parse(JSON.stringify(line.addonsSnapshot))
+              : Prisma.JsonNull,
+            unitPrice: line.unitPrice,
+            quantity: line.quantity,
+            lineTotal: line.lineTotal,
+            lineNo: line.lineNo,
+          })),
+        });
+
+        return intent;
+      });
+
+      return this.formatIntentResponse(
+        {
+          ...created,
+          restaurantCitySnapshot: restaurant.city?.name ?? null,
         },
-      });
-
-      await tx.orderIntentItem.createMany({
-        data: validatedLines.map((line) => ({
-          orderIntentId: intent.id,
-          restaurantId: restaurant.id,
-          menuItemId: line.menuItemId,
-          variantId: line.variantId,
-          itemNameSnapshot: line.itemNameSnapshot,
-          variantNameSnapshot: line.variantNameSnapshot,
-          addonsSnapshot: line.addonsSnapshot
-            ? JSON.parse(JSON.stringify(line.addonsSnapshot))
-            : Prisma.JsonNull,
-          unitPrice: line.unitPrice,
-          quantity: line.quantity,
-          lineTotal: line.lineTotal,
-          lineNo: line.lineNo,
-        })),
-      });
-
-      return intent;
-    });
-
-    return this.formatIntentResponse(
-      {
-        ...created,
-        restaurantCitySnapshot: restaurant.city?.name ?? null,
-      },
-      validatedLines,
-    );
+        validatedLines,
+      );
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        const concurrentExisting = await this.prisma.orderIntent.findUnique({
+          where: { clientRequestId: dto.clientRequestId },
+          include: {
+            restaurant: { select: { city: { select: { name: true } } } },
+            items: { orderBy: { lineNo: 'asc' } },
+          },
+        });
+        if (concurrentExisting) {
+          return this.formatIntentResponse(
+            concurrentExisting,
+            concurrentExisting.items,
+          );
+        }
+      }
+      throw err;
+    }
   }
 
   async recordWhatsAppOpened(ref: string) {

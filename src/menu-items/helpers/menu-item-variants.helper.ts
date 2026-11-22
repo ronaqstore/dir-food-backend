@@ -21,6 +21,10 @@ export async function handleReplaceVariants(
     throw new NotFoundException('Menu item not found for this restaurant');
   }
 
+  if (item.isDeal) {
+    throw new BadRequestException('Deals cannot have variants');
+  }
+
   const providedIds = dto.variants
     .map((v) => v.id)
     .filter((id): id is string => Boolean(id));

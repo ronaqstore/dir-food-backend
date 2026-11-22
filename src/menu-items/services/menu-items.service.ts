@@ -424,7 +424,23 @@ export class MenuItemsService {
       data.originalPrice =
         dto.originalPrice !== null ? BigInt(dto.originalPrice) : null;
     }
-    if (dto.isDeal !== undefined) data.isDeal = dto.isDeal;
+    if (dto.isDeal === true) {
+      const activeVariantsCount = await this.prisma.menuItemVariant.count({
+        where: {
+          restaurantId,
+          menuItemId: id,
+          isActive: true,
+        },
+      });
+      if (activeVariantsCount > 0) {
+        throw new BadRequestException(
+          'Cannot mark an item with active variants as a deal',
+        );
+      }
+      data.isDeal = true;
+    } else if (dto.isDeal !== undefined) {
+      data.isDeal = dto.isDeal;
+    }
     if (dto.isAvailable !== undefined) data.isAvailable = dto.isAvailable;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
