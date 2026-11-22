@@ -17,6 +17,7 @@ describe('DeliveryAreasService (unit)', () => {
       area: {
         findMany: vi.fn(),
         findFirst: vi.fn(),
+        findUnique: vi.fn().mockResolvedValue(null),
         create: vi.fn(),
       },
       restaurantDeliveryArea: {

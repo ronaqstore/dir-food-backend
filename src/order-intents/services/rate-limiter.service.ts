@@ -27,6 +27,30 @@ export class OrderIntentRateLimiterService {
   ): void {
     const now = Date.now();
 
+    if (this.ipRecords.size > 2000) {
+      const ipMap = this.ipRecords;
+      for (const [key, record] of ipMap.entries()) {
+        record.timestamps = record.timestamps.filter(
+          (ts) => now - ts < this.IP_WINDOW_MS,
+        );
+        if (record.timestamps.length === 0) {
+          ipMap.delete(key);
+        }
+      }
+    }
+
+    if (this.phoneRecords.size > 2000) {
+      const phoneMap = this.phoneRecords;
+      for (const [key, record] of phoneMap.entries()) {
+        record.timestamps = record.timestamps.filter(
+          (ts) => now - ts < this.PHONE_WINDOW_MS,
+        );
+        if (record.timestamps.length === 0) {
+          phoneMap.delete(key);
+        }
+      }
+    }
+
     const ipKey = ip || 'unknown-ip';
     let ipEntry = this.ipRecords.get(ipKey);
     if (!ipEntry) {

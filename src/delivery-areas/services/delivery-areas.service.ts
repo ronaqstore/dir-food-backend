@@ -202,17 +202,20 @@ export class DeliveryAreasService {
       throw new BadRequestException('Area name cannot be empty');
     }
 
-    const slug = slugify(name);
+    let slug = slugify(name);
     if (!slug) {
-      throw new BadRequestException('Invalid area name');
+      slug = `area-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
     const cleanInput = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    const matchedAlias = await this.prisma.areaAlias.findUnique({
-      where: { cityId_normalized: { cityId, normalized: cleanInput } },
-      include: { area: true },
-    });
+    let matchedAlias = null;
+    if (cleanInput) {
+      matchedAlias = await this.prisma.areaAlias.findUnique({
+        where: { cityId_normalized: { cityId, normalized: cleanInput } },
+        include: { area: true },
+      });
+    }
 
     let area = matchedAlias?.area;
 
@@ -230,8 +233,8 @@ export class DeliveryAreasService {
           .toLowerCase()
           .replace(/[^a-z0-9]/g, '');
         return (
-          cleanExistingName === cleanInput ||
-          cleanExistingSlug === cleanInput ||
+          (cleanInput && cleanExistingName === cleanInput) ||
+          (cleanInput && cleanExistingSlug === cleanInput) ||
           a.slug === slug ||
           a.name.toLowerCase() === name.toLowerCase()
         );
@@ -239,11 +242,21 @@ export class DeliveryAreasService {
     }
 
     if (!area) {
+      let uniqueSlug = slug;
+      let counter = 1;
+      while (
+        await this.prisma.area.findUnique({
+          where: { cityId_slug: { cityId, slug: uniqueSlug } },
+        })
+      ) {
+        uniqueSlug = `${slug}-${counter++}`;
+      }
+
       area = await this.prisma.area.create({
         data: {
           cityId,
           name,
-          slug,
+          slug: uniqueSlug,
           isActive: true,
           isVerified: false,
           isCustomCreated: true,
