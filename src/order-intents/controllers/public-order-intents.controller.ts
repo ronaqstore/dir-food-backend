@@ -5,9 +5,11 @@ import {
   Body,
   Param,
   Ip,
+  Req,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { OrderIntentsService } from '../services/order-intents.service.js';
@@ -42,8 +44,14 @@ export class PublicOrderIntentsController {
   async createOrderIntent(
     @Body() dto: CreateOrderIntentDto,
     @Ip() ipAddress: string,
+    @Req() req?: Request,
   ) {
-    return this.orderIntentsService.createOrderIntent(dto, ipAddress);
+    const rawForwarded = req?.headers?.['x-forwarded-for'];
+    const clientIp =
+      typeof rawForwarded === 'string'
+        ? rawForwarded.split(',')[0].trim()
+        : ipAddress || req?.ip || '127.0.0.1';
+    return this.orderIntentsService.createOrderIntent(dto, clientIp);
   }
 
   @Post(':ref/whatsapp-opened')

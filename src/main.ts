@@ -15,6 +15,12 @@ async function createApp(): Promise<INestApplication> {
   }
 
   const app = await NestFactory.create(AppModule);
+  const expressInstance = app.getHttpAdapter().getInstance() as {
+    set?: (setting: string, val: unknown) => void;
+  };
+  if (typeof expressInstance?.set === 'function') {
+    expressInstance.set('trust proxy', 1);
+  }
   const config = app.get(AppConfigurationService);
 
   app.use(cookieParser());

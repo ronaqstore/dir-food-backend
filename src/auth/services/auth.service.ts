@@ -43,6 +43,8 @@ import {
   handleIssuePasswordSetupLink,
   handleSetupPassword,
   handleChangePassword,
+  assertNotLockedOut,
+  handleFailedLoginAttempt,
 } from '../helpers/auth-password.helper.js';
 
 const TIMING_EQUALISER_HASH =
@@ -244,19 +246,7 @@ export class AuthService {
       );
     }
 
-    if (user.lockedUntil && user.lockedUntil > now) {
-      const remainingMinutes = Math.ceil(
-        (user.lockedUntil.getTime() - now.getTime()) / 60_000,
-      );
-      throw new HttpException(
-        {
-          code: 'ACCOUNT_LOCKED',
-          message: `Account is temporarily locked. Try again in ${remainingMinutes} minute(s).`,
-          lockedUntil: user.lockedUntil.toISOString(),
-        },
-        HttpStatus.FORBIDDEN,
-      );
-    }
+    assertNotLockedOut(user.lockedUntil, now);
 
     const isPasswordValid = await bcrypt.compare(
       dto.password,
@@ -264,33 +254,15 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      const newAttempts = user.failedLoginCount + 1;
-      let lockedUntil: Date | null = null;
-
-      if (newAttempts >= this.MAX_FAILED_ATTEMPTS) {
-        lockedUntil = new Date(now.getTime() + this.LOCKOUT_MINUTES * 60_000);
-      }
-
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginCount: newAttempts,
-          lockedUntil,
-        },
-      });
-
-      if (lockedUntil) {
-        throw new HttpException(
-          {
-            code: 'ACCOUNT_LOCKED',
-            message: `Account has been locked due to too many failed attempts. Try again in ${this.LOCKOUT_MINUTES} minutes.`,
-            lockedUntil: lockedUntil.toISOString(),
-          },
-          HttpStatus.FORBIDDEN,
-        );
-      }
-
-      throw new UnauthorizedException('Invalid phone or password');
+      await handleFailedLoginAttempt(
+        this.prisma,
+        user.id,
+        user.failedLoginCount,
+        now,
+        this.MAX_FAILED_ATTEMPTS,
+        this.LOCKOUT_MINUTES,
+        'Invalid phone or password',
+      );
     }
 
     if (user.failedLoginCount > 0 || user.lockedUntil !== null) {
@@ -387,13 +359,24 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const now = new Date();
+    assertNotLockedOut(admin.lockedUntil, now);
+
     const isPasswordValid = await bcrypt.compare(
       dto.password,
       admin.passwordHash,
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      await handleFailedLoginAttempt(
+        this.prisma,
+        admin.id,
+        admin.failedLoginCount,
+        now,
+        this.MAX_FAILED_ATTEMPTS,
+        this.LOCKOUT_MINUTES,
+        'Invalid credentials',
+      );
     }
 
     if (admin.status !== UserStatus.ACTIVE) {

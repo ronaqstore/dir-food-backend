@@ -4,6 +4,8 @@ import {
   handleIssuePasswordSetupLink,
   handleSetupPassword,
   handleChangePassword,
+  assertNotLockedOut,
+  handleFailedLoginAttempt,
 } from './auth-password.helper.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
@@ -53,5 +55,37 @@ describe('auth-password.helper', () => {
         10,
       ),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('throws HttpException if account is currently locked', () => {
+    const now = new Date();
+    const lockedUntil = new Date(now.getTime() + 10 * 60_000);
+    expect(() => assertNotLockedOut(lockedUntil, now)).toThrow();
+  });
+
+  it('allows access if lockedUntil is in the past', () => {
+    const now = new Date();
+    const lockedUntil = new Date(now.getTime() - 10 * 60_000);
+    expect(() => assertNotLockedOut(lockedUntil, now)).not.toThrow();
+  });
+
+  it('handles failed login and locks after reaching max attempts', async () => {
+    const mockPrisma = {
+      user: {
+        update: vi.fn().mockResolvedValue({}),
+      },
+    } as unknown as PrismaService;
+
+    const now = new Date();
+    await expect(
+      handleFailedLoginAttempt(mockPrisma, 'u-1', 4, now, 5, 15),
+    ).rejects.toThrow();
+
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'u-1' },
+        data: expect.objectContaining({ failedLoginCount: 5 }),
+      }),
+    );
   });
 });

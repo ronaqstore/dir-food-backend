@@ -1,5 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import { normalizePhone } from '../../common/utils/phone.js';
 
 interface RateLimitRecord {
   timestamps: number[];
@@ -72,7 +73,8 @@ export class OrderIntentRateLimiterService {
     }
 
     if (customerPhone && customerPhone.trim()) {
-      const normalized = customerPhone.replace(/\D/g, '');
+      const normalized =
+        normalizePhone(customerPhone) || customerPhone.replace(/\D/g, '');
       const phoneKey = this.hashKey(`${restaurantId}:${normalized}`);
       let phoneEntry = this.phoneRecords.get(phoneKey);
       if (!phoneEntry) {

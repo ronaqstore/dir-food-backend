@@ -406,8 +406,22 @@ export class MenuItemsService {
       data.description = dto.description?.trim() || null;
     if (dto.categoryId !== undefined) data.categoryId = dto.categoryId;
     if (dto.basePrice !== undefined) {
-      data.basePrice = dto.basePrice !== null ? BigInt(dto.basePrice) : null;
-      if (dto.basePrice !== null) {
+      if (dto.basePrice === null) {
+        const activeVariantsCount = await this.prisma.menuItemVariant.count({
+          where: {
+            restaurantId,
+            menuItemId: id,
+            isActive: true,
+          },
+        });
+        if (activeVariantsCount === 0) {
+          throw new BadRequestException(
+            'Cannot remove base price from an item that has no variants',
+          );
+        }
+        data.basePrice = null;
+      } else {
+        data.basePrice = BigInt(dto.basePrice);
         await this.prisma.menuItemVariant.updateMany({
           where: {
             restaurantId,

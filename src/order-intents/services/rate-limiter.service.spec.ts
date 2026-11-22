@@ -51,4 +51,15 @@ describe('OrderIntentRateLimiterService', () => {
     }
     expect(() => rateLimiter.checkAndRecord(ip, restId, null)).toThrow();
   });
+
+  it('normalizes different phone formats to the same rate limit bucket', () => {
+    const restId = 'rest-123';
+    rateLimiter.checkAndRecord('10.0.0.1', restId, '03001234567');
+    rateLimiter.checkAndRecord('10.0.0.2', restId, '+92 300 1234567');
+    rateLimiter.checkAndRecord('10.0.0.3', restId, '00923001234567');
+
+    expect(() =>
+      rateLimiter.checkAndRecord('10.0.0.4', restId, '923001234567'),
+    ).toThrow(HttpException);
+  });
 });

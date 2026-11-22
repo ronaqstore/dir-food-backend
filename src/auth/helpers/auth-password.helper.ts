@@ -1,4 +1,10 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  HttpException,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
@@ -141,4 +147,58 @@ export async function handleChangePassword(
   });
 
   return { success: true, message: 'Password changed successfully' };
+}
+
+export function assertNotLockedOut(lockedUntil: Date | null, now: Date): void {
+  if (lockedUntil && lockedUntil > now) {
+    const remainingMinutes = Math.ceil(
+      (lockedUntil.getTime() - now.getTime()) / 60_000,
+    );
+    throw new HttpException(
+      {
+        code: 'ACCOUNT_LOCKED',
+        message: `Account is temporarily locked. Try again in ${remainingMinutes} minute(s).`,
+        lockedUntil: lockedUntil.toISOString(),
+      },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+}
+
+export async function handleFailedLoginAttempt(
+  prisma: PrismaService,
+  userId: string,
+  currentFailedCount: number,
+  now: Date,
+  maxAttempts: number,
+  lockoutMinutes: number,
+  errorMessage = 'Invalid phone or password',
+): Promise<never> {
+  const newAttempts = currentFailedCount + 1;
+  let lockedUntil: Date | null = null;
+
+  if (newAttempts >= maxAttempts) {
+    lockedUntil = new Date(now.getTime() + lockoutMinutes * 60_000);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      failedLoginCount: newAttempts,
+      lockedUntil,
+    },
+  });
+
+  if (lockedUntil) {
+    throw new HttpException(
+      {
+        code: 'ACCOUNT_LOCKED',
+        message: `Account has been locked due to too many failed attempts. Try again in ${lockoutMinutes} minutes.`,
+        lockedUntil: lockedUntil.toISOString(),
+      },
+      HttpStatus.FORBIDDEN,
+    );
+  }
+
+  throw new UnauthorizedException(errorMessage);
 }

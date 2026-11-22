@@ -423,18 +423,24 @@ export class OrderIntentsService {
       });
     }
 
-    if (intent.whatsappOpenedAt === null) {
+    const nextStatus =
+      !intent.status ||
+      intent.status === OrderIntentStatus.WHATSAPP_HANDOFF_READY
+        ? OrderIntentStatus.WHATSAPP_OPENED
+        : intent.status;
+
+    if (intent.whatsappOpenedAt === null || intent.status !== nextStatus) {
       await this.prisma.orderIntent.update({
         where: { id: intent.id },
         data: {
-          status: OrderIntentStatus.WHATSAPP_OPENED,
-          whatsappOpenedAt: new Date(),
+          status: nextStatus,
+          whatsappOpenedAt: intent.whatsappOpenedAt ?? new Date(),
         },
       });
     }
 
     return {
-      status: OrderIntentStatus.WHATSAPP_OPENED,
+      status: nextStatus,
     };
   }
 
