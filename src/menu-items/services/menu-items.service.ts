@@ -158,6 +158,10 @@ export class MenuItemsService {
       );
     }
 
+    if (dto.isDeal && hasVariants) {
+      throw new BadRequestException('Deals cannot have variants');
+    }
+
     if (
       dto.originalPrice !== undefined &&
       dto.originalPrice !== null &&

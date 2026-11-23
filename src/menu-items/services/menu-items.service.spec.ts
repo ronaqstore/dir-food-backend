@@ -138,6 +138,19 @@ describe('MenuItemsService (unit)', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
+    it('throws BadRequestException if deal has variants', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
+
+      await expect(
+        service.createItem('res-1', {
+          categoryId: 'cat-1',
+          name: 'Burger Deal',
+          isDeal: true,
+          variants: [{ name: 'Small', price: 50000 }],
+        }),
+      ).rejects.toThrow('Deals cannot have variants');
+    });
+
     it('creates a deal item with originalPrice and isDeal flag', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({ id: 'res-1' });
       mockPrisma.menuCategory.findUnique.mockResolvedValue({

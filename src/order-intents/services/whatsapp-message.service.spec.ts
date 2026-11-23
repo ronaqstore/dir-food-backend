@@ -44,6 +44,7 @@ describe('WhatsappMessageService', () => {
     expect(message).toContain('2) Naan x 4 — Rs 30 = Rs 120');
     expect(message).toContain('Items total: Rs 1,220');
     expect(message).toContain('Delivery charge: Rs 100');
+    expect(message).toContain('Total: Rs 1,320 (incl. delivery)');
     expect(message).toContain('Name: Ahmad Khan');
     expect(message).toContain('Phone: 03001234567');
     expect(message).toContain('Area: Timergara');
@@ -71,12 +72,15 @@ describe('WhatsappMessageService', () => {
         },
       ],
       subtotal: 200000n,
-      deliveryFee: null, // to be confirmed
+      deliveryFee: null,
       areaName: 'Balambat',
       landmark: 'Near Post Office',
     });
 
     expect(message).toContain('Delivery charge: please confirm');
+    expect(message).toContain(
+      'Total: Rs 2,000 + delivery charge to be confirmed',
+    );
     expect(message).not.toContain('Name:');
     expect(message).not.toContain('Phone:');
     expect(message).not.toContain('Directions:');

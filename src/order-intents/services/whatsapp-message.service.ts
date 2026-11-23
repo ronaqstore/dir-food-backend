@@ -80,6 +80,14 @@ export class WhatsappMessageService {
       deliveryChargeText = formatPaisaToRupees(params.deliveryFee);
     }
     lines.push(`Delivery charge: ${deliveryChargeText}`);
+    if (params.deliveryFee !== null && params.deliveryFee !== undefined) {
+      const grandTotal = params.subtotal + params.deliveryFee;
+      lines.push(`Total: ${formatPaisaToRupees(grandTotal)} (incl. delivery)`);
+    } else {
+      lines.push(
+        `Total: ${formatPaisaToRupees(params.subtotal)} + delivery charge to be confirmed`,
+      );
+    }
     lines.push('');
     lines.push('Delivery Details:');
 
