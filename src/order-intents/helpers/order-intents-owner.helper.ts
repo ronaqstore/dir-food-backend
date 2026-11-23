@@ -3,6 +3,27 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { QueryOrderIntentsDto } from '../dto/query-order-intents.dto.js';
 
+export interface ValidatedLineItem {
+  menuItemId: string;
+  variantId: string | null;
+  itemNameSnapshot: string;
+  variantNameSnapshot: string | null;
+  addonsSnapshot: Array<{ id: string; name: string; price: number }> | null;
+  unitPrice: bigint;
+  quantity: number;
+  lineTotal: bigint;
+  lineNo: number;
+}
+
+export interface PriceChangeDetail {
+  menuItemId: string;
+  variantId: string | null;
+  name: string;
+  unitPrice: bigint;
+  quantity: number;
+  lineTotal: bigint;
+}
+
 export async function handleGetOwnerOrderIntents(
   prisma: PrismaService,
   restaurantId: string,
@@ -37,15 +58,19 @@ export async function handleGetOwnerOrderIntents(
 
   const where: Prisma.OrderIntentWhereInput = { AND: andConditions };
 
+  const allowedSortFields = new Set([
+    'createdAt',
+    'subtotal',
+    'status',
+    'customerName',
+  ]);
   let sortField = query.sortBy;
   let sortDirection: 'asc' | 'desc' =
     query.sortOrder?.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
   if (query.sort) {
     const parts = query.sort.split('.');
-    if (parts[0]) {
-      sortField = parts[0];
-    }
+    if (parts[0]) sortField = parts[0];
     if (
       parts[1]?.toLowerCase() === 'asc' ||
       parts[1]?.toLowerCase() === 'desc'
@@ -54,27 +79,10 @@ export async function handleGetOwnerOrderIntents(
     }
   }
 
-  let orderBy: Prisma.OrderIntentOrderByWithRelationInput = {
-    createdAt: 'desc',
-  };
-  if (sortField) {
-    switch (sortField) {
-      case 'createdAt':
-        orderBy = { createdAt: sortDirection };
-        break;
-      case 'subtotal':
-        orderBy = { subtotal: sortDirection };
-        break;
-      case 'status':
-        orderBy = { status: sortDirection };
-        break;
-      case 'customerName':
-        orderBy = { customerName: sortDirection };
-        break;
-      default:
-        orderBy = { createdAt: 'desc' };
-    }
-  }
+  const orderBy: Prisma.OrderIntentOrderByWithRelationInput =
+    sortField && allowedSortFields.has(sortField)
+      ? { [sortField]: sortDirection }
+      : { createdAt: 'desc' };
 
   const [total, items] = await Promise.all([
     prisma.orderIntent.count({ where }),

@@ -132,6 +132,44 @@ describe('OrderIntentsService', () => {
     expect(res.whatsappUrl).toContain('https://wa.me/923001234567');
   });
 
+  it('throws 409 INTENT_EXPIRED if existing intent has expired', async () => {
+    prisma.orderIntent.findUnique.mockResolvedValue({
+      id: 'intent-1',
+      clientRequestId: 'req-123',
+      publicRef: 'TM-7K4P9Q',
+      restaurantNameSnapshot: 'Hotel Al-Noor',
+      restaurantWhatsappSnapshot: '03001234567',
+      status: OrderIntentStatus.WHATSAPP_HANDOFF_READY,
+      subtotal: 110000n,
+      deliveryFee: 10000n,
+      deliveryFeeStatus: DeliveryFeeStatus.KNOWN,
+      deliveryAreaNameSnapshot: 'Timergara',
+      landmark: 'Degree College',
+      expiresAt: new Date(Date.now() - 1000),
+      items: [
+        {
+          itemNameSnapshot: 'Chicken Karahi',
+          unitPrice: 110000n,
+          quantity: 1,
+          lineTotal: 110000n,
+        },
+      ],
+    });
+
+    await expect(
+      service.createOrderIntent(
+        {
+          clientRequestId: 'req-123',
+          restaurantSlug: 'hotel-al-noor',
+          items: [{ menuItemId: 'item-1', quantity: 1 }],
+          delivery: { areaId: 'area-1', landmark: 'Degree College' },
+          expectedSubtotal: 110000,
+        },
+        '127.0.0.1',
+      ),
+    ).rejects.toThrow(ConflictException);
+  });
+
   it('detects price change and throws 409 PRICE_CHANGED without saving', async () => {
     prisma.orderIntent.findUnique.mockResolvedValue(null);
     prisma.restaurant.findUnique.mockResolvedValue(validRestaurant);

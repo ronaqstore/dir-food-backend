@@ -25,6 +25,8 @@ import {
   handleGetOwnerOrderIntents,
   handleGetOwnerStats,
   handleGetOwnerOrderIntentDetail,
+  type ValidatedLineItem,
+  type PriceChangeDetail,
 } from '../helpers/order-intents-owner.helper.js';
 
 export interface IntentFormattedItem {
@@ -65,6 +67,7 @@ export class OrderIntentsService {
   ) {}
 
   async createOrderIntent(dto: CreateOrderIntentDto, ipAddress: string) {
+    const now = new Date();
     const existing = await this.prisma.orderIntent.findUnique({
       where: { clientRequestId: dto.clientRequestId },
       include: {
@@ -74,10 +77,15 @@ export class OrderIntentsService {
     });
 
     if (existing) {
+      if (existing.expiresAt.getTime() <= now.getTime()) {
+        throw new ConflictException({
+          code: 'INTENT_EXPIRED',
+          message: 'This WhatsApp order request has expired.',
+        });
+      }
       return this.formatIntentResponse(existing, existing.items);
     }
 
-    const now = new Date();
     const normalizedSlug = dto.restaurantSlug.trim().toLowerCase();
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { slug: normalizedSlug },
@@ -169,27 +177,8 @@ export class OrderIntentsService {
     const itemMap = new Map(dbItems.map((item) => [item.id, item]));
 
     let calculatedSubtotal = 0n;
-    const validatedLines: Array<{
-      menuItemId: string;
-      variantId: string | null;
-      itemNameSnapshot: string;
-      variantNameSnapshot: string | null;
-      addonsSnapshot: Array<{ id: string; name: string; price: number }> | null;
-      unitPrice: bigint;
-      quantity: number;
-      lineTotal: bigint;
-      lineNo: number;
-    }> = [];
-
-    const priceChangeDetails: Array<{
-      menuItemId: string;
-      variantId: string | null;
-      name: string;
-      unitPrice: bigint;
-      quantity: number;
-      lineTotal: bigint;
-    }> = [];
-
+    const validatedLines: ValidatedLineItem[] = [];
+    const priceChangeDetails: PriceChangeDetail[] = [];
     let lineCounter = 1;
 
     for (const reqItem of dto.items) {
@@ -396,6 +385,12 @@ export class OrderIntentsService {
           },
         });
         if (concurrentExisting) {
+          if (concurrentExisting.expiresAt.getTime() <= Date.now()) {
+            throw new ConflictException({
+              code: 'INTENT_EXPIRED',
+              message: 'This WhatsApp order request has expired.',
+            });
+          }
           return this.formatIntentResponse(
             concurrentExisting,
             concurrentExisting.items,
@@ -439,9 +434,7 @@ export class OrderIntentsService {
       });
     }
 
-    return {
-      status: nextStatus,
-    };
+    return { status: nextStatus };
   }
 
   async getPublicOrderIntent(ref: string) {
@@ -450,9 +443,7 @@ export class OrderIntentsService {
       where: { publicRef: normalizedRef },
       include: {
         restaurant: { select: { city: { select: { name: true } } } },
-        items: {
-          orderBy: { lineNo: 'asc' },
-        },
+        items: { orderBy: { lineNo: 'asc' } },
       },
     });
 
