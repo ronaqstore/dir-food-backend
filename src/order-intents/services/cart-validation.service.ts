@@ -53,8 +53,10 @@ export class CartValidationService {
   ): Promise<ValidatedCartResult> {
     const now = new Date();
 
+    const normalizedSlug = restaurantSlug.trim().toLowerCase();
+
     const restaurant = await this.prisma.restaurant.findUnique({
-      where: { slug: restaurantSlug },
+      where: { slug: normalizedSlug },
       include: {
         hours: true,
       },
@@ -85,6 +87,7 @@ export class CartValidationService {
         id: { in: itemIds },
         restaurantId: restaurant.id,
         isActive: true,
+        category: { isActive: true },
       },
       include: {
         variants: {

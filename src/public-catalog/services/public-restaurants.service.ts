@@ -228,8 +228,9 @@ export class PublicRestaurantsService {
 
   async getRestaurantBySlug(slug: string): Promise<PublicRestaurantProfile> {
     const now = new Date();
+    const normalizedSlug = slug.trim().toLowerCase();
     const restaurant = await this.prisma.restaurant.findUnique({
-      where: { slug },
+      where: { slug: normalizedSlug },
       select: {
         id: true,
         slug: true,
@@ -348,8 +349,9 @@ export class PublicRestaurantsService {
     slug: string,
   ): Promise<{ categories: PublicMenuCategory[] }> {
     const now = new Date();
+    const normalizedSlug = slug.trim().toLowerCase();
     const restaurant = await this.prisma.restaurant.findUnique({
-      where: { slug },
+      where: { slug: normalizedSlug },
       select: {
         id: true,
         status: true,

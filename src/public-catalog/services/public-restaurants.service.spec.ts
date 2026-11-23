@@ -282,6 +282,20 @@ describe('PublicRestaurantsService', () => {
       );
     });
 
+    it('normalizes uppercase and untrimmed slugs when fetching restaurant profile', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getRestaurantBySlug('  HOTEL-AL-NOOR  '),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrisma.restaurant.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { slug: 'hotel-al-noor' },
+        }),
+      );
+    });
+
     it('throws 404 RESTAURANT_NOT_AVAILABLE if restaurant is PENDING', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({
         id: 'res-pending',
@@ -373,6 +387,20 @@ describe('PublicRestaurantsService', () => {
 
       await expect(service.getRestaurantMenu('missing')).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('normalizes uppercase and untrimmed slugs when fetching restaurant menu', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getRestaurantMenu('  Hotel-Al-Noor  '),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrisma.restaurant.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { slug: 'hotel-al-noor' },
+        }),
       );
     });
   });

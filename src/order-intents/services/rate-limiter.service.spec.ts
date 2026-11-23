@@ -31,12 +31,10 @@ describe('OrderIntentRateLimiterService', () => {
     const restId = 'rest-123';
     const phone = '03001234567';
 
-    // Different IPs to avoid IP rate limit
     rateLimiter.checkAndRecord('10.0.0.1', restId, phone);
     rateLimiter.checkAndRecord('10.0.0.2', restId, phone);
     rateLimiter.checkAndRecord('10.0.0.3', restId, phone);
 
-    // 4th attempt from same phone for same restaurant should fail
     expect(() => rateLimiter.checkAndRecord('10.0.0.4', restId, phone)).toThrow(
       HttpException,
     );
@@ -61,5 +59,17 @@ describe('OrderIntentRateLimiterService', () => {
     expect(() =>
       rateLimiter.checkAndRecord('10.0.0.4', restId, '923001234567'),
     ).toThrow(HttpException);
+  });
+
+  it('does not increment counter on checkOnly calls', () => {
+    const ip = '192.168.1.200';
+    const restId = 'rest-456';
+
+    for (let i = 0; i < 10; i++) {
+      expect(() => rateLimiter.checkOnly(ip, restId)).not.toThrow();
+    }
+
+    rateLimiter.record(ip, restId);
+    expect(() => rateLimiter.checkOnly(ip, restId)).not.toThrow();
   });
 });

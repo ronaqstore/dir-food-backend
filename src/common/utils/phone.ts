@@ -7,6 +7,8 @@ export function normalizePhone(rawPhone: string): string {
     digits = '92' + digits.slice(1);
   } else if (digits.startsWith('0092')) {
     digits = digits.slice(2);
+  } else if (digits.length === 10 && digits.startsWith('3')) {
+    digits = '92' + digits;
   }
   return digits;
 }

@@ -146,4 +146,9 @@ describe('WhatsappMessageService', () => {
       'https://wa.me/923001234567?text=Assalam%20o%20Alaikum!%20Test%20message.',
     );
   });
+
+  it('normalizes 10-digit mobile number starting with 3 to Pakistani country code in wa.me URL', () => {
+    const url = service.buildWhatsAppUrl('3001234567', 'Test message.');
+    expect(url).toBe('https://wa.me/923001234567?text=Test%20message.');
+  });
 });

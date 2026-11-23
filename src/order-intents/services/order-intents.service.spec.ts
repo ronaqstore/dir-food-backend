@@ -229,7 +229,7 @@ describe('OrderIntentsService', () => {
       id: 'intent-1',
       publicRef: 'TM-7K4P9Q',
       whatsappOpenedAt: null,
-      expiresAt: new Date(Date.now() + 3600000), // expires in 1 hour
+      expiresAt: new Date(Date.now() + 3600000),
     });
 
     const res = await service.recordWhatsAppOpened('TM-7K4P9Q');
@@ -242,11 +242,58 @@ describe('OrderIntentsService', () => {
       id: 'intent-1',
       publicRef: 'TM-7K4P9Q',
       whatsappOpenedAt: null,
-      expiresAt: new Date(Date.now() - 3600000), // expired 1 hour ago
+      expiresAt: new Date(Date.now() - 3600000),
     });
 
     await expect(service.recordWhatsAppOpened('TM-7K4P9Q')).rejects.toThrow(
       ConflictException,
+    );
+  });
+
+  it('normalizes restaurant slug and scopes menuItem query to active category', async () => {
+    prisma.orderIntent.findUnique.mockResolvedValue(null);
+    prisma.restaurant.findUnique.mockResolvedValue(validRestaurant);
+    prisma.restaurantDeliveryArea.findUnique.mockResolvedValue(
+      validDeliveryArea,
+    );
+    prisma.menuItem.findMany.mockResolvedValue([validItem]);
+    prisma.orderIntent.create.mockResolvedValue({
+      id: 'intent-created',
+      clientRequestId: 'slug-test',
+      publicRef: 'TM-7K4P9Q',
+      restaurantNameSnapshot: 'Hotel Al-Noor',
+      restaurantWhatsappSnapshot: '03001234567',
+      status: OrderIntentStatus.WHATSAPP_HANDOFF_READY,
+      subtotal: 110000n,
+      deliveryFee: 10000n,
+      deliveryFeeStatus: DeliveryFeeStatus.KNOWN,
+      deliveryAreaNameSnapshot: 'Timergara',
+      landmark: 'College',
+      expiresAt: new Date(Date.now() + 86400000),
+    });
+
+    await service.createOrderIntent(
+      {
+        clientRequestId: 'slug-test',
+        restaurantSlug: '  HOTEL-AL-NOOR  ',
+        items: [{ menuItemId: 'item-1', quantity: 1 }],
+        delivery: { areaId: 'area-1', landmark: 'College' },
+        expectedSubtotal: 110000,
+      },
+      '127.0.0.1',
+    );
+
+    expect(prisma.restaurant.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { slug: 'hotel-al-noor' },
+      }),
+    );
+    expect(prisma.menuItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          category: { isActive: true },
+        }),
+      }),
     );
   });
 });

@@ -78,9 +78,9 @@ export class OrderIntentsService {
     }
 
     const now = new Date();
-
+    const normalizedSlug = dto.restaurantSlug.trim().toLowerCase();
     const restaurant = await this.prisma.restaurant.findUnique({
-      where: { slug: dto.restaurantSlug },
+      where: { slug: normalizedSlug },
       include: { hours: true, city: { select: { name: true } } },
     });
 
@@ -102,11 +102,7 @@ export class OrderIntentsService {
       );
     }
 
-    this.rateLimiter.checkAndRecord(
-      ipAddress,
-      restaurant.id,
-      dto.customer?.phone,
-    );
+    this.rateLimiter.checkOnly(ipAddress, restaurant.id, dto.customer?.phone);
 
     if (dto.customer?.phone && dto.customer.phone.trim()) {
       if (!isValidPakistaniMobile(dto.customer.phone)) {
@@ -162,6 +158,7 @@ export class OrderIntentsService {
         id: { in: itemIds },
         restaurantId: restaurant.id,
         isActive: true,
+        category: { isActive: true },
       },
       include: {
         variants: { where: { isActive: true } },
@@ -330,6 +327,8 @@ export class OrderIntentsService {
       publicRef = generateReferenceCode();
       attempts++;
     }
+
+    this.rateLimiter.record(ipAddress, restaurant.id, dto.customer?.phone);
 
     try {
       const created = await this.prisma.$transaction(async (tx) => {

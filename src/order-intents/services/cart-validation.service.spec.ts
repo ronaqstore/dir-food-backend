@@ -9,7 +9,17 @@ import { NotFoundException } from '@nestjs/common';
 
 describe('CartValidationService', () => {
   let service: CartValidationService;
-  let prisma: any;
+  let prisma: {
+    restaurant: {
+      findUnique: ReturnType<typeof vi.fn>;
+    };
+    menuItem: {
+      findMany: ReturnType<typeof vi.fn>;
+    };
+    restaurantDeliveryArea: {
+      findUnique: ReturnType<typeof vi.fn>;
+    };
+  };
 
   beforeEach(() => {
     prisma = {
@@ -180,5 +190,51 @@ describe('CartValidationService', () => {
 
     expect(result.lines[0].addons).toHaveLength(1);
     expect(result.subtotal).toBe(55000n);
+  });
+
+  it('normalizes uppercase and untrimmed slug when querying restaurant', async () => {
+    prisma.restaurant.findUnique.mockResolvedValue(null);
+
+    await expect(
+      service.validateCart('  AL-NOOR  ', [
+        { menuItemId: 'item-1', quantity: 1 },
+      ]),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(prisma.restaurant.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { slug: 'al-noor' },
+      }),
+    );
+  });
+
+  it('queries menu items scoped to active categories only', async () => {
+    const futureDate = new Date(Date.now() + 10 * 86400000);
+    prisma.restaurant.findUnique.mockResolvedValue({
+      id: 'rest-1',
+      name: 'Al Noor',
+      slug: 'al-noor',
+      status: RestaurantStatus.ACTIVE,
+      subscriptionEndsAt: futureDate,
+      manualStatus: ManualStatus.AUTO,
+      hours: [],
+    });
+
+    prisma.menuItem.findMany.mockResolvedValue([]);
+
+    const result = await service.validateCart('al-noor', [
+      { menuItemId: 'item-inactive-cat', quantity: 1 },
+    ]);
+
+    expect(prisma.menuItem.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          category: { isActive: true },
+        }),
+      }),
+    );
+    expect(result.problems).toContain(
+      "Item 'item-inactive-cat' is not found or inactive",
+    );
   });
 });
