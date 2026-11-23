@@ -154,6 +154,30 @@ describe('DeliveryAreasService (unit)', () => {
         },
       );
     });
+
+    it('scopes area lookup to restaurant cityId when restaurant has a city', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        cityId: 'city-1',
+      });
+      mockPrisma.area.findMany.mockResolvedValue([{ id: 'area-1' }]);
+      mockPrisma.restaurantDeliveryArea.findMany.mockResolvedValue([]);
+
+      const dto = {
+        areas: [{ areaId: 'area-1', deliveryFee: 5000 }],
+      };
+
+      await service.updateDeliveryAreas('res-1', dto);
+
+      expect(mockPrisma.area.findMany).toHaveBeenCalledWith({
+        where: {
+          id: { in: ['area-1'] },
+          isActive: true,
+          cityId: 'city-1',
+        },
+        select: { id: true },
+      });
+    });
   });
 
   describe('createCustomArea', () => {

@@ -197,7 +197,11 @@ describe('AuthController (unit)', () => {
 
   it('delegates logout and clears cookie', async () => {
     const result = await controller.logout(mockResponse);
-    expect(mockResponse.clearCookie).toHaveBeenCalledWith('dir_food_token');
+    expect(mockResponse.clearCookie).toHaveBeenCalledWith('dir_food_token', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+    });
     expect(result).toEqual({
       success: true,
       message: 'Logged out successfully',

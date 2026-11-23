@@ -85,7 +85,7 @@ export class DeliveryAreasService {
   async updateDeliveryAreas(restaurantId: string, dto: UpdateDeliveryAreasDto) {
     const restaurant = await this.prisma.restaurant.findUnique({
       where: { id: restaurantId },
-      select: { id: true },
+      select: { id: true, cityId: true },
     });
 
     if (!restaurant) {
@@ -99,6 +99,7 @@ export class DeliveryAreasService {
         where: {
           id: { in: targetAreaIds },
           isActive: true,
+          ...(restaurant.cityId ? { cityId: restaurant.cityId } : {}),
         },
         select: { id: true },
       });

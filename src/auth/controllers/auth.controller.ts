@@ -135,7 +135,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Log out and clear session cookie' })
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('dir_food_token');
+    res.clearCookie('dir_food_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
     return { success: true, message: 'Logged out successfully' };
   }
 
