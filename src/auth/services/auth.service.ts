@@ -45,6 +45,7 @@ import {
   handleChangePassword,
   assertNotLockedOut,
   handleFailedLoginAttempt,
+  checkAndRecordIpLoginThrottle,
 } from '../helpers/auth-password.helper.js';
 
 const TIMING_EQUALISER_HASH =
@@ -55,6 +56,7 @@ export class AuthService {
   private readonly SALT_ROUNDS = 12;
   private readonly MAX_FAILED_ATTEMPTS = 5;
   private readonly LOCKOUT_MINUTES = 15;
+  private readonly ipLoginAttempts = new Map<string, number[]>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -216,8 +218,9 @@ export class AuthService {
 
   async restaurantOwnerLogin(
     dto: OwnerLoginDto,
-    _ipAddress?: string,
+    ipAddress?: string,
   ): Promise<OwnerLoginResponseDto> {
+    checkAndRecordIpLoginThrottle(this.ipLoginAttempts, ipAddress);
     const normalizedPhone = normalizePhone(dto.phone);
 
     const user = await this.prisma.user.findFirst({
@@ -297,6 +300,7 @@ export class AuthService {
         typ: AuthTokenType.RESTAURANT_OWNER,
         restaurantId: user.restaurantId ?? null,
         role: user.role,
+        tokenVersion: user.tokenVersion,
       },
       tokenExpiresIn,
     );
@@ -334,8 +338,9 @@ export class AuthService {
 
   async platformAdminLogin(
     dto: PlatformAdminLoginDto,
-    _ipAddress?: string,
+    ipAddress?: string,
   ): Promise<PlatformAdminLoginResponseDto> {
+    checkAndRecordIpLoginThrottle(this.ipLoginAttempts, ipAddress);
     const normalizedPhone = normalizePhone(dto.phone);
 
     const admin = await this.prisma.user.findFirst({
@@ -394,6 +399,7 @@ export class AuthService {
         userId: admin.id,
         typ: AuthTokenType.PLATFORM_ADMIN,
         role: admin.role,
+        tokenVersion: admin.tokenVersion,
       },
       tokenExpiresIn,
     );

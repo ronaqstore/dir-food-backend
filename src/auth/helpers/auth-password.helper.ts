@@ -108,6 +108,7 @@ export async function handleSetupPassword(
       passwordHash,
       setupTokenHash: null,
       setupExpiresAt: null,
+      tokenVersion: { increment: 1 },
     },
   });
 
@@ -143,7 +144,10 @@ export async function handleChangePassword(
 
   await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash },
+    data: {
+      passwordHash,
+      tokenVersion: { increment: 1 },
+    },
   });
 
   return { success: true, message: 'Password changed successfully' };
@@ -201,4 +205,34 @@ export async function handleFailedLoginAttempt(
   }
 
   throw new UnauthorizedException(errorMessage);
+}
+
+const IP_LOGIN_LIMIT = 10;
+const IP_LOGIN_WINDOW_MS = 60 * 1000;
+
+export function checkAndRecordIpLoginThrottle(
+  ipLoginAttempts: Map<string, number[]>,
+  ipAddress?: string,
+): void {
+  if (!ipAddress) return;
+  const clientIp = ipAddress === '::1' ? '127.0.0.1' : ipAddress;
+  const now = Date.now();
+  let timestamps = ipLoginAttempts.get(clientIp);
+  if (!timestamps) {
+    timestamps = [];
+    ipLoginAttempts.set(clientIp, timestamps);
+  }
+  const active = timestamps.filter((t) => now - t < IP_LOGIN_WINDOW_MS);
+  if (active.length >= IP_LOGIN_LIMIT) {
+    throw new HttpException(
+      {
+        code: 'TOO_MANY_LOGIN_ATTEMPTS',
+        message:
+          'Too many login attempts from this network. Please wait a minute before trying again.',
+      },
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
+  active.push(now);
+  ipLoginAttempts.set(clientIp, active);
 }

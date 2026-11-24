@@ -15,7 +15,10 @@ export interface SeedAdminsResult {
 }
 
 export async function seedAdmins(prisma: PrismaClient): Promise<SeedAdminsResult> {
-  const sharedPassword = process.env.SEED_ADMIN_PASSWORD || 'admin@123';
+  const sharedPassword = process.env.SEED_ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'admin@123');
+  if (!sharedPassword) {
+    throw new Error('SEED_ADMIN_PASSWORD must be explicitly provided in production environments');
+  }
   const passwordHash = await bcrypt.hash(sharedPassword, 12);
 
   const adminAccounts: AdminAccountInfo[] = [
@@ -55,7 +58,6 @@ export async function seedAdmins(prisma: PrismaClient): Promise<SeedAdminsResult
       where: { phone: adm.phone },
       update: {
         name: adm.name,
-        passwordHash,
         role: UserRole.PLATFORM_ADMIN,
         status: UserStatus.ACTIVE,
         restaurantId: null,

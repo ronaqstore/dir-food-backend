@@ -241,4 +241,29 @@ describe('RestaurantAuthGuard (DB checks)', () => {
       ForbiddenException,
     );
   });
+
+  it('rejects token when tokenVersion does not match user tokenVersion in database', async () => {
+    const token = await jwtService.signAsync({
+      sub: 'owner-1',
+      restaurantId: 'rest-1',
+      role: UserRole.RESTAURANT_OWNER,
+      typ: AuthTokenType.RESTAURANT_OWNER,
+      tokenVersion: 1,
+    });
+
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'owner-1',
+      role: UserRole.RESTAURANT_OWNER,
+      status: UserStatus.ACTIVE,
+      restaurantId: 'rest-1',
+      tokenVersion: 2,
+      restaurant: {
+        id: 'rest-1',
+        status: RestaurantStatus.ACTIVE,
+      },
+    });
+
+    const context = createMockContext({ authorization: `Bearer ${token}` });
+    await expect(guard.canActivate(context)).rejects.toThrow();
+  });
 });

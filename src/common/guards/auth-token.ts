@@ -14,6 +14,7 @@ export interface JwtPayloadClaims {
   role?: UserRole;
   restaurantId?: string | null;
   typ?: AuthTokenType | string;
+  tokenVersion?: number;
 }
 
 export const extractRawToken = (request: Request): string | null => {
@@ -43,6 +44,7 @@ export const verifyTokenOfType = async (
   try {
     payload = await jwtService.verifyAsync<JwtPayloadClaims>(rawToken, {
       secret,
+      algorithms: ['HS256'],
     });
   } catch {
     throw new UnauthorizedException('Invalid or expired token');

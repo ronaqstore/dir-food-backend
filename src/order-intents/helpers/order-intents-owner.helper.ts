@@ -144,39 +144,39 @@ export async function handleGetOwnerStats(
   const days = range === '30d' ? 30 : 7;
   const windowStart = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-  const intents = await prisma.orderIntent.findMany({
-    where: {
-      restaurantId,
-      createdAt: { gte: windowStart },
-    },
-    include: {
-      items: true,
-    },
-  });
+  const [requestsCreated, whatsappOpened, groupedItems] = await Promise.all([
+    prisma.orderIntent.count({
+      where: { restaurantId, createdAt: { gte: windowStart } },
+    }),
+    prisma.orderIntent.count({
+      where: {
+        restaurantId,
+        createdAt: { gte: windowStart },
+        whatsappOpenedAt: { not: null },
+      },
+    }),
+    prisma.orderIntentItem.groupBy({
+      by: ['itemNameSnapshot', 'variantNameSnapshot'],
+      where: {
+        orderIntent: { restaurantId, createdAt: { gte: windowStart } },
+      },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: 'desc' } },
+      take: 10,
+    }),
+  ]);
 
-  const requestsCreated = intents.length;
-  const whatsappOpened = intents.filter(
-    (i) => i.whatsappOpenedAt !== null,
-  ).length;
   const whatsappOpenRate =
     requestsCreated === 0
       ? 0
       : Math.round((whatsappOpened / requestsCreated) * 10000) / 100;
 
-  const itemCounts = new Map<string, number>();
-  for (const intent of intents) {
-    for (const item of intent.items) {
-      const key = item.variantNameSnapshot
-        ? `${item.itemNameSnapshot} (${item.variantNameSnapshot})`
-        : item.itemNameSnapshot;
-      itemCounts.set(key, (itemCounts.get(key) || 0) + item.quantity);
-    }
-  }
-
-  const topItems = Array.from(itemCounts.entries())
-    .map(([name, requestedQuantity]) => ({ name, requestedQuantity }))
-    .sort((a, b) => b.requestedQuantity - a.requestedQuantity)
-    .slice(0, 10);
+  const topItems = groupedItems.map((item) => ({
+    name: item.variantNameSnapshot
+      ? `${item.itemNameSnapshot} (${item.variantNameSnapshot})`
+      : item.itemNameSnapshot,
+    requestedQuantity: item._sum.quantity ?? 0,
+  }));
 
   return {
     range: `${days}d`,

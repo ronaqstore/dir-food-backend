@@ -14,8 +14,12 @@ export class OrderIntentRateLimiterService {
   private readonly PHONE_LIMIT = 3;
   private readonly PHONE_WINDOW_MS = 60 * 60 * 1000;
 
+  private readonly LOOKUP_LIMIT = 30;
+  private readonly LOOKUP_WINDOW_MS = 60 * 1000;
+
   private readonly ipRecords = new Map<string, RateLimitRecord>();
   private readonly phoneRecords = new Map<string, RateLimitRecord>();
+  private readonly lookupRecords = new Map<string, RateLimitRecord>();
 
   private hashKey(key: string): string {
     return createHash('sha256').update(`dir_food_rl:${key}`).digest('hex');
@@ -42,6 +46,18 @@ export class OrderIntentRateLimiterService {
         );
         if (record.timestamps.length === 0) {
           phoneMap.delete(key);
+        }
+      }
+    }
+
+    if (this.lookupRecords.size > 2000) {
+      const lookupMap = this.lookupRecords;
+      for (const [key, record] of lookupMap.entries()) {
+        record.timestamps = record.timestamps.filter(
+          (ts) => now - ts < this.LOOKUP_WINDOW_MS,
+        );
+        if (record.timestamps.length === 0) {
+          lookupMap.delete(key);
         }
       }
     }
@@ -134,8 +150,38 @@ export class OrderIntentRateLimiterService {
     this.record(ip, restaurantId, customerPhone);
   }
 
+  checkAndRecordLookup(ip: string): void {
+    const now = Date.now();
+    this.cleanup(now);
+
+    const ipKey = ip || 'unknown-ip';
+    let entry = this.lookupRecords.get(ipKey);
+    if (!entry) {
+      entry = { timestamps: [] };
+      this.lookupRecords.set(ipKey, entry);
+    }
+
+    entry.timestamps = entry.timestamps.filter(
+      (ts) => now - ts < this.LOOKUP_WINDOW_MS,
+    );
+
+    if (entry.timestamps.length >= this.LOOKUP_LIMIT) {
+      throw new HttpException(
+        {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message:
+            'Too many lookup requests. Please wait a moment before trying again.',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    entry.timestamps.push(now);
+  }
+
   reset(): void {
     this.ipRecords.clear();
     this.phoneRecords.clear();
+    this.lookupRecords.clear();
   }
 }

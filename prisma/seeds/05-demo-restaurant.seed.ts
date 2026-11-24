@@ -85,7 +85,6 @@ export async function seedDemoRestaurant(
       where: { id: ownerUser.id },
       data: {
         name: 'Jawad Ullah',
-        passwordHash: ownerPasswordHash,
         status: UserStatus.ACTIVE,
         failedLoginCount: 0,
         lockedUntil: null,
@@ -103,7 +102,6 @@ export async function seedDemoRestaurant(
         where: { id: userByPhone.id },
         data: {
           name: 'Jawad Ullah',
-          passwordHash: ownerPasswordHash,
           role: UserRole.RESTAURANT_OWNER,
           status: UserStatus.ACTIVE,
           restaurantId: restaurant.id,

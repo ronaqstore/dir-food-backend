@@ -6,6 +6,7 @@ import {
   handleChangePassword,
   assertNotLockedOut,
   handleFailedLoginAttempt,
+  checkAndRecordIpLoginThrottle,
 } from './auth-password.helper.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
@@ -87,5 +88,16 @@ describe('auth-password.helper', () => {
         data: expect.objectContaining({ failedLoginCount: 5 }),
       }),
     );
+  });
+
+  it('throttles logins when an IP exceeds the maximum attempts', () => {
+    const attempts = new Map<string, number[]>();
+    const ip = '198.51.100.5';
+
+    for (let i = 0; i < 10; i++) {
+      expect(() => checkAndRecordIpLoginThrottle(attempts, ip)).not.toThrow();
+    }
+
+    expect(() => checkAndRecordIpLoginThrottle(attempts, ip)).toThrow();
   });
 });

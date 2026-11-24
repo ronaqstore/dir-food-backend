@@ -46,6 +46,15 @@ export class PlatformAdminGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
+    if (
+      payload.tokenVersion !== undefined &&
+      payload.tokenVersion !== admin.tokenVersion
+    ) {
+      throw new UnauthorizedException(
+        'Session expired due to password change or logout. Please log in again.',
+      );
+    }
+
     if (admin.status !== UserStatus.ACTIVE) {
       throw new ForbiddenException('Admin account is disabled.');
     }

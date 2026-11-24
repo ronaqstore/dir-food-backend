@@ -47,6 +47,15 @@ export class RestaurantAuthGuard implements CanActivate {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
+    if (
+      payload.tokenVersion !== undefined &&
+      payload.tokenVersion !== user.tokenVersion
+    ) {
+      throw new UnauthorizedException(
+        'Session expired due to password change or logout. Please log in again.',
+      );
+    }
+
     if (user.status !== UserStatus.ACTIVE) {
       throw new ForbiddenException(
         'Your account has been disabled. Contact support.',

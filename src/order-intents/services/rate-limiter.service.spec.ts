@@ -72,4 +72,14 @@ describe('OrderIntentRateLimiterService', () => {
     rateLimiter.record(ip, restId);
     expect(() => rateLimiter.checkOnly(ip, restId)).not.toThrow();
   });
+
+  it('enforces lookup rate limit for public order intents', () => {
+    const ip = '192.168.1.50';
+
+    for (let i = 0; i < 30; i++) {
+      expect(() => rateLimiter.checkAndRecordLookup(ip)).not.toThrow();
+    }
+
+    expect(() => rateLimiter.checkAndRecordLookup(ip)).toThrow(HttpException);
+  });
 });

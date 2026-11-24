@@ -76,7 +76,6 @@ describe('AuthService (unit)', () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue(null);
 
       const now = new Date();
-      const futureEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       const createdRestaurant = {
         id: '0192aaaa-0000-7000-8000-000000000001',
@@ -314,6 +313,7 @@ describe('AuthService (unit)', () => {
           passwordHash: expect.any(String),
           setupTokenHash: null,
           setupExpiresAt: null,
+          tokenVersion: { increment: 1 },
         },
       });
     });
@@ -334,7 +334,10 @@ describe('AuthService (unit)', () => {
       expect(result.success).toBe(true);
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
-        data: { passwordHash: expect.any(String) },
+        data: {
+          passwordHash: expect.any(String),
+          tokenVersion: { increment: 1 },
+        },
       });
     });
 

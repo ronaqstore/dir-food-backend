@@ -23,6 +23,10 @@ function parseFlags(): SeedFlags {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_PRODUCTION_SEED !== 'true') {
+    throw new Error('Database seeding is strictly forbidden in production mode without explicit ALLOW_PRODUCTION_SEED=true.');
+  }
+
   const flags = parseFlags();
   const prisma = getPrismaClient();
 

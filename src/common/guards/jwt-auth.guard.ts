@@ -47,6 +47,7 @@ export class JwtAuthGuard implements CanActivate {
         typ?: string;
       }>(token, {
         secret: this.configService.jwtSecret,
+        algorithms: ['HS256'],
       });
 
       const userId = payload.sub ?? payload.userId;

@@ -6,4 +6,5 @@ export interface AuthTokenClaims {
   typ: AuthTokenType;
   restaurantId?: string | null;
   role?: string;
+  tokenVersion?: number;
 }

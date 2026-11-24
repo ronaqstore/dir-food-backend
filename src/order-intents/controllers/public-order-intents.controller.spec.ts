@@ -41,11 +41,17 @@ describe('PublicOrderIntentsController', () => {
     expect(res).toEqual({ status: 'WHATSAPP_OPENED' });
   });
 
-  it('delegates getPublicOrderIntent to service', async () => {
+  it('delegates getPublicOrderIntent to service with IP', async () => {
     service.getPublicOrderIntent.mockResolvedValue({ reference: 'TM-7K4P9Q' });
 
-    const res = await controller.getPublicOrderIntent('TM-7K4P9Q');
-    expect(service.getPublicOrderIntent).toHaveBeenCalledWith('TM-7K4P9Q');
+    const res = await controller.getPublicOrderIntent(
+      'TM-7K4P9Q',
+      '192.168.1.1',
+    );
+    expect(service.getPublicOrderIntent).toHaveBeenCalledWith(
+      'TM-7K4P9Q',
+      '192.168.1.1',
+    );
     expect(res).toEqual({ reference: 'TM-7K4P9Q' });
   });
 

@@ -438,7 +438,10 @@ export class OrderIntentsService {
     return { status: nextStatus };
   }
 
-  async getPublicOrderIntent(ref: string) {
+  async getPublicOrderIntent(ref: string, ipAddress?: string) {
+    if (ipAddress) {
+      this.rateLimiter.checkAndRecordLookup(ipAddress);
+    }
     const normalizedRef = ref.trim().toUpperCase();
     const intent = await this.prisma.orderIntent.findUnique({
       where: { publicRef: normalizedRef },

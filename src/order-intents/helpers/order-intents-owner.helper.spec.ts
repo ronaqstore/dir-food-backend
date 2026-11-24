@@ -45,17 +45,14 @@ describe('order-intents-owner.helper', () => {
   it('aggregates owner stats correctly', async () => {
     const mockPrisma = {
       orderIntent: {
-        findMany: vi.fn().mockResolvedValue([
+        count: vi.fn().mockResolvedValueOnce(1).mockResolvedValueOnce(1),
+      },
+      orderIntentItem: {
+        groupBy: vi.fn().mockResolvedValue([
           {
-            id: 'oi-1',
-            whatsappOpenedAt: new Date(),
-            items: [
-              {
-                itemNameSnapshot: 'Biryani',
-                variantNameSnapshot: null,
-                quantity: 2,
-              },
-            ],
+            itemNameSnapshot: 'Biryani',
+            variantNameSnapshot: null,
+            _sum: { quantity: 2 },
           },
         ]),
       },
@@ -66,6 +63,8 @@ describe('order-intents-owner.helper', () => {
     expect(result.whatsappOpened).toBe(1);
     expect(result.whatsappOpenRate).toBe(100);
     expect(result.topItems).toHaveLength(1);
+    expect(result.topItems[0].name).toBe('Biryani');
+    expect(result.topItems[0].requestedQuantity).toBe(2);
   });
 
   it('retrieves and formats order intent detail with addons', async () => {

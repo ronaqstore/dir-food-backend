@@ -5,12 +5,10 @@ import {
   Body,
   Param,
   Ip,
-  Req,
   HttpCode,
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { OrderIntentsService } from '../services/order-intents.service.js';
@@ -46,13 +44,9 @@ export class PublicOrderIntentsController {
   async createOrderIntent(
     @Body() dto: CreateOrderIntentDto,
     @Ip() ipAddress: string,
-    @Req() req?: Request,
   ) {
-    const rawForwarded = req?.headers?.['x-forwarded-for'];
     const clientIp =
-      typeof rawForwarded === 'string'
-        ? rawForwarded.split(',')[0].trim()
-        : ipAddress || req?.ip || '127.0.0.1';
+      ipAddress === '::1' ? '127.0.0.1' : ipAddress || '127.0.0.1';
     return this.orderIntentsService.createOrderIntent(dto, clientIp);
   }
 
@@ -83,10 +77,16 @@ export class PublicOrderIntentsController {
   })
   @ApiResponse({ status: 404, description: 'Order intent not found' })
   @ApiResponse({ status: 409, description: 'Order intent has expired' })
-  async getPublicOrderIntent(@Param('ref') ref: string) {
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
+  async getPublicOrderIntent(
+    @Param('ref') ref: string,
+    @Ip() ipAddress: string,
+  ) {
     if (!isValidReferenceCode(ref)) {
       throw new BadRequestException('Invalid reference code format');
     }
-    return this.orderIntentsService.getPublicOrderIntent(ref);
+    const clientIp =
+      ipAddress === '::1' ? '127.0.0.1' : ipAddress || '127.0.0.1';
+    return this.orderIntentsService.getPublicOrderIntent(ref, clientIp);
   }
 }

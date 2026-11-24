@@ -56,6 +56,7 @@ model User {
   status           UserStatus @default(ACTIVE)
   failedLoginCount Int        @default(0) @map("failed_login_count")
   lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz(3)
+  tokenVersion     Int        @default(0) @map("token_version")
   createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
