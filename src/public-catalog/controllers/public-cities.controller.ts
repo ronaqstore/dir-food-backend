@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Header } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { PublicCitiesService } from '../services/public-cities.service.js';
@@ -10,6 +10,10 @@ export class PublicCitiesController {
   constructor(private readonly citiesService: PublicCitiesService) {}
 
   @Get()
+  @Header(
+    'Cache-Control',
+    'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+  )
   @ApiOperation({
     summary: 'Get active cities/districts for public restaurant discovery',
   })

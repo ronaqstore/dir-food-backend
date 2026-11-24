@@ -60,23 +60,21 @@ export class MenuItemsService {
         : 20;
     const skip = (safePage - 1) * safeLimit;
 
-    const baseWhere: Record<string, unknown> = { restaurantId };
+    const where: Record<string, unknown> = { restaurantId };
     if (categoryId) {
-      baseWhere.categoryId = categoryId;
+      where.categoryId = categoryId;
     }
     if (typeof isDeal === 'boolean') {
-      baseWhere.isDeal = isDeal;
+      where.isDeal = isDeal;
+    }
+    if (typeof isAvailable === 'boolean') {
+      where.isAvailable = isAvailable;
     }
     if (search && search.trim()) {
-      baseWhere.OR = [
+      where.OR = [
         { name: { contains: search.trim(), mode: 'insensitive' } },
         { description: { contains: search.trim(), mode: 'insensitive' } },
       ];
-    }
-
-    const where: Record<string, unknown> = { ...baseWhere };
-    if (typeof isAvailable === 'boolean') {
-      where.isAvailable = isAvailable;
     }
 
     const orderDirection = sortOrder === 'desc' ? 'desc' : 'asc';
@@ -88,23 +86,8 @@ export class MenuItemsService {
         ? [{ [sortBy === 'price' ? 'basePrice' : sortBy]: orderDirection }]
         : [{ categoryId: 'asc' }, { sortOrder: 'asc' }];
 
-    const [
-      total,
-      availableCount,
-      soldOutCount,
-      dishesCount,
-      dealsCount,
-      items,
-    ] = await Promise.all([
+    const [total, items] = await Promise.all([
       this.prisma.menuItem.count({ where }),
-      this.prisma.menuItem.count({
-        where: { ...baseWhere, isAvailable: true },
-      }),
-      this.prisma.menuItem.count({
-        where: { ...baseWhere, isAvailable: false },
-      }),
-      this.prisma.menuItem.count({ where: { restaurantId, isDeal: false } }),
-      this.prisma.menuItem.count({ where: { restaurantId, isDeal: true } }),
       this.prisma.menuItem.findMany({
         where,
         skip,
@@ -128,11 +111,6 @@ export class MenuItemsService {
         limit: safeLimit,
         total,
         totalPages: Math.max(1, Math.ceil(total / safeLimit)),
-        totalCount: availableCount + soldOutCount,
-        availableCount,
-        soldOutCount,
-        dishesCount,
-        dealsCount,
       },
     };
   }

@@ -369,25 +369,29 @@ export class PlatformAdminAreasService {
       .replace(/[^\p{L}\p{N}]/gu, '');
 
     await this.prisma.$transaction(async (tx) => {
-      for (const rda of sourceArea.restaurantAreas) {
-        await tx.restaurantDeliveryArea.upsert({
-          where: {
-            restaurantId_areaId: {
-              restaurantId: rda.restaurantId,
-              areaId: targetArea.id,
-            },
-          },
-          create: {
-            restaurantId: rda.restaurantId,
-            areaId: targetArea.id,
-            deliveryFee: rda.deliveryFee,
-            minOrderAmount: rda.minOrderAmount,
-            isActive: rda.isActive,
-          },
-          update: {
-            isActive: rda.isActive,
-          },
-        });
+      if (sourceArea.restaurantAreas.length > 0) {
+        await Promise.all(
+          sourceArea.restaurantAreas.map((rda) =>
+            tx.restaurantDeliveryArea.upsert({
+              where: {
+                restaurantId_areaId: {
+                  restaurantId: rda.restaurantId,
+                  areaId: targetArea.id,
+                },
+              },
+              create: {
+                restaurantId: rda.restaurantId,
+                areaId: targetArea.id,
+                deliveryFee: rda.deliveryFee,
+                minOrderAmount: rda.minOrderAmount,
+                isActive: rda.isActive,
+              },
+              update: {
+                isActive: rda.isActive,
+              },
+            }),
+          ),
+        );
       }
 
       await tx.orderIntent.updateMany({
