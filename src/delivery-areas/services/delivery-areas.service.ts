@@ -208,7 +208,7 @@ export class DeliveryAreasService {
       slug = `area-${Math.floor(1000 + Math.random() * 9000)}`;
     }
 
-    const cleanInput = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanInput = name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
     let matchedAlias = null;
     if (cleanInput) {
@@ -229,10 +229,10 @@ export class DeliveryAreasService {
       area = existingAreas.find((a) => {
         const cleanExistingName = a.name
           .toLowerCase()
-          .replace(/[^a-z0-9]/g, '');
+          .replace(/[^\p{L}\p{N}]/gu, '');
         const cleanExistingSlug = a.slug
           .toLowerCase()
-          .replace(/[^a-z0-9]/g, '');
+          .replace(/[^\p{L}\p{N}]/gu, '');
         return (
           (cleanInput && cleanExistingName === cleanInput) ||
           (cleanInput && cleanExistingSlug === cleanInput) ||

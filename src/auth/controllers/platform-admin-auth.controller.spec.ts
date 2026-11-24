@@ -9,6 +9,7 @@ describe('PlatformAdminAuthController', () => {
 
   const mockAuthService = {
     issuePasswordSetupLink: vi.fn(),
+    changePassword: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -27,6 +28,28 @@ describe('PlatformAdminAuthController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('changes password for authenticated admin via authService', async () => {
+    const mockUser: any = { userId: 'admin-1' };
+    const mockDto = {
+      currentPassword: 'OldPassword123!',
+      newPassword: 'NewPassword123!',
+    };
+    mockAuthService.changePassword.mockResolvedValue({
+      success: true,
+      message: 'Password changed successfully',
+    });
+
+    const result = await controller.changePassword(mockUser, mockDto);
+    expect(result).toEqual({
+      success: true,
+      message: 'Password changed successfully',
+    });
+    expect(mockAuthService.changePassword).toHaveBeenCalledWith(
+      'admin-1',
+      mockDto,
+    );
   });
 
   it('issues password setup link via authService', async () => {

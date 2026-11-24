@@ -150,11 +150,6 @@ export class AuthService {
       cityId = defaultCity?.id;
     }
 
-    const now = new Date();
-    const subscriptionEndsAt = new Date(
-      now.getTime() + 30 * 24 * 60 * 60 * 1000,
-    );
-
     const result = await this.prisma.$transaction(async (tx) => {
       const restaurant = await tx.restaurant.create({
         data: {
@@ -165,8 +160,8 @@ export class AuthService {
           whatsappNumber: normalizedWa ?? null,
           cuisines: dto.cuisines ?? [],
           status: RestaurantStatus.PENDING,
-          trialStartedAt: now,
-          subscriptionEndsAt,
+          trialStartedAt: null,
+          subscriptionEndsAt: null,
         },
       });
 
@@ -239,11 +234,7 @@ export class AuthService {
 
     if (!user || !user.passwordHash) {
       await bcrypt.compare(dto.password, TIMING_EQUALISER_HASH);
-      throw new UnauthorizedException(
-        !user
-          ? 'Invalid phone or password'
-          : 'Password not set. Please use your setup link.',
-      );
+      throw new UnauthorizedException('Invalid phone or password');
     }
 
     assertNotLockedOut(user.lockedUntil, now);

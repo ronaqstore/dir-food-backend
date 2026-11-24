@@ -17,6 +17,7 @@ import { UpdateCuisineDto } from '../dto/update-cuisine.dto.js';
 import { QueryCuisinesDto } from '../dto/query-cuisines.dto.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { PlatformAdminGuard } from '../../common/guards/platform-admin.guard.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
@@ -25,7 +26,7 @@ import type { AuthenticatedUser } from '../../common/decorators/current-user.dec
 @ApiBearerAuth('bearer')
 @Controller('admin/cuisines')
 @Roles(UserRole.PLATFORM_ADMIN)
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, PlatformAdminGuard)
 export class PlatformAdminCuisinesController {
   constructor(private readonly cuisinesService: PlatformAdminCuisinesService) {}
 

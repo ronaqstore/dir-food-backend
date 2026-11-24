@@ -7,8 +7,10 @@ import {
 import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { R2StorageService } from '../../uploads/services/r2-storage.service.js';
-import { ImageProcessorService } from '../../uploads/services/image-processor.service.js';
-import type { RawUploadFile } from '../../uploads/services/image-processor.service.js';
+import {
+  ImageProcessorService,
+  type RawUploadFile,
+} from '../../uploads/services/image-processor.service.js';
 import type { CreateMenuItemDto } from '../dto/create-item.dto.js';
 import type { UpdateMenuItemDto } from '../dto/update-item.dto.js';
 import type { ReplaceVariantsDto } from '../dto/replace-variants.dto.js';
@@ -51,8 +53,11 @@ export class MenuItemsService {
       throw new NotFoundException('Restaurant not found');
     }
 
-    const safePage = Math.max(1, page);
-    const safeLimit = Math.min(500, Math.max(1, limit));
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safeLimit =
+      Number.isFinite(limit) && limit > 0
+        ? Math.min(500, Math.floor(limit))
+        : 20;
     const skip = (safePage - 1) * safeLimit;
 
     const baseWhere: Record<string, unknown> = { restaurantId };
@@ -75,20 +80,13 @@ export class MenuItemsService {
     }
 
     const orderDirection = sortOrder === 'desc' ? 'desc' : 'asc';
-    let orderByClause: Record<string, 'asc' | 'desc'>[] = [
-      { categoryId: 'asc' },
-      { sortOrder: 'asc' },
-    ];
-
-    if (sortBy === 'name') {
-      orderByClause = [{ name: orderDirection }];
-    } else if (sortBy === 'price') {
-      orderByClause = [{ basePrice: orderDirection }];
-    } else if (sortBy === 'createdAt') {
-      orderByClause = [{ createdAt: orderDirection }];
-    } else if (sortBy === 'sortOrder') {
-      orderByClause = [{ sortOrder: orderDirection }];
-    }
+    const orderByClause: Record<string, 'asc' | 'desc'>[] =
+      sortBy === 'name' ||
+      sortBy === 'price' ||
+      sortBy === 'createdAt' ||
+      sortBy === 'sortOrder'
+        ? [{ [sortBy === 'price' ? 'basePrice' : sortBy]: orderDirection }]
+        : [{ categoryId: 'asc' }, { sortOrder: 'asc' }];
 
     const [
       total,
@@ -163,11 +161,9 @@ export class MenuItemsService {
     }
 
     if (
-      dto.originalPrice !== undefined &&
-      dto.originalPrice !== null &&
+      dto.originalPrice != null &&
       hasBasePrice &&
-      dto.basePrice !== undefined &&
-      dto.basePrice !== null &&
+      dto.basePrice != null &&
       dto.originalPrice <= dto.basePrice
     ) {
       throw new BadRequestException(
@@ -372,15 +368,14 @@ export class MenuItemsService {
           : null
         : existing.basePrice;
 
-    if (dto.originalPrice !== undefined && dto.originalPrice !== null) {
-      if (
-        finalBasePrice !== null &&
-        BigInt(dto.originalPrice) <= finalBasePrice
-      ) {
-        throw new BadRequestException(
-          'Original price must be greater than selling base price',
-        );
-      }
+    if (
+      dto.originalPrice != null &&
+      finalBasePrice !== null &&
+      BigInt(dto.originalPrice) <= finalBasePrice
+    ) {
+      throw new BadRequestException(
+        'Original price must be greater than selling base price',
+      );
     }
 
     const targetCategoryId = dto.categoryId ?? existing.categoryId;
@@ -426,16 +421,6 @@ export class MenuItemsService {
         data.basePrice = null;
       } else {
         data.basePrice = BigInt(dto.basePrice);
-        await this.prisma.menuItemVariant.updateMany({
-          where: {
-            restaurantId,
-            menuItemId: id,
-            isActive: true,
-          },
-          data: {
-            isActive: false,
-          },
-        });
       }
     }
     if (dto.originalPrice !== undefined) {
@@ -462,28 +447,46 @@ export class MenuItemsService {
     if (dto.isAvailable !== undefined) data.isAvailable = dto.isAvailable;
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
 
+    const shouldDeactivateVariants =
+      dto.basePrice !== undefined && dto.basePrice !== null;
+
     try {
-      return await this.prisma.menuItem.update({
-        where: {
-          id_restaurantId: {
-            id,
-            restaurantId,
+      return await this.prisma.$transaction(async (tx) => {
+        if (shouldDeactivateVariants) {
+          await tx.menuItemVariant.updateMany({
+            where: {
+              restaurantId,
+              menuItemId: id,
+              isActive: true,
+            },
+            data: {
+              isActive: false,
+            },
+          });
+        }
+
+        return tx.menuItem.update({
+          where: {
+            id_restaurantId: {
+              id,
+              restaurantId,
+            },
           },
-        },
-        data,
-        include: {
-          variants: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
+          data,
+          include: {
+            variants: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+            addons: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+            category: {
+              select: { id: true, name: true },
+            },
           },
-          addons: {
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-          },
-          category: {
-            select: { id: true, name: true },
-          },
-        },
+        });
       });
     } catch (err: unknown) {
       if (

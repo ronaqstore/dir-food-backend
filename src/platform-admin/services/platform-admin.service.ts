@@ -194,7 +194,12 @@ export class PlatformAdminService {
   }
 
   async getPendingRestaurants(page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safeLimit =
+      Number.isFinite(limit) && limit > 0
+        ? Math.min(100, Math.floor(limit))
+        : 20;
+    const skip = (safePage - 1) * safeLimit;
 
     const [total, items] = await Promise.all([
       this.prisma.restaurant.count({
@@ -203,7 +208,7 @@ export class PlatformAdminService {
       this.prisma.restaurant.findMany({
         where: { status: RestaurantStatus.PENDING },
         skip,
-        take: limit,
+        take: safeLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           users: {
@@ -229,8 +234,8 @@ export class PlatformAdminService {
     return {
       data: items,
       meta: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
       },
     };

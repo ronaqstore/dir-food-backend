@@ -18,5 +18,13 @@ describe('AppController', () => {
     it('should return "Hello World!"', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
+
+    it('should return health status', async () => {
+      const res = await appController.getHealth();
+      expect(res).toEqual({
+        status: 'ok',
+        database: 'connected',
+      });
+    });
   });
 });

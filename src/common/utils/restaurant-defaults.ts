@@ -4,7 +4,7 @@ import { timeStringToDate } from '../../restaurant-hours/utils/opening-hours.uti
 export const DEFAULT_OPEN_TIME = '10:00';
 export const DEFAULT_CLOSE_TIME = '23:00';
 export const DEFAULT_DELIVERY_FEE_PAISA = 0n;
-export const DEFAULT_MIN_ORDER_AMOUNT_PAISA = 0n;
+export const DEFAULT_MIN_ORDER_AMOUNT_PAISA: bigint | null = null;
 
 export async function seedRestaurantDefaults(
   tx: Prisma.TransactionClient,

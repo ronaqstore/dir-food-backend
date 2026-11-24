@@ -83,8 +83,8 @@ describe('AuthService (unit)', () => {
         name: 'Dir Tikka',
         slug: 'dir-tikka',
         status: RestaurantStatus.PENDING,
-        trialStartedAt: now,
-        subscriptionEndsAt: futureEnd,
+        trialStartedAt: null,
+        subscriptionEndsAt: null,
       };
 
       const createdUser = {
@@ -111,13 +111,13 @@ describe('AuthService (unit)', () => {
       });
 
       expect(result.restaurant.status).toBe(RestaurantStatus.PENDING);
-      expect(result.restaurant.trialStartedAt).toBeDefined();
-      expect(result.restaurant.subscriptionEndsAt).toBeDefined();
+      expect(result.restaurant.trialStartedAt).toBeNull();
+      expect(result.restaurant.subscriptionEndsAt).toBeNull();
       expect(mockPrisma.restaurant.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            trialStartedAt: expect.any(Date),
-            subscriptionEndsAt: expect.any(Date),
+            trialStartedAt: null,
+            subscriptionEndsAt: null,
           }),
         }),
       );

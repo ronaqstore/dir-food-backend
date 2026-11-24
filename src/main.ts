@@ -25,6 +25,23 @@ async function createApp(): Promise<INestApplication> {
 
   app.use(cookieParser());
 
+  app.use((_req: Request, res: Response, next: () => void) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=()',
+    );
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader(
+        'Strict-Transport-Security',
+        'max-age=31536000; includeSubDomains',
+      );
+    }
+    next();
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -38,33 +55,35 @@ async function createApp(): Promise<INestApplication> {
     credentials: true,
   });
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Dir Food API')
-    .setDescription(
-      'Dir Food Backend API — Restaurant discovery and WhatsApp request platform for Timergara / Lower Dir, Pakistan',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        description: 'Enter your JWT token (obtained from login)',
-        in: 'header',
-      },
-      'bearer',
-    )
-    .build();
+  if (process.env.NODE_ENV !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Dir Food API')
+      .setDescription(
+        'Dir Food Backend API — Restaurant discovery and WhatsApp request platform for Timergara / Lower Dir, Pakistan',
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'Authorization',
+          description: 'Enter your JWT token (obtained from login)',
+          in: 'header',
+        },
+        'bearer',
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document, {
-    customCssUrl: 'https://unpkg.com/swagger-ui-dist@5.33.0/swagger-ui.css',
-    customJs: [
-      'https://unpkg.com/swagger-ui-dist@5.33.0/swagger-ui-bundle.js',
-      'https://unpkg.com/swagger-ui-dist@5.33.0/swagger-ui-standalone-preset.js',
-    ],
-  });
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document, {
+      customCssUrl: 'https://unpkg.com/swagger-ui-dist@5.33.0/swagger-ui.css',
+      customJs: [
+        'https://unpkg.com/swagger-ui-dist@5.33.0/swagger-ui-bundle.js',
+        'https://unpkg.com/swagger-ui-dist@5.33.0/swagger-ui-standalone-preset.js',
+      ],
+    });
+  }
 
   await app.init();
   cachedApp = app;

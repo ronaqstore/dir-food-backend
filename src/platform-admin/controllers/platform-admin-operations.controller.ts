@@ -6,13 +6,14 @@ import { QueryActivityDto } from '../dto/query-activity.dto.js';
 import { QueryAuditLogsDto } from '../dto/query-audit-logs.dto.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { PlatformAdminGuard } from '../../common/guards/platform-admin.guard.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 
 @ApiTags('Platform Admin Operations')
 @ApiBearerAuth('bearer')
 @Controller('admin')
 @Roles(UserRole.PLATFORM_ADMIN)
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, PlatformAdminGuard)
 export class PlatformAdminOperationsController {
   constructor(
     private readonly operationsService: PlatformAdminOperationsService,

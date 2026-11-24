@@ -12,10 +12,7 @@ import {
   DeliveryFeeStatus,
 } from '../../generated/prisma/enums.js';
 import { isRestaurantOpenNow } from '../../restaurant-hours/utils/opening-hours.util.js';
-import {
-  isValidPakistaniMobile,
-  isReservedPhoneNumber,
-} from '../../common/utils/phone.js';
+import { isValidPakistaniMobile } from '../../common/utils/phone.js';
 import { generateReferenceCode } from '../utils/reference-code.util.js';
 import { WhatsappMessageService } from './whatsapp-message.service.js';
 import { OrderIntentRateLimiterService } from './rate-limiter.service.js';
@@ -117,9 +114,6 @@ export class OrderIntentsService {
         throw new UnprocessableEntityException(
           'Please enter a valid Pakistani mobile number',
         );
-      }
-      if (isReservedPhoneNumber(dto.customer.phone)) {
-        throw new ConflictException('This phone number is already in use');
       }
     }
 
@@ -287,7 +281,9 @@ export class OrderIntentsService {
     }
 
     const effectiveMinOrder =
-      deliveryArea.minOrderAmount ?? restaurant.minOrderAmount;
+      deliveryArea.minOrderAmount !== null && deliveryArea.minOrderAmount > 0n
+        ? deliveryArea.minOrderAmount
+        : restaurant.minOrderAmount;
     if (effectiveMinOrder !== null && calculatedSubtotal < effectiveMinOrder) {
       throw new UnprocessableEntityException({
         code: 'BELOW_MINIMUM_ORDER',
@@ -316,8 +312,6 @@ export class OrderIntentsService {
       publicRef = generateReferenceCode();
       attempts++;
     }
-
-    this.rateLimiter.record(ipAddress, restaurant.id, dto.customer?.phone);
 
     try {
       const created = await this.prisma.$transaction(async (tx) => {
@@ -365,6 +359,8 @@ export class OrderIntentsService {
         return intent;
       });
 
+      this.rateLimiter.record(ipAddress, restaurant.id, dto.customer?.phone);
+
       return this.formatIntentResponse(
         {
           ...created,
@@ -396,6 +392,11 @@ export class OrderIntentsService {
             concurrentExisting.items,
           );
         }
+        throw new ConflictException({
+          code: 'REFERENCE_COLLISION',
+          message:
+            'A collision occurred while generating your order reference. Please retry.',
+        });
       }
       throw err;
     }

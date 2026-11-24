@@ -101,4 +101,26 @@ describe('ResponseEnvelopeInterceptor', () => {
       });
     });
   });
+
+  it('converts objects with toNumber method (such as Prisma Decimal) to Number', async () => {
+    const fakeDecimal = {
+      s: 1,
+      e: 1,
+      d: [348265],
+      toNumber: () => 34.8265,
+    };
+
+    const handler: CallHandler = {
+      handle: () => of({ mapLat: fakeDecimal }),
+    };
+
+    const observable = interceptor.intercept(mockContext, handler);
+    observable.subscribe((result) => {
+      expect(result).toEqual({
+        data: {
+          mapLat: 34.8265,
+        },
+      });
+    });
+  });
 });

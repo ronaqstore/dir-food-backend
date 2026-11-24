@@ -22,6 +22,7 @@ import { ShortenSubscriptionDto } from '../dto/shorten-subscription.dto.js';
 import { UpdateSlugDto } from '../dto/update-slug.dto.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { RolesGuard } from '../../common/guards/roles.guard.js';
+import { PlatformAdminGuard } from '../../common/guards/platform-admin.guard.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
@@ -30,7 +31,7 @@ import type { AuthenticatedUser } from '../../common/decorators/current-user.dec
 @ApiBearerAuth('bearer')
 @Controller('admin')
 @Roles(UserRole.PLATFORM_ADMIN)
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, PlatformAdminGuard)
 export class PlatformAdminController {
   constructor(private readonly adminService: PlatformAdminService) {}
 

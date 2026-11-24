@@ -131,6 +131,7 @@ export class AuthController {
     return this.authService.changePassword(user.userId, dto);
   }
 
+  @Public()
   @Post('logout')
   @ApiOperation({ summary: 'Log out and clear session cookie' })
   @HttpCode(HttpStatus.OK)

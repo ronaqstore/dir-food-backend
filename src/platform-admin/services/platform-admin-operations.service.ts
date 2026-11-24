@@ -10,9 +10,17 @@ export class PlatformAdminOperationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async searchOrderIntents(query: QueryAdminOrdersDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const safePage =
+      query.page !== undefined && Number.isFinite(query.page) && query.page > 0
+        ? Math.floor(query.page)
+        : 1;
+    const safeLimit =
+      query.limit !== undefined &&
+      Number.isFinite(query.limit) &&
+      query.limit > 0
+        ? Math.min(100, Math.floor(query.limit))
+        : 20;
+    const skip = (safePage - 1) * safeLimit;
 
     const where: Prisma.OrderIntentWhereInput = {};
     if (query.ref?.trim()) {
@@ -36,7 +44,7 @@ export class PlatformAdminOperationsService {
       this.prisma.orderIntent.findMany({
         where,
         skip,
-        take: limit,
+        take: safeLimit,
         orderBy: { createdAt: 'desc' },
         include: {
           restaurant: {
@@ -56,10 +64,10 @@ export class PlatformAdminOperationsService {
     return {
       data: items,
       meta: {
-        page,
-        limit,
+        page: safePage,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.max(1, Math.ceil(total / safeLimit)),
       },
     };
   }

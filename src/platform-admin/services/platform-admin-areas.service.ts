@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/services/audit.service.js';
 import { slugify } from '../../common/utils/phone.js';
@@ -221,14 +221,30 @@ export class PlatformAdminAreasService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.restaurantDeliveryArea.deleteMany({
-        where: { areaId: id },
-      }),
-      this.prisma.area.delete({
-        where: { id },
-      }),
-    ]);
+    try {
+      await this.prisma.$transaction([
+        this.prisma.restaurantDeliveryArea.deleteMany({
+          where: { areaId: id },
+        }),
+        this.prisma.area.delete({
+          where: { id },
+        }),
+      ]);
+    } catch (err: unknown) {
+      const isForeignKeyViolation =
+        (err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2003') ||
+        (typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          err.code === 'P2003');
+      if (isForeignKeyViolation) {
+        throw new BadRequestException(
+          `Cannot delete area "${area.name}" because it is associated with customer orders. You can deactivate it instead.`,
+        );
+      }
+      throw err;
+    }
 
     await this.auditService.log({
       actorUserId: adminUserId,
@@ -348,7 +364,9 @@ export class PlatformAdminAreasService {
       );
     }
 
-    const cleanAlias = sourceArea.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanAlias = sourceArea.name
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]/gu, '');
 
     await this.prisma.$transaction(async (tx) => {
       for (const rda of sourceArea.restaurantAreas) {
@@ -372,13 +390,13 @@ export class PlatformAdminAreasService {
         });
       }
 
-      await tx.restaurantDeliveryArea.deleteMany({
-        where: { areaId: sourceArea.id },
-      });
-
       await tx.orderIntent.updateMany({
         where: { deliveryAreaId: sourceArea.id },
         data: { deliveryAreaId: targetArea.id },
+      });
+
+      await tx.restaurantDeliveryArea.deleteMany({
+        where: { areaId: sourceArea.id },
       });
 
       if (cleanAlias) {

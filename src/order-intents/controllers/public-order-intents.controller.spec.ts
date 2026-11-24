@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BadRequestException } from '@nestjs/common';
 import { PublicOrderIntentsController } from './public-order-intents.controller.js';
 import { OrderIntentsService } from '../services/order-intents.service.js';
 
@@ -46,5 +47,19 @@ describe('PublicOrderIntentsController', () => {
     const res = await controller.getPublicOrderIntent('TM-7K4P9Q');
     expect(service.getPublicOrderIntent).toHaveBeenCalledWith('TM-7K4P9Q');
     expect(res).toEqual({ reference: 'TM-7K4P9Q' });
+  });
+
+  it('rejects invalid reference code on recordWhatsAppOpened', async () => {
+    await expect(
+      controller.recordWhatsAppOpened('INVALID_REF'),
+    ).rejects.toThrow(BadRequestException);
+    expect(service.recordWhatsAppOpened).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid reference code on getPublicOrderIntent', async () => {
+    await expect(
+      controller.getPublicOrderIntent('INVALID_REF'),
+    ).rejects.toThrow(BadRequestException);
+    expect(service.getPublicOrderIntent).not.toHaveBeenCalled();
   });
 });

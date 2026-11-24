@@ -73,8 +73,14 @@ export class MenuCategoriesService implements OnModuleInit {
       orderByClause = [{ sortOrder: orderDirection }];
     }
 
-    const safePage = Math.max(1, page ?? 1);
-    const safeLimit = Math.min(200, Math.max(1, limit ?? 20));
+    const safePage =
+      page !== undefined && Number.isFinite(page) && page > 0
+        ? Math.floor(page)
+        : 1;
+    const safeLimit =
+      limit !== undefined && Number.isFinite(limit) && limit > 0
+        ? Math.min(200, Math.floor(limit))
+        : 20;
     const skip = (safePage - 1) * safeLimit;
 
     const [total, items] = await Promise.all([

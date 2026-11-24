@@ -28,6 +28,14 @@ export function serializeBigInts(value: unknown): unknown {
   if (value instanceof Date) {
     return value;
   }
+  if (
+    value &&
+    typeof value === 'object' &&
+    'toNumber' in value &&
+    typeof (value as { toNumber?: unknown }).toNumber === 'function'
+  ) {
+    return (value as { toNumber: () => number }).toNumber();
+  }
   if (Array.isArray(value)) {
     return value.map(serializeBigInts);
   }

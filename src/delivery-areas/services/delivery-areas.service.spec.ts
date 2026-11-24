@@ -316,6 +316,37 @@ describe('DeliveryAreasService (unit)', () => {
       expect(res.deliveryFee).toBeNull();
     });
 
+    it('matches existing area with Urdu name', async () => {
+      mockPrisma.restaurant.findUnique.mockResolvedValue({
+        id: 'res-1',
+        cityId: 'city-1',
+      });
+      mockPrisma.area.findMany.mockResolvedValue([
+        {
+          id: 'existing-urdu-id',
+          cityId: 'city-1',
+          name: 'تیمرگرہ',
+          slug: 'timergara',
+          isActive: true,
+          isVerified: true,
+        },
+      ]);
+      mockPrisma.restaurantDeliveryArea.upsert.mockResolvedValue({
+        restaurantId: 'res-1',
+        areaId: 'existing-urdu-id',
+        deliveryFee: null,
+        minOrderAmount: null,
+        isActive: true,
+      });
+
+      const res = await service.createCustomArea('res-1', {
+        name: 'تیمرگرہ',
+      });
+
+      expect(mockPrisma.area.create).not.toHaveBeenCalled();
+      expect(res.areaId).toBe('existing-urdu-id');
+    });
+
     it('throws BadRequestException if name is empty', async () => {
       mockPrisma.restaurant.findUnique.mockResolvedValue({
         id: 'res-1',

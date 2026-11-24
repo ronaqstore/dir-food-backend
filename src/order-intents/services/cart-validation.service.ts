@@ -224,7 +224,10 @@ export class CartValidationService {
               : DeliveryFeeStatus.TO_BE_CONFIRMED,
         };
 
-        if (deliveryArea.minOrderAmount !== null) {
+        if (
+          deliveryArea.minOrderAmount !== null &&
+          deliveryArea.minOrderAmount > 0n
+        ) {
           effectiveMinOrder = deliveryArea.minOrderAmount;
         }
       }

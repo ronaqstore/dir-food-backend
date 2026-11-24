@@ -191,6 +191,21 @@ describe('PlatformAdminAreasService (unit)', () => {
         BadRequestException,
       );
     });
+
+    it('catches Prisma P2003 foreign key constraint and throws BadRequestException', async () => {
+      mockPrisma.area.findUnique.mockResolvedValue({
+        id: 'a1',
+        name: 'Timergara',
+        slug: 'timergara',
+        cityId: 'city-1',
+      });
+      mockPrisma.orderIntent.count.mockResolvedValue(0);
+      mockPrisma.$transaction.mockRejectedValue({ code: 'P2003' });
+
+      await expect(service.deleteArea('a1', 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   describe('approveArea', () => {
