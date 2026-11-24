@@ -125,14 +125,13 @@ export async function seedDemoRestaurant(
     }
   }
 
-  // 4. Operating Hours & Delivery Areas
+  // 4. Operating Hours & Delivery Areas (closed by default)
   await seedRestaurantDefaults(prisma as any, restaurant.id, city?.id);
 
-  // Activate delivery areas with delivery fees and minimum order
   await prisma.restaurantDeliveryArea.updateMany({
     where: { restaurantId: restaurant.id },
     data: {
-      isActive: true,
+      isActive: false,
       deliveryFee: 10000n, // Rs. 100 in paisa
       minOrderAmount: 50000n, // Rs. 500 in paisa
     },
