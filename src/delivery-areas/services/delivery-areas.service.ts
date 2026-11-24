@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { slugify } from '../../common/utils/phone.js';
 import type { UpdateDeliveryAreasDto } from '../dto/update-delivery-areas.dto.js';
@@ -253,16 +253,36 @@ export class DeliveryAreasService {
         uniqueSlug = `${slug}-${counter++}`;
       }
 
-      area = await this.prisma.area.create({
-        data: {
-          cityId,
-          name,
-          slug: uniqueSlug,
-          isActive: true,
-          isVerified: false,
-          isCustomCreated: true,
-        },
-      });
+      try {
+        area = await this.prisma.area.create({
+          data: {
+            cityId,
+            name,
+            slug: uniqueSlug,
+            isActive: true,
+            isVerified: false,
+            isCustomCreated: true,
+          },
+        });
+      } catch (err: unknown) {
+        if (
+          err instanceof Prisma.PrismaClientKnownRequestError &&
+          err.code === 'P2002'
+        ) {
+          const found = await this.prisma.area.findUnique({
+            where: { cityId_slug: { cityId, slug: uniqueSlug } },
+          });
+          area =
+            found ??
+            (await this.prisma.area.findFirst({
+              where: { cityId, name },
+            })) ??
+            undefined;
+          if (!area) throw err;
+        } else {
+          throw err;
+        }
+      }
     }
 
     const fee =

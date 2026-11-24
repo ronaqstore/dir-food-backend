@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import {
   RestaurantStatus,
@@ -136,37 +136,61 @@ export class PlatformAdminService {
         ? BigInt(dto.minOrderAmount)
         : null;
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const restaurant = await tx.restaurant.create({
-        data: {
-          name: dto.name.trim(),
-          slug,
-          cityId: cityId ?? null,
-          contactPhone: normalizedContact,
-          whatsappNumber: normalizedWa ?? null,
-          addressText: dto.addressText?.trim() ?? null,
-          cuisines: dto.cuisines ?? [],
-          minOrderAmount: minOrder,
-          status: RestaurantStatus.PENDING,
-        },
+    let result;
+    try {
+      result = await this.prisma.$transaction(async (tx) => {
+        const restaurant = await tx.restaurant.create({
+          data: {
+            name: dto.name.trim(),
+            slug,
+            cityId: cityId ?? null,
+            contactPhone: normalizedContact,
+            whatsappNumber: normalizedWa ?? null,
+            addressText: dto.addressText?.trim() ?? null,
+            cuisines: dto.cuisines ?? [],
+            minOrderAmount: minOrder,
+            status: RestaurantStatus.PENDING,
+          },
+        });
+
+        const user = await tx.user.create({
+          data: {
+            name: dto.owner.name.trim(),
+            phone: normalizedOwnerPhone,
+            role: UserRole.RESTAURANT_OWNER,
+            status: UserStatus.ACTIVE,
+            restaurantId: restaurant.id,
+          },
+        });
+
+        await seedRestaurantDefaults(tx, restaurant.id, cityId);
+
+        const setupLink = await this.authService.buildSetupLink(user.id, tx);
+
+        return { restaurant, user, setupLink };
       });
-
-      const user = await tx.user.create({
-        data: {
-          name: dto.owner.name.trim(),
-          phone: normalizedOwnerPhone,
-          role: UserRole.RESTAURANT_OWNER,
-          status: UserStatus.ACTIVE,
-          restaurantId: restaurant.id,
-        },
-      });
-
-      await seedRestaurantDefaults(tx, restaurant.id, cityId);
-
-      const setupLink = await this.authService.buildSetupLink(user.id, tx);
-
-      return { restaurant, user, setupLink };
-    });
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        const target = (err.meta?.target as string[]) || [];
+        if (target.includes('phone')) {
+          throw new ConflictException(
+            'A user with this phone number already exists',
+          );
+        }
+        if (target.includes('slug')) {
+          throw new ConflictException(
+            'A restaurant with this name or slug already exists',
+          );
+        }
+        throw new ConflictException(
+          'A record with these unique details already exists',
+        );
+      }
+      throw err;
+    }
 
     await this.auditService.log({
       actorUserId: adminUserId,

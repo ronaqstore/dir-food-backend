@@ -7,7 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import bcrypt from 'bcrypt';
-import type { Prisma } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AppConfigurationService } from '../../app-configuration/app-configuration.service.js';
 import { RegisterRestaurantDto } from '../dto/register.dto.js';
@@ -152,36 +152,53 @@ export class AuthService {
       cityId = defaultCity?.id;
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const restaurant = await tx.restaurant.create({
-        data: {
-          name: dto.restaurantName.trim(),
-          slug,
-          cityId: cityId ?? null,
-          description: dto.description?.trim() ?? null,
-          whatsappNumber: normalizedWa ?? null,
-          cuisines: dto.cuisines ?? [],
-          status: RestaurantStatus.PENDING,
-          trialStartedAt: null,
-          subscriptionEndsAt: null,
-        },
+    let result;
+    try {
+      result = await this.prisma.$transaction(async (tx) => {
+        const restaurant = await tx.restaurant.create({
+          data: {
+            name: dto.restaurantName.trim(),
+            slug,
+            cityId: cityId ?? null,
+            description: dto.description?.trim() ?? null,
+            whatsappNumber: normalizedWa ?? null,
+            cuisines: dto.cuisines ?? [],
+            status: RestaurantStatus.PENDING,
+            trialStartedAt: null,
+            subscriptionEndsAt: null,
+          },
+        });
+
+        const user = await tx.user.create({
+          data: {
+            name: dto.ownerName.trim(),
+            phone: normalizedPhone,
+            passwordHash,
+            role: UserRole.RESTAURANT_OWNER,
+            status: UserStatus.ACTIVE,
+            restaurantId: restaurant.id,
+          },
+        });
+
+        await seedRestaurantDefaults(tx, restaurant.id, cityId);
+
+        return { restaurant, user };
       });
-
-      const user = await tx.user.create({
-        data: {
-          name: dto.ownerName.trim(),
-          phone: normalizedPhone,
-          passwordHash,
-          role: UserRole.RESTAURANT_OWNER,
-          status: UserStatus.ACTIVE,
-          restaurantId: restaurant.id,
-        },
-      });
-
-      await seedRestaurantDefaults(tx, restaurant.id, cityId);
-
-      return { restaurant, user };
-    });
+    } catch (err: unknown) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        const target = (err.meta?.target as string[]) || [];
+        const msg = target.includes('phone')
+          ? 'A user with this phone number already exists'
+          : target.includes('slug')
+            ? 'A restaurant with this name or slug already exists'
+            : 'A record with these unique details already exists';
+        throw new ConflictException(msg);
+      }
+      throw err;
+    }
 
     await this.auditService.log({
       actorUserId: result.user.id,

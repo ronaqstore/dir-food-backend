@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { Prisma } from '../../generated/prisma/client.js';
 import { serializeBigInts } from '../interceptors/response-envelope.interceptor.js';
 
 @Catch()
@@ -38,6 +39,27 @@ export class HttpExceptionFilter implements ExceptionFilter {
         if (Array.isArray(obj.message)) {
           message = 'Validation failed';
         }
+      }
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+      if (exception.code === 'P2002') {
+        status = HttpStatus.CONFLICT;
+        code = 'CONFLICT';
+        const target = (exception.meta?.target as string[]) || [];
+        message =
+          target.length > 0
+            ? `A record with this ${target.join(', ')} already exists.`
+            : 'A record with these unique details already exists.';
+      } else if (exception.code === 'P2025') {
+        status = HttpStatus.NOT_FOUND;
+        code = 'NOT_FOUND';
+        message = 'The requested record was not found.';
+      } else if (exception.code === 'P2003') {
+        status = HttpStatus.BAD_REQUEST;
+        code = 'BAD_REQUEST';
+        message =
+          'Referenced related record does not exist or cannot be modified.';
+      } else {
+        this.logger.error('PRISMA_EXCEPTION_IN_FILTER:', exception);
       }
     } else {
       this.logger.error('UNHANDLED_EXCEPTION_IN_FILTER:', exception);
