@@ -47,6 +47,7 @@ import {
   handleFailedLoginAttempt,
   checkAndRecordIpLoginThrottle,
 } from '../helpers/auth-password.helper.js';
+import { handleGetMe } from '../helpers/auth-me.helper.js';
 
 const TIMING_EQUALISER_HASH =
   '$2b$12$C6UzMDM.H6dfI/f/IKcEe.7QGK2M4Yw1nBqzYlJ0Z7iVfZ1zUq7r2K';
@@ -468,36 +469,8 @@ export class AuthService {
     return handleChangePassword(this.prisma, userId, dto, this.SALT_ROUNDS);
   }
 
-  async getMe(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        role: true,
-        status: true,
-        restaurant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            status: true,
-            trialStartedAt: true,
-            subscriptionEndsAt: true,
-            whatsappNumber: true,
-            contactPhone: true,
-            manualStatus: true,
-          },
-        },
-      },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    return user;
+  async getMe(userId: string, tokenVersion?: number) {
+    return handleGetMe(this.prisma, userId, tokenVersion);
   }
 
   async checkRestaurantName(

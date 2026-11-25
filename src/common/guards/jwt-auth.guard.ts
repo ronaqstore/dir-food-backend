@@ -45,6 +45,7 @@ export class JwtAuthGuard implements CanActivate {
         role: AuthenticatedUser['role'];
         restaurantId?: string | null;
         typ?: string;
+        tokenVersion?: number;
       }>(token, {
         secret: this.configService.jwtSecret,
         algorithms: ['HS256'],
@@ -59,6 +60,9 @@ export class JwtAuthGuard implements CanActivate {
         userId,
         role: payload.role,
         restaurantId: payload.restaurantId ?? null,
+        ...(payload.tokenVersion !== undefined
+          ? { tokenVersion: payload.tokenVersion }
+          : {}),
       };
 
       return true;

@@ -5,6 +5,7 @@ export interface AuthenticatedUser {
   userId: string;
   role: UserRole;
   restaurantId?: string | null;
+  tokenVersion?: number;
 }
 
 export interface AuthenticatedRestaurantUser extends AuthenticatedUser {

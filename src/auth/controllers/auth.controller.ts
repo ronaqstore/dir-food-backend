@@ -150,6 +150,8 @@ export class AuthController {
     summary: 'Get current authenticated user profile and restaurant info',
   })
   async me(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.getMe(user.userId);
+    return user.tokenVersion !== undefined
+      ? this.authService.getMe(user.userId, user.tokenVersion)
+      : this.authService.getMe(user.userId);
   }
 }

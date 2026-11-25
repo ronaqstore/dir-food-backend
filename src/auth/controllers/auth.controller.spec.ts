@@ -221,4 +221,19 @@ describe('AuthController (unit)', () => {
     expect(mockAuthService.getMe).toHaveBeenCalledWith('u-1');
     expect(result).toEqual(profile);
   });
+
+  it('forwards tokenVersion to AuthService.getMe when present', async () => {
+    const mockUser = {
+      userId: 'u-1',
+      role: UserRole.RESTAURANT_OWNER,
+      restaurantId: 'r-1',
+      tokenVersion: 3,
+    };
+    const profile = { id: 'u-1', name: 'Owner Khan' };
+    mockAuthService.getMe.mockResolvedValue(profile);
+
+    const result = await controller.me(mockUser);
+    expect(mockAuthService.getMe).toHaveBeenCalledWith('u-1', 3);
+    expect(result).toEqual(profile);
+  });
 });
