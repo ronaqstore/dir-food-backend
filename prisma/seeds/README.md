@@ -15,18 +15,15 @@ prisma/
     ├── 01-cities.seed.ts           # 41 Khyber Pakhtunkhwa districts & cities
     ├── 02-areas.seed.ts            # Master delivery areas & settlements
     ├── 03-cuisines.seed.ts         # 40 Master food types & culinary specialties
-    ├── 04-admins.seed.ts           # Platform Super Admin accounts (Admin 1 & 2)
-    ├── 05-demo-restaurant.seed.ts  # Demo Restaurant (Zaiqa Mahal), Owner, Hours, Areas & Menu
-    └── data/
-        └── menu-catalog.data.ts    # Rich catalog data (dishes, portions, prices, images)
+    └── 04-admins.seed.ts           # Platform Super Admin accounts (Admin 1 & 2)
 ```
 
 ---
 
 ## How to Run the Seeders
 
-### 1. Seed All Data (Master Command)
-Populates the entire database from scratch with a single command:
+### 1. Seed All Platform Data (Master Command)
+Populates the database with core platform reference data (no dummy restaurants):
 ```bash
 npm run seed
 ```
@@ -49,15 +46,6 @@ npm run seed -- --only=cuisines
 
 # Seed only super admin accounts
 npm run seed -- --only=admins
-
-# Seed only the demo restaurant & menu catalog
-npm run seed -- --only=demo
-```
-
-### 3. Seed Production / Platform Data Only (Skip Demo Restaurant)
-If deploying to production where you want platform data (districts, areas, cuisines, admins) but NO sample demo restaurant:
-```bash
-npm run seed -- --skip-demo
 ```
 
 ---
@@ -67,10 +55,9 @@ npm run seed -- --skip-demo
 | Seeder File | Target Tables | Description |
 |---|---|---|
 | `01-cities.seed.ts` | `cities` | Seeds the 41 districts of Khyber Pakhtunkhwa (`lower-dir`, `swat`, `peshawar`, etc.) with `sortOrder` and active status. |
-| `02-areas.seed.ts` | `areas` | Seeds 1,000+ master settlements, mouzas, and towns from `content/area.json` mapped to each district. |
+| `02-areas.seed.ts` | `areas` | Seeds master settlements, mouzas, and towns mapped to each district. |
 | `03-cuisines.seed.ts` | `cuisines` | Seeds the 40 standard platform food specialties (`Fast Food`, `Shinwari`, `Karahi`, `BBQ`, `Biryani`, `Continental`, etc.). |
 | `04-admins.seed.ts` | `users` | Creates or updates Super Admin 1 (`03115514151`) and Super Admin 2 (`03059596704`) with `PLATFORM_ADMIN` role and hashed passwords. |
-| `05-demo-restaurant.seed.ts` | `restaurants`, `users`, `restaurant_hours`, `restaurant_delivery_areas`, `menu_categories`, `menu_items`, `menu_item_variants` | Seeds the premier demo restaurant (*Zaiqa Mahal* in Timergara), owner account (*Jawad Ullah*), weekly hours (10:00–23:00), delivery areas, and 100+ dishes, portion sizes (`Half` / `Full`), and promotional combo deals. |
 
 ---
 

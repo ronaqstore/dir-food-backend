@@ -3,11 +3,9 @@ import { seedCities } from './seeds/01-cities.seed.js';
 import { seedAreas } from './seeds/02-areas.seed.js';
 import { seedCuisines } from './seeds/03-cuisines.seed.js';
 import { seedAdmins } from './seeds/04-admins.seed.js';
-import { seedDemoRestaurant } from './seeds/05-demo-restaurant.seed.js';
 
 interface SeedFlags {
   only?: string;
-  skipDemo?: boolean;
 }
 
 function parseFlags(): SeedFlags {
@@ -15,8 +13,6 @@ function parseFlags(): SeedFlags {
   for (const arg of process.argv.slice(2)) {
     if (arg.startsWith('--only=')) {
       flags.only = arg.split('=')[1]?.toLowerCase().trim();
-    } else if (arg === '--skip-demo' || arg === '--skip-menu') {
-      flags.skipDemo = true;
     }
   }
   return flags;
@@ -43,7 +39,7 @@ async function main() {
     // 1. Platform Cities & Districts
     // -------------------------------------------------------------------------
     if (shouldRun('cities')) {
-      console.log('\n[1/5] 🏛️  Seeding Platform Cities & Districts...');
+      console.log('\n[1/4] 🏛️  Seeding Platform Cities & Districts...');
       const { count } = await seedCities(prisma);
       console.log(`      ✔ ${count} Khyber Pakhtunkhwa districts & cities verified.`);
     }
@@ -52,7 +48,7 @@ async function main() {
     // 2. Master Delivery Areas & Localities
     // -------------------------------------------------------------------------
     if (shouldRun('areas')) {
-      console.log('\n[2/5] 📍  Seeding Master Delivery Areas & Localities...');
+      console.log('\n[2/4] 📍  Seeding Master Delivery Areas & Localities...');
       const { totalCount } = await seedAreas(prisma);
       console.log(`      ✔ ${totalCount} delivery areas & settlements indexed.`);
     }
@@ -61,7 +57,7 @@ async function main() {
     // 3. Master Cuisines & Food Types
     // -------------------------------------------------------------------------
     if (shouldRun('cuisines')) {
-      console.log('\n[3/5] 🍲  Seeding Master Cuisines & Food Types...');
+      console.log('\n[3/4] 🍲  Seeding Master Cuisines & Food Types...');
       const { count } = await seedCuisines(prisma);
       console.log(`      ✔ ${count} master cuisines verified.`);
     }
@@ -70,26 +66,12 @@ async function main() {
     // 4. Platform Super Admin Accounts
     // -------------------------------------------------------------------------
     if (shouldRun('admins') || shouldRun('admin')) {
-      console.log('\n[4/5] 👑  Seeding Platform Super Admins...');
+      console.log('\n[4/4] 👑  Seeding Platform Super Admins...');
       const { admins, defaultPassword } = await seedAdmins(prisma);
       for (const adm of admins) {
         console.log(`      ✔ ${adm.name} ready: ${adm.rawPhone} (${adm.phone})`);
       }
       console.log(`      🔑 Default Password: ${defaultPassword}`);
-    }
-
-    // -------------------------------------------------------------------------
-    // 5. Demo Restaurant & Menu Catalog
-    // -------------------------------------------------------------------------
-    if (!flags.skipDemo && (shouldRun('demo') || shouldRun('menu') || shouldRun('demo-restaurant') || !flags.only)) {
-      console.log('\n[5/5] 🍽️  Seeding Demo Restaurant & Full Menu Catalog...');
-      const demo = await seedDemoRestaurant(prisma);
-      console.log(`      ✔ Restaurant: ${demo.restaurantName}`);
-      console.log(`      ✔ Slug:       ${demo.restaurantSlug}`);
-      console.log(`      ✔ Owner:      ${demo.ownerPhone} (Password: ${demo.ownerPassword})`);
-      console.log(`      ✔ Categories: ${demo.categoriesCount}`);
-      console.log(`      ✔ Menu Items: ${demo.itemsCount}`);
-      console.log(`      ✔ Variants:   ${demo.variantsCount}`);
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
